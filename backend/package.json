@@ -8,18 +8,21 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js"
   },
-  "type" : "module",
+  "type": "module",
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@prisma/client": "^7.3.0",
+    "@prisma/client": "^7.4.1",
     "cors": "^2.8.6",
     "dotenv": "^17.2.4",
     "express": "^5.2.1",
     "helmet": "^8.1.0",
     "morgan": "^1.10.1",
-    "nodemon": "^3.1.11",
-    "prisma": "^7.3.0"
+    "nodemon": "^3.1.11"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.0",
+    "prisma": "^7.4.1"
   }
 }
