@@ -1,5 +1,10 @@
 # IITJ-PHC-SYSTEM
 
 Todo:
-- [ ] Basic Initialization
+- [x] Basic Initialization
 - [ ] Basic Project Structure
+- [ ] MVP
+- [ ] Basic UI
+- [ ] Basic Routes
+- [ ] Documentation
+- [ ] Containerization
