@@ -33,13 +33,12 @@ app.get("/", (req, res) => {
   res.status(200).json({ message: "Welcome to the IITJ PHC System API" });
 });
 
-// Health check
-app.get("/api/v1/health", (req, res) => {
-  res.status(200).json({ status: "ok", message: "Server is running" });
-});
+// Import routes
+import healthcheckRoutes from "./routes/healthcheck.routes.js";
 
-// TODO: Mount routes here
-// import authRoutes from "./routes/auth.routes.js";
-// app.use("/api/v1/auth", authRoutes);
+
+// Mount routes
+app.use("/api/v1/healthcheck", healthcheckRoutes);
+
 
 export { app };
