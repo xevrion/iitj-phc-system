@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -11,4 +5,217 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum UserRole {
+  PATIENT
+  DOCTOR
+  ADMIN
+  STAFF
+}
+
+enum DoctorType {
+  SPECIALIST
+  PHYSICIAN
+}
+
+enum VisitStatus {
+  WAITING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum VisitType {
+  OPD
+  ADMIT
+  EMERGENCY
+}
+
+enum AppointmentStatus {
+  BOOKED
+  CANCELLED
+  COMPLETED
+}
+
+enum LabRequestStatus {
+  REQUESTED
+  COMPLETED
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+}
+
+enum DocumentType {
+  PRESCRIPTION
+  LAB_REPORT
+  DISCHARGE
+}
+
+model User {
+  id        String   @id @default(uuid())
+  ldapId    String?  @unique
+  role      UserRole
+  createdAt DateTime @default(now())
+  isActive  Boolean  @default(true)
+
+  patient Patient?
+  doctor  Doctor?
+}
+
+model Patient {
+  id         String  @id @default(uuid())
+  userId     String  @unique
+  bloodGroup String?
+  phone      String?
+  address    String?
+  qrCode     String? @unique
+
+  user              User               @relation(fields: [userId], references: [id])
+  visits            Visit[]
+  appointments      Appointment[]
+  externalDocuments ExternalDocument[]
+}
+
+model Doctor {
+  id             String     @id @default(uuid())
+  userId         String     @unique
+  doctorType     DoctorType
+  specialization String?
+  isAvailable    Boolean    @default(false)
+
+  user          User               @relation(fields: [userId], references: [id])
+  visits        Visit[]
+  appointments  Appointment[]
+  prescriptions Prescription[]
+  labRequests   LabRequest[]
+  attendance    DoctorAttendance[]
+}
+
+model Visit {
+  id          String      @id @default(uuid()) // VisitID
+  patientId   String
+  doctorId    String?
+  visitStatus VisitStatus @default(WAITING)
+  visitType   VisitType
+  createdAt   DateTime    @default(now())
+  closedAt    DateTime?
+
+  patient           Patient            @relation(fields: [patientId], references: [id])
+  doctor            Doctor?            @relation(fields: [doctorId], references: [id])
+  prescription      Prescription?
+  labRequests       LabRequest[]
+  bill              Bill?
+  externalDocuments ExternalDocument[]
+}
+
+model Appointment {
+  id              String            @id @default(uuid())
+  patientId       String
+  doctorId        String
+  appointmentTime DateTime
+  slotDuration    Int
+  status          AppointmentStatus @default(BOOKED)
+
+  patient Patient @relation(fields: [patientId], references: [id])
+  doctor  Doctor  @relation(fields: [doctorId], references: [id])
+}
+
+model Prescription {
+  id        String   @id @default(uuid())
+  visitId   String   @unique
+  doctorId  String
+  notes     String?
+  createdAt DateTime @default(now())
+
+  visit  Visit              @relation(fields: [visitId], references: [id])
+  doctor Doctor             @relation(fields: [doctorId], references: [id])
+  items  PrescriptionItem[]
+}
+
+model PrescriptionItem {
+  id             String  @id @default(uuid())
+  prescriptionId String
+  medicineId     String
+  dosage         String?
+  duration       String?
+
+  prescription Prescription @relation(fields: [prescriptionId], references: [id])
+  medicine     Medicine     @relation(fields: [medicineId], references: [id])
+}
+
+model LabRequest {
+  id       String           @id @default(uuid())
+  visitId  String
+  doctorId String
+  testName String
+  status   LabRequestStatus @default(REQUESTED)
+
+  visit  Visit      @relation(fields: [visitId], references: [id])
+  doctor Doctor     @relation(fields: [doctorId], references: [id])
+  report LabReport?
+}
+
+model LabReport {
+  id           String   @id @default(uuid())
+  labRequestId String   @unique
+  reportUrl    String
+  uploadedAt   DateTime @default(now())
+
+  labRequest LabRequest @relation(fields: [labRequestId], references: [id])
+}
+
+model ExternalDocument {
+  id           String       @id @default(uuid())
+  patientId    String
+  visitId      String?
+  documentType DocumentType
+  fileUrl      String
+  uploadedAt   DateTime     @default(now())
+
+  patient Patient @relation(fields: [patientId], references: [id])
+  visit   Visit?  @relation(fields: [visitId], references: [id])
+}
+
+model Medicine {
+  id            String  @id @default(uuid())
+  name          String
+  stockQuantity Int
+  unitPrice     Decimal @db.Decimal(10, 2)
+
+  prescriptionItems PrescriptionItem[]
+  billItems         BillItem[]
+}
+
+model Bill {
+  id            String        @id @default(uuid())
+  visitId       String        @unique
+  totalAmount   Decimal       @db.Decimal(10, 2)
+  paymentStatus PaymentStatus @default(UNPAID)
+  createdAt     DateTime      @default(now())
+
+  visit Visit      @relation(fields: [visitId], references: [id])
+  items BillItem[]
+}
+
+model BillItem {
+  id         String  @id @default(uuid())
+  billId     String
+  medicineId String
+  quantity   Int
+  price      Decimal @db.Decimal(10, 2)
+
+  bill     Bill     @relation(fields: [billId], references: [id])
+  medicine Medicine @relation(fields: [medicineId], references: [id])
+}
+
+model DoctorAttendance {
+  id         String    @id @default(uuid())
+  doctorId   String
+  checkIn    DateTime
+  checkOut   DateTime?
+  totalHours Float?
+
+  doctor Doctor @relation(fields: [doctorId], references: [id])
 }
