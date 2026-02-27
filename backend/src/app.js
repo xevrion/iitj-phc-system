@@ -38,6 +38,7 @@ import healthcheckRoutes from "./routes/healthcheck.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import patientRoutes from "./routes/patient.routes.js";
 import visitRoutes from "./routes/visit.routes.js";
+import doctorRoutes from "./routes/doctor.routes.js";
 
 // Import error handler
 import { errorHandler } from "./middlewares/errorHandler.middleware.js";
@@ -47,6 +48,7 @@ app.use("/api/v1/healthcheck", healthcheckRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/patients", patientRoutes);
 app.use("/api/v1/visits", visitRoutes);
+app.use("/api/v1/doctors", doctorRoutes);
 
 // Global error handler — must be last
 app.use(errorHandler);
