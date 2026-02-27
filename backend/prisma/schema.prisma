@@ -7,11 +7,15 @@ datasource db {
   provider = "postgresql"
 }
 
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
 enum UserRole {
   PATIENT
   DOCTOR
+  RECEPTION_STAFF
+  PHARMACY_STAFF
+  LAB_STAFF
   ADMIN
-  STAFF
 }
 
 enum DoctorType {
@@ -21,8 +25,9 @@ enum DoctorType {
 
 enum VisitStatus {
   WAITING
-  IN_PROGRESS
+  IN_CONSULTATION
   COMPLETED
+  CANCELLED
 }
 
 enum VisitType {
@@ -53,6 +58,8 @@ enum DocumentType {
   DISCHARGE
 }
 
+// ─── Core Identity ────────────────────────────────────────────────────────────
+
 model User {
   id        String   @id @default(uuid())
   ldapId    String?  @unique
@@ -60,17 +67,26 @@ model User {
   createdAt DateTime @default(now())
   isActive  Boolean  @default(true)
 
-  patient Patient?
-  doctor  Doctor?
+  patient        Patient?
+  doctor         Doctor?
+  receptionStaff ReceptionStaff?
+  pharmacyStaff  PharmacyStaff?
+  labStaff       LabStaff?
+  phcEvents      PHCEvent[]
 }
 
+// ─── Role Profiles ────────────────────────────────────────────────────────────
+
 model Patient {
-  id         String  @id @default(uuid())
-  userId     String  @unique
+  id         String    @id @default(uuid())
+  userId     String    @unique
+  name       String?
+  dob        DateTime? @db.Date
+  email      String?
   bloodGroup String?
   phone      String?
   address    String?
-  qrCode     String? @unique
+  qrCode     String?   @unique
 
   user              User               @relation(fields: [userId], references: [id])
   visits            Visit[]
@@ -81,6 +97,7 @@ model Patient {
 model Doctor {
   id             String     @id @default(uuid())
   userId         String     @unique
+  name           String?
   doctorType     DoctorType
   specialization String?
   isAvailable    Boolean    @default(false)
@@ -93,21 +110,57 @@ model Doctor {
   attendance    DoctorAttendance[]
 }
 
+model ReceptionStaff {
+  id     String @id @default(uuid())
+  userId String @unique
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model PharmacyStaff {
+  id     String @id @default(uuid())
+  userId String @unique
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model LabStaff {
+  id     String @id @default(uuid())
+  userId String @unique
+
+  user       User        @relation(fields: [userId], references: [id])
+  labReports LabReport[]
+}
+
+// ─── Clinical Workflow ────────────────────────────────────────────────────────
+
 model Visit {
-  id          String      @id @default(uuid()) // VisitID
-  patientId   String
-  doctorId    String?
-  visitStatus VisitStatus @default(WAITING)
-  visitType   VisitType
-  createdAt   DateTime    @default(now())
-  closedAt    DateTime?
+  id                String      @id @default(uuid())
+  patientId         String
+  doctorId          String?
+  visitStatus       VisitStatus @default(WAITING)
+  visitType         VisitType
+  consultationNotes String?
+  createdAt         DateTime    @default(now())
+  closedAt          DateTime?
 
   patient           Patient            @relation(fields: [patientId], references: [id])
   doctor            Doctor?            @relation(fields: [doctorId], references: [id])
+  vitals            VisitVitals?
   prescription      Prescription?
   labRequests       LabRequest[]
   bill              Bill?
   externalDocuments ExternalDocument[]
+}
+
+model VisitVitals {
+  id            String  @id @default(uuid())
+  visitId       String  @unique
+  weight        Float?
+  temperature   Float?
+  bloodPressure String?
+
+  visit Visit @relation(fields: [visitId], references: [id])
 }
 
 model Appointment {
@@ -116,6 +169,7 @@ model Appointment {
   doctorId        String
   appointmentTime DateTime
   slotDuration    Int
+  isEmergency     Boolean           @default(false)
   status          AppointmentStatus @default(BOOKED)
 
   patient Patient @relation(fields: [patientId], references: [id])
@@ -123,11 +177,12 @@ model Appointment {
 }
 
 model Prescription {
-  id        String   @id @default(uuid())
-  visitId   String   @unique
-  doctorId  String
-  notes     String?
-  createdAt DateTime @default(now())
+  id          String   @id @default(uuid())
+  visitId     String   @unique
+  doctorId    String
+  notes       String?
+  isDispensed Boolean  @default(false)
+  createdAt   DateTime @default(now())
 
   visit  Visit              @relation(fields: [visitId], references: [id])
   doctor Doctor             @relation(fields: [doctorId], references: [id])
@@ -158,12 +213,14 @@ model LabRequest {
 }
 
 model LabReport {
-  id           String   @id @default(uuid())
-  labRequestId String   @unique
-  reportUrl    String
-  uploadedAt   DateTime @default(now())
+  id                   String   @id @default(uuid())
+  labRequestId         String   @unique
+  uploadedByLabStaffId String?
+  reportUrl            String
+  uploadedAt           DateTime @default(now())
 
-  labRequest LabRequest @relation(fields: [labRequestId], references: [id])
+  labRequest      LabRequest @relation(fields: [labRequestId], references: [id])
+  uploadedByStaff LabStaff?  @relation(fields: [uploadedByLabStaffId], references: [id])
 }
 
 model ExternalDocument {
@@ -177,6 +234,8 @@ model ExternalDocument {
   patient Patient @relation(fields: [patientId], references: [id])
   visit   Visit?  @relation(fields: [visitId], references: [id])
 }
+
+// ─── Pharmacy & Billing ───────────────────────────────────────────────────────
 
 model Medicine {
   id            String  @id @default(uuid())
@@ -210,6 +269,8 @@ model BillItem {
   medicine Medicine @relation(fields: [medicineId], references: [id])
 }
 
+// ─── Attendance & Admin ───────────────────────────────────────────────────────
+
 model DoctorAttendance {
   id         String    @id @default(uuid())
   doctorId   String
@@ -218,4 +279,15 @@ model DoctorAttendance {
   totalHours Float?
 
   doctor Doctor @relation(fields: [doctorId], references: [id])
+}
+
+model PHCEvent {
+  id                String   @id @default(uuid())
+  title             String
+  description       String?
+  eventDate         DateTime
+  publishedAt       DateTime @default(now())
+  publishedByUserId String?
+
+  publishedBy User? @relation(fields: [publishedByUserId], references: [id])
 }
