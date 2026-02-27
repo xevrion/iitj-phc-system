@@ -10,7 +10,7 @@
 - Node.js v20+
 - npm
 - A **Prisma Postgres** cloud database (see setup below)
-- Postman, Bruno, or any HTTP client for hitting routes
+- [Bruno](https://www.usebruno.com/) — the API client used for this project (free, open-source)
 
 ---
 
@@ -84,7 +84,84 @@ What gets created:
 
 ---
 
-## 5. Do You Need to Reset the DB Between Test Runs?
+## 5. Bruno API Collection
+
+All API requests are pre-built as a Bruno collection. No manual setup needed — just open the folder.
+
+### Opening the collection
+
+1. Download and install [Bruno](https://www.usebruno.com/) (free)
+2. Open Bruno → click **Open Collection**
+3. Navigate to `backend/tests/iitj-phc-system/` inside this repo and select that folder
+4. The collection opens with 6 folders — one per module:
+
+```
+Auth/           — Login, Get current user
+Patient/        — Profile, QR lookup, Visit history
+Doctor/         — List, Availability, Check-in/out, Attendance
+Visit/          — Create, Queue, Vitals, Claim, Consult, Complete, Cancel
+Prescription/   — Create, View, Pending queue, Dispense
+Lab/            — Request test, View requests, Pending queue, Upload report
+```
+
+### Updating tokens
+
+The tokens stored in each request file are from a previous session and will be expired.
+Before sending any request, get a fresh token:
+
+1. Open **Auth → Login and get a token**
+2. Change `ldapId` in the body to the role you need (`doctor01`, `reception01`, etc.)
+3. Send the request → copy the `token` value from the response
+4. Open the request you want to test → edit the `Authorization` header value to `Bearer <your token>`
+
+> Each role has its own token. If you switch from `doctor01` to `pharmacy01`, log in again as `pharmacy01` and paste that token into the pharmacy requests.
+
+### Replacing placeholder IDs
+
+Requests that operate on a specific record use placeholder strings in the URL:
+
+| Placeholder | What to replace it with |
+|-------------|------------------------|
+| `PATIENT_PROFILE_ID` | `id` from `GET /patients/qr/QR001` response |
+| `DOCTOR_PROFILE_ID` | `id` from `GET /doctors` response |
+| `VISIT_ID` | `id` from `POST /visits` response |
+| `PRESCRIPTION_ID` | `id` from `POST /visits/.../prescription` response |
+| `LAB_REQUEST_ID` | `id` from `POST /visits/.../lab-requests` response |
+| `MEDICINE_ID` | `id` from Prisma Studio → Medicine table |
+
+Edit the URL directly in Bruno before sending.
+
+### Recommended testing flow
+
+Follow the smoke test order in §13 using Bruno. A typical session looks like:
+
+```
+1. Auth/Login and get a token       → ldapId: "reception01" → copy token
+2. Patient/Identify patient by QR   → paste reception01 token → copy patientId
+3. Visit/Reception creates visit    → paste patientId in body, paste token → copy visitId
+
+4. Auth/Login and get a token       → ldapId: "doctor01" → copy token
+5. Doctor/Doctor checks in          → paste doctor01 token
+6. Visit/Doctor views waiting queue → confirms visit is there
+7. Visit/Doctor claims visit        → paste visitId in URL
+8. Visit/Doctor saves consultation  → paste visitId in URL
+9. Prescription/Doctor creates prescription → paste visitId, medicineId
+10. Lab/Doctor requests lab test    → paste visitId
+11. Visit/Doctor completes visit    → paste visitId
+12. Doctor/Doctor checks out
+
+13. Auth/Login and get a token      → ldapId: "pharmacy01" → copy token
+14. Prescription/Pharmacy views pending prescriptions
+15. Prescription/Pharmacy dispenses prescription → paste prescriptionId in URL
+
+16. Auth/Login and get a token      → ldapId: "lab01" → copy token
+17. Lab/Lab staff views pending requests
+18. Lab/Lab staff uploads report    → paste labRequestId in URL
+```
+
+---
+
+## 6. Do You Need to Reset the DB Between Test Runs?
 
 **No — you do not need to reset the DB between test runs.**
 
@@ -111,7 +188,7 @@ npx prisma studio
 
 ---
 
-## 6. Auth
+## 7. Auth
 
 > **Base URL for all routes:** `http://localhost:8000/api/v1`
 >
@@ -148,7 +225,7 @@ GET /auth/me
 
 ---
 
-## 7. Patient Routes
+## 8. Patient Routes
 
 > Staff routes: login as `reception01` or `doctor01`
 > Patient routes: login as `patient01`
@@ -187,7 +264,7 @@ GET /patients/<patient profile id>/visits
 
 ---
 
-## 8. Doctor Routes
+## 9. Doctor Routes
 
 ### List available doctors
 ```
@@ -229,11 +306,11 @@ GET /doctors/attendance/records
 
 ---
 
-## 9. Visit Lifecycle
+## 10. Visit Lifecycle
 
 > Full flow: **create → vitals → claim → consultation → prescription → lab request → complete**
 
-### 9.1 Reception creates a visit
+### 10.1 Reception creates a visit
 ```
 POST /visits
 # Role: RECEPTION_STAFF
@@ -252,48 +329,48 @@ Body:
 
 `visitType` options: `OPD` | `ADMIT` | `EMERGENCY`
 
-### 9.2 Add/update vitals separately
+### 10.2 Add/update vitals separately
 ```
 POST /visits/<visitId>/vitals
 # Role: RECEPTION_STAFF
 Body: { "weight": 70, "temperature": 99.1, "bloodPressure": "118/76" }
 ```
 
-### 9.3 Doctor's waiting queue
+### 10.3 Doctor's waiting queue
 ```
 GET /visits/my-queue
 # Role: DOCTOR
 # Returns all WAITING visits assigned to this doctor
 ```
 
-### 9.4 Doctor claims the visit
+### 10.4 Doctor claims the visit
 ```
 PUT /visits/<visitId>/claim
 # Role: DOCTOR
 # Status: WAITING → IN_CONSULTATION. Locks visit to this doctor.
 ```
 
-### 9.5 Doctor saves consultation notes
+### 10.5 Doctor saves consultation notes
 ```
 PUT /visits/<visitId>/consultation
 # Role: DOCTOR (must be the assigned doctor)
 Body: { "consultationNotes": "Patient has mild fever. Prescribed paracetamol." }
 ```
 
-### 9.6 Get full visit record
+### 10.6 Get full visit record
 ```
 GET /visits/<visitId>
 # Role: DOCTOR, RECEPTION_STAFF, PHARMACY_STAFF, LAB_STAFF, ADMIN
 ```
 
-### 9.7 Cancel a visit
+### 10.7 Cancel a visit
 ```
 PUT /visits/<visitId>/cancel
 # Role: DOCTOR, RECEPTION_STAFF, ADMIN
 # Works on WAITING or IN_CONSULTATION visits only
 ```
 
-### 9.8 Doctor completes the visit
+### 10.8 Doctor completes the visit
 ```
 PUT /visits/<visitId>/complete
 # Role: DOCTOR (must be the assigned doctor)
@@ -302,7 +379,7 @@ PUT /visits/<visitId>/complete
 
 ---
 
-## 10. Prescription Routes
+## 11. Prescription Routes
 
 ### Doctor creates a prescription
 ```
@@ -342,7 +419,7 @@ PUT /prescriptions/<prescriptionId>/dispense
 
 ---
 
-## 11. Lab Routes
+## 12. Lab Routes
 
 ### Doctor requests a lab test
 ```
@@ -372,7 +449,7 @@ Body: { "reportUrl": "https://storage.example.com/reports/cbc-001.pdf" }
 
 ---
 
-## 12. End-to-End Smoke Test
+## 13. End-to-End Smoke Test
 
 Run these in order. Swap tokens between role logins. Replace all `<ids>` with values from actual responses.
 
@@ -402,11 +479,11 @@ Run these in order. Swap tokens between role logins. Replace all `<ids>` with va
 
 All 18 steps should return `200` or `201` with no errors.
 
-> To get `medicineId` for step 9: log in as any user and call `GET /doctors` — or look it up in Prisma Studio under the Medicine table.
+> To get `medicineId` for step 9: look it up in Prisma Studio under the Medicine table, or call `GET /doctors` — the response includes the doctor profile but not medicines; use Studio instead.
 
 ---
 
-## 13. Expected HTTP Status Codes
+## 14. Expected HTTP Status Codes
 
 | Scenario | Code |
 |----------|------|
@@ -420,7 +497,7 @@ All 18 steps should return `200` or `201` with no errors.
 
 ---
 
-## 14. Common Mistakes
+## 15. Common Mistakes
 
 | Error | Cause | Fix |
 |-------|-------|-----|
@@ -434,15 +511,17 @@ All 18 steps should return `200` or `201` with no errors.
 | `501 LDAP integration not configured` | `LDAP_URL` is set in `.env` | Leave `LDAP_URL` blank for dev mode |
 | Prisma Studio shows empty tables | Migration not run | Run `npx prisma migrate dev` |
 | Seed script fails with connection error | `DATABASE_URL` not set | Check `.env` has the correct `prisma+postgres://` URL |
+| Bruno token gives `401` | Token expired | Re-login and paste fresh token into the request |
 
 ---
 
-## 15. Updating This File
+## 16. Updating This File
 
 When a new module/route is added:
 1. Add a new numbered section with: method, path, required role, request body, and what to save from the response
-2. Add the relevant step(s) to the smoke test in section 12
-3. Add any new gotchas to section 14
+2. Add the relevant step(s) to the smoke test in §13
+3. Add the Bruno request files under `backend/tests/iitj-phc-system/<Folder>/`
+4. Add any new gotchas to §15
 
 ---
 
