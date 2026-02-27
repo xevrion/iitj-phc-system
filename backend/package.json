@@ -9,9 +9,6 @@
     "start": "node --experimental-strip-types src/server.js",
     "seed": "npx prisma db seed"
   },
-  "prisma": {
-    "seed": "node --experimental-strip-types prisma/seed.js"
-  },
   "type": "module",
   "keywords": [],
   "author": "",
