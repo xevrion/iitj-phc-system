@@ -37,6 +37,7 @@ app.get("/", (req, res) => {
 import healthcheckRoutes from "./routes/healthcheck.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import patientRoutes from "./routes/patient.routes.js";
+import visitRoutes from "./routes/visit.routes.js";
 
 // Import error handler
 import { errorHandler } from "./middlewares/errorHandler.middleware.js";
@@ -45,6 +46,7 @@ import { errorHandler } from "./middlewares/errorHandler.middleware.js";
 app.use("/api/v1/healthcheck", healthcheckRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/patients", patientRoutes);
+app.use("/api/v1/visits", visitRoutes);
 
 // Global error handler — must be last
 app.use(errorHandler);
