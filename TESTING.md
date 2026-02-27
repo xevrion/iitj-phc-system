@@ -43,7 +43,10 @@ cp .env.example .env
 # 3. Run migrations — creates all tables in the cloud DB
 npx prisma migrate dev --name "initial-schema"
 
-# 4. Start the server
+# 4. Seed the database with test users and medicines
+npm run seed
+
+# 5. Start the server
 npm run dev
 # → http://localhost:8000
 ```
@@ -53,65 +56,62 @@ npm run dev
 
 ---
 
-## 4. Seeding Test Data
+## 4. Seed Script
 
-No seed script yet — use **Prisma Studio** to manually insert records:
+The seed script creates all test users, their role profiles, and two test medicines.
+It is **safe to run multiple times** — it skips records that already exist.
 
+```bash
+# From the backend/ directory
+npm run seed
+```
+
+What gets created:
+
+| ldapId | Role | Profile data |
+|--------|------|-------------|
+| `doctor01` | `DOCTOR` | Dr. Sharma, PHYSICIAN, available |
+| `reception01` | `RECEPTION_STAFF` | thin profile |
+| `patient01` | `PATIENT` | Rahul Verma, QR code: QR001, blood group B+ |
+| `pharmacy01` | `PHARMACY_STAFF` | thin profile |
+| `lab01` | `LAB_STAFF` | thin profile |
+| `admin01` | `ADMIN` | no profile table (role only) |
+
+| Medicine | Stock | Unit price |
+|----------|-------|-----------|
+| Paracetamol 500mg | 200 | ₹2.50 |
+| Amoxicillin 250mg | 100 | ₹8.00 |
+
+---
+
+## 5. Do You Need to Reset the DB Between Test Runs?
+
+**No — you do not need to reset the DB between test runs.**
+
+- The seed script is idempotent. Re-running it only skips existing records; it won't create duplicates.
+- Visits, prescriptions, and lab requests created during testing stay in the DB. That's fine — each test run creates new ones, so leftover data from previous runs doesn't interfere.
+- The server keeps working against the same DB across sessions.
+
+**The only cases where you'd want to reset:**
+
+| Situation | What to do |
+|-----------|-----------|
+| Schema changed (new migration) | Run `npx prisma migrate dev` — adds only the new changes, does **not** drop existing data |
+| Want a completely clean slate | Run `npx prisma migrate reset` — **drops all data**, re-runs all migrations, then re-seeds automatically |
+| Doctor is still checked in from a previous test run | Call `POST /doctors/me/checkout` (logged in as `doctor01`) before starting a new smoke test |
+
+> `npx prisma migrate reset` is the nuclear option. It wipes everything and re-seeds.
+> Don't use it unless you genuinely need a blank DB.
+
+To inspect the DB at any time:
 ```bash
 npx prisma studio
 # Opens at http://localhost:5555 — connects to your cloud DB
 ```
 
-### Records to create (do this in order)
-
-#### User table — one row per test user
-| ldapId | role | isActive |
-|--------|------|----------|
-| `doctor01` | `DOCTOR` | `true` |
-| `reception01` | `RECEPTION_STAFF` | `true` |
-| `patient01` | `PATIENT` | `true` |
-| `pharmacy01` | `PHARMACY_STAFF` | `true` |
-| `lab01` | `LAB_STAFF` | `true` |
-| `admin01` | `ADMIN` | `true` |
-
-> After creating each User row, copy its `id` (UUID) — you'll need it for the profile tables below.
-
-#### Profile tables — link each user to their role-specific data
-
-**Doctor**
-| userId | name | doctorType | isAvailable |
-|--------|------|------------|-------------|
-| `<doctor01 id>` | `Dr. Sharma` | `PHYSICIAN` | `true` |
-
-**Patient**
-| userId | name | qrCode | bloodGroup | phone |
-|--------|------|--------|------------|-------|
-| `<patient01 id>` | `Rahul Verma` | `QR001` | `B+` | `9876543210` |
-
-**ReceptionStaff** — just the userId field
-| userId |
-|--------|
-| `<reception01 id>` |
-
-**PharmacyStaff**
-| userId |
-|--------|
-| `<pharmacy01 id>` |
-
-**LabStaff**
-| userId |
-|--------|
-| `<lab01 id>` |
-
-**Medicine** (needed before creating prescriptions)
-| name | stockQuantity | unitPrice |
-|------|---------------|-----------|
-| `Paracetamol 500mg` | `200` | `2.50` |
-| `Amoxicillin 250mg` | `100` | `8.00` |
-
 ---
 
-## 5. Auth
+## 6. Auth
 
 > **Base URL for all routes:** `http://localhost:8000/api/v1`
 >
@@ -148,7 +148,7 @@ GET /auth/me
 
 ---
 
-## 6. Patient Routes
+## 7. Patient Routes
 
 > Staff routes: login as `reception01` or `doctor01`
 > Patient routes: login as `patient01`
@@ -187,7 +187,7 @@ GET /patients/<patient profile id>/visits
 
 ---
 
-## 7. Doctor Routes
+## 8. Doctor Routes
 
 ### List available doctors
 ```
@@ -229,11 +229,11 @@ GET /doctors/attendance/records
 
 ---
 
-## 8. Visit Lifecycle
+## 9. Visit Lifecycle
 
 > Full flow: **create → vitals → claim → consultation → prescription → lab request → complete**
 
-### 8.1 Reception creates a visit
+### 9.1 Reception creates a visit
 ```
 POST /visits
 # Role: RECEPTION_STAFF
@@ -252,48 +252,48 @@ Body:
 
 `visitType` options: `OPD` | `ADMIT` | `EMERGENCY`
 
-### 8.2 Add/update vitals separately
+### 9.2 Add/update vitals separately
 ```
 POST /visits/<visitId>/vitals
 # Role: RECEPTION_STAFF
 Body: { "weight": 70, "temperature": 99.1, "bloodPressure": "118/76" }
 ```
 
-### 8.3 Doctor's waiting queue
+### 9.3 Doctor's waiting queue
 ```
 GET /visits/my-queue
 # Role: DOCTOR
 # Returns all WAITING visits assigned to this doctor
 ```
 
-### 8.4 Doctor claims the visit
+### 9.4 Doctor claims the visit
 ```
 PUT /visits/<visitId>/claim
 # Role: DOCTOR
 # Status: WAITING → IN_CONSULTATION. Locks visit to this doctor.
 ```
 
-### 8.5 Doctor saves consultation notes
+### 9.5 Doctor saves consultation notes
 ```
 PUT /visits/<visitId>/consultation
 # Role: DOCTOR (must be the assigned doctor)
 Body: { "consultationNotes": "Patient has mild fever. Prescribed paracetamol." }
 ```
 
-### 8.6 Get full visit record
+### 9.6 Get full visit record
 ```
 GET /visits/<visitId>
 # Role: DOCTOR, RECEPTION_STAFF, PHARMACY_STAFF, LAB_STAFF, ADMIN
 ```
 
-### 8.7 Cancel a visit
+### 9.7 Cancel a visit
 ```
 PUT /visits/<visitId>/cancel
 # Role: DOCTOR, RECEPTION_STAFF, ADMIN
 # Works on WAITING or IN_CONSULTATION visits only
 ```
 
-### 8.8 Doctor completes the visit
+### 9.8 Doctor completes the visit
 ```
 PUT /visits/<visitId>/complete
 # Role: DOCTOR (must be the assigned doctor)
@@ -302,7 +302,7 @@ PUT /visits/<visitId>/complete
 
 ---
 
-## 9. Prescription Routes
+## 10. Prescription Routes
 
 ### Doctor creates a prescription
 ```
@@ -342,7 +342,7 @@ PUT /prescriptions/<prescriptionId>/dispense
 
 ---
 
-## 10. Lab Routes
+## 11. Lab Routes
 
 ### Doctor requests a lab test
 ```
@@ -372,7 +372,7 @@ Body: { "reportUrl": "https://storage.example.com/reports/cbc-001.pdf" }
 
 ---
 
-## 11. End-to-End Smoke Test
+## 12. End-to-End Smoke Test
 
 Run these in order. Swap tokens between role logins. Replace all `<ids>` with values from actual responses.
 
@@ -402,9 +402,11 @@ Run these in order. Swap tokens between role logins. Replace all `<ids>` with va
 
 All 18 steps should return `200` or `201` with no errors.
 
+> To get `medicineId` for step 9: log in as any user and call `GET /doctors` — or look it up in Prisma Studio under the Medicine table.
+
 ---
 
-## 12. Expected HTTP Status Codes
+## 13. Expected HTTP Status Codes
 
 | Scenario | Code |
 |----------|------|
@@ -418,28 +420,29 @@ All 18 steps should return `200` or `201` with no errors.
 
 ---
 
-## 13. Common Mistakes
+## 14. Common Mistakes
 
 | Error | Cause | Fix |
 |-------|-------|-----|
 | `401 Unauthorized request` | No auth header | Add `Authorization: Bearer <token>` |
 | `403 Access denied` | Wrong role | Re-login with the correct role account |
-| `404 Doctor profile not found` | User row exists but no Doctor row | Add a Doctor row in Prisma Studio |
+| `404 Doctor profile not found` | User row exists but no Doctor row | Re-run `npm run seed` |
 | `404 Patient not found` | Passing User `id` instead of Patient `id` | Use the Patient table's `id`, not User's |
-| `400 Already checked in` | Checkin called twice | Call `/doctors/me/checkout` first |
+| `400 Already checked in` | Checkin called twice (leftover from previous test run) | Call `POST /doctors/me/checkout` first |
 | `409 Prescription already exists` | Created twice for same visit | One prescription per visit only |
 | `400 Visit is not in WAITING state` | Trying to claim a non-WAITING visit | Check current visit status first |
 | `501 LDAP integration not configured` | `LDAP_URL` is set in `.env` | Leave `LDAP_URL` blank for dev mode |
 | Prisma Studio shows empty tables | Migration not run | Run `npx prisma migrate dev` |
+| Seed script fails with connection error | `DATABASE_URL` not set | Check `.env` has the correct `prisma+postgres://` URL |
 
 ---
 
-## 14. Updating This File
+## 15. Updating This File
 
 When a new module/route is added:
 1. Add a new numbered section with: method, path, required role, request body, and what to save from the response
-2. Add the relevant step(s) to the smoke test in section 11
-3. Add any new gotchas to section 13
+2. Add the relevant step(s) to the smoke test in section 12
+3. Add any new gotchas to section 14
 
 ---
 
