@@ -9,56 +9,62 @@
 
 - Node.js v20+
 - npm
-- A PostgreSQL database — either:
-  - **Prisma Postgres (cloud):** sign up at [prisma.io/postgres](https://prisma.io/postgres), create a project, copy the connection string.
-  - **Local PostgreSQL:** see setup below.
-
-### Local PostgreSQL setup (if not using cloud)
-```bash
-sudo apt install postgresql          # Ubuntu/Debian
-sudo -u postgres psql <<SQL
-CREATE DATABASE phc_dev;
-CREATE USER phc_user WITH PASSWORD 'phc_pass';
-GRANT ALL PRIVILEGES ON DATABASE phc_dev TO phc_user;
-SQL
-# DATABASE_URL = postgresql://phc_user:phc_pass@localhost:5432/phc_dev
-```
+- A **Prisma Postgres** cloud database (see setup below)
+- Postman, Bruno, or any HTTP client for hitting routes
 
 ---
 
-## 2. First-Time Setup
+## 2. Database Setup (Prisma Cloud)
+
+1. Go to [console.prisma.io](https://console.prisma.io) and sign in
+2. Create a new **Prisma Postgres** project
+3. Copy the connection string — it looks like:
+   ```
+   prisma+postgres://accelerate.prisma-data.net/?api_key=...
+   ```
+4. Paste it as `DATABASE_URL` in your `.env`
+
+---
+
+## 3. First-Time Setup
 
 ```bash
-# 1. Clone and install
 cd backend
+
+# 1. Install dependencies
 npm install
 
-# 2. Create your .env from the template
+# 2. Create your env file
 cp .env.example .env
-# Edit .env — fill in DATABASE_URL and JWT_SECRET at minimum
+# Open .env and fill in:
+#   DATABASE_URL=<your prisma cloud connection string>
+#   JWT_SECRET=any-long-random-string
 
-# 3. Apply all migrations to create the DB tables
+# 3. Run migrations — creates all tables in the cloud DB
 npx prisma migrate dev --name "initial-schema"
-# (If migrations folder already exists, just run: npx prisma migrate dev)
 
-# 4. Start the dev server
+# 4. Start the server
 npm run dev
-# Server running at http://localhost:8000
+# → http://localhost:8000
 ```
+
+> If the migrations folder already exists (other devs have run it before),
+> `npx prisma migrate dev` with no name will apply any pending ones.
 
 ---
 
-## 3. Seeding Test Data
+## 4. Seeding Test Data
 
-No seed script exists yet — create records manually via **Prisma Studio**:
+No seed script yet — use **Prisma Studio** to manually insert records:
 
 ```bash
-npx prisma studio     # opens browser at http://localhost:5555
+npx prisma studio
+# Opens at http://localhost:5555 — connects to your cloud DB
 ```
 
-### Minimum records needed for full flow testing
+### Records to create (do this in order)
 
-#### Step 1 — Create User rows (User table)
+#### User table — one row per test user
 | ldapId | role | isActive |
 |--------|------|----------|
 | `doctor01` | `DOCTOR` | `true` |
@@ -68,36 +74,36 @@ npx prisma studio     # opens browser at http://localhost:5555
 | `lab01` | `LAB_STAFF` | `true` |
 | `admin01` | `ADMIN` | `true` |
 
-> Copy each `id` (UUID) after creating — you'll need it for profile rows.
+> After creating each User row, copy its `id` (UUID) — you'll need it for the profile tables below.
 
-#### Step 2 — Create profile rows
+#### Profile tables — link each user to their role-specific data
 
-**Doctor table:**
+**Doctor**
 | userId | name | doctorType | isAvailable |
 |--------|------|------------|-------------|
-| `<doctor01 user id>` | `Dr. Sharma` | `PHYSICIAN` | `true` |
+| `<doctor01 id>` | `Dr. Sharma` | `PHYSICIAN` | `true` |
 
-**Patient table:**
+**Patient**
 | userId | name | qrCode | bloodGroup | phone |
 |--------|------|--------|------------|-------|
-| `<patient01 user id>` | `Rahul Verma` | `QR001` | `B+` | `9876543210` |
+| `<patient01 id>` | `Rahul Verma` | `QR001` | `B+` | `9876543210` |
 
-**ReceptionStaff table:**
+**ReceptionStaff** — just the userId field
 | userId |
 |--------|
-| `<reception01 user id>` |
+| `<reception01 id>` |
 
-**PharmacyStaff table:**
+**PharmacyStaff**
 | userId |
 |--------|
-| `<pharmacy01 user id>` |
+| `<pharmacy01 id>` |
 
-**LabStaff table:**
+**LabStaff**
 | userId |
 |--------|
-| `<lab01 user id>` |
+| `<lab01 id>` |
 
-**Medicine table** (needed before prescriptions):
+**Medicine** (needed before creating prescriptions)
 | name | stockQuantity | unitPrice |
 |------|---------------|-----------|
 | `Paracetamol 500mg` | `200` | `2.50` |
@@ -105,20 +111,21 @@ npx prisma studio     # opens browser at http://localhost:5555
 
 ---
 
-## 4. Auth
+## 5. Auth
 
-> **Base URL:** `http://localhost:8000/api/v1`
+> **Base URL for all routes:** `http://localhost:8000/api/v1`
 >
-> In dev mode (`LDAP_URL` not set), **any password is accepted** as long as the `ldapId` exists in the User table.
+> Dev mode (`LDAP_URL` not set in `.env`) — **any password is accepted**,
+> the system only checks that the `ldapId` exists in the User table.
 
-### Login
+### Login and get a token
 ```
 POST /auth/login
 Content-Type: application/json
 
 { "ldapId": "doctor01", "password": "anything" }
 ```
-**Response:**
+Response:
 ```json
 {
   "statusCode": 200,
@@ -128,99 +135,108 @@ Content-Type: application/json
   }
 }
 ```
-Save the token. Add to all subsequent requests:
+
+Save the token. Every request after this needs:
 ```
 Authorization: Bearer <token>
 ```
 
-### Get current user
+### Get current user info
 ```
 GET /auth/me
-Authorization: Bearer <token>
 ```
 
 ---
 
-## 5. Patient Routes
+## 6. Patient Routes
 
-Login as `reception01` or `doctor01` for staff routes. Login as `patient01` for patient-only routes.
+> Staff routes: login as `reception01` or `doctor01`
+> Patient routes: login as `patient01`
 
 ### Patient views own profile
 ```
 GET /patients/me
-# Login as patient01
+# Role: PATIENT
 ```
 
 ### Patient updates own profile
 ```
 PUT /patients/me
-# Login as patient01
+# Role: PATIENT
 Body: { "phone": "9999999999", "bloodGroup": "O+" }
 ```
 
-### QR-based identification (reception desk)
+### Identify patient by QR code (reception desk)
 ```
 GET /patients/qr/QR001
-# Login as reception01
+# Role: RECEPTION_STAFF
 ```
 
-### View patient record (staff)
+### View a patient's full record
 ```
 GET /patients/<patient profile id>
-# Login as doctor01 or reception01
+# Role: DOCTOR, RECEPTION_STAFF, ADMIN
+# Note: use the Patient table id, NOT the User id
 ```
 
-### Patient visit history
+### View a patient's visit history
 ```
 GET /patients/<patient profile id>/visits
-# Login as doctor01, reception01, or patient01
+# Role: DOCTOR, RECEPTION_STAFF, ADMIN, PATIENT
 ```
 
 ---
 
-## 6. Doctor Routes
+## 7. Doctor Routes
 
 ### List available doctors
 ```
 GET /doctors
-# Any logged-in user
+# Role: any authenticated user
 ```
 
-### Doctor sets availability
+### View a specific doctor
+```
+GET /doctors/<doctor profile id>
+# Role: any authenticated user
+```
+
+### Doctor sets their availability
 ```
 PUT /doctors/me/availability
-# Login as doctor01
+# Role: DOCTOR
 Body: { "isAvailable": true }
 ```
 
-### Doctor check-in (opens attendance record)
+### Doctor checks in (opens attendance, marks available)
 ```
 POST /doctors/me/checkin
-# Login as doctor01
+# Role: DOCTOR
 ```
 
-### Doctor check-out (closes record, computes hours)
+### Doctor checks out (closes attendance, computes hours)
 ```
 POST /doctors/me/checkout
-# Login as doctor01
+# Role: DOCTOR
 ```
 
-### Admin views attendance records
+### Admin views all attendance records
 ```
 GET /doctors/attendance/records
-# Login as admin01
+# Role: ADMIN
+# Optional query: ?doctorId=<id> to filter by doctor
 ```
 
 ---
 
-## 7. Visit Lifecycle
+## 8. Visit Lifecycle
 
-> Full flow: create → vitals → claim → consultation → prescription → lab request → complete
+> Full flow: **create → vitals → claim → consultation → prescription → lab request → complete**
 
-### 7.1 Reception creates a visit
+### 8.1 Reception creates a visit
 ```
 POST /visits
-# Login as reception01
+# Role: RECEPTION_STAFF
 Body:
 {
   "patientId": "<patient profile id>",
@@ -232,64 +248,66 @@ Body:
   }
 }
 ```
-> Save the `id` from the response — this is your `visitId`.
+> Save the `id` from the response — this is your `visitId` for everything below.
 
-### 7.2 Add/update vitals separately
+`visitType` options: `OPD` | `ADMIT` | `EMERGENCY`
+
+### 8.2 Add/update vitals separately
 ```
 POST /visits/<visitId>/vitals
-# Login as reception01
+# Role: RECEPTION_STAFF
 Body: { "weight": 70, "temperature": 99.1, "bloodPressure": "118/76" }
 ```
 
-### 7.3 Doctor's queue
+### 8.3 Doctor's waiting queue
 ```
 GET /visits/my-queue
-# Login as doctor01
-# Shows all WAITING visits assigned to this doctor
+# Role: DOCTOR
+# Returns all WAITING visits assigned to this doctor
 ```
 
-### 7.4 Doctor claims the visit
+### 8.4 Doctor claims the visit
 ```
 PUT /visits/<visitId>/claim
-# Login as doctor01
-# Sets status → IN_CONSULTATION, assigns doctor
+# Role: DOCTOR
+# Status: WAITING → IN_CONSULTATION. Locks visit to this doctor.
 ```
 
-### 7.5 Doctor saves consultation notes
+### 8.5 Doctor saves consultation notes
 ```
 PUT /visits/<visitId>/consultation
-# Login as doctor01
-Body: { "consultationNotes": "Patient presents with fever. Prescribed paracetamol." }
+# Role: DOCTOR (must be the assigned doctor)
+Body: { "consultationNotes": "Patient has mild fever. Prescribed paracetamol." }
 ```
 
-### 7.6 Get full visit record
+### 8.6 Get full visit record
 ```
 GET /visits/<visitId>
-# Login as doctor01 / reception01 / pharmacy01 / lab01
+# Role: DOCTOR, RECEPTION_STAFF, PHARMACY_STAFF, LAB_STAFF, ADMIN
 ```
 
-### 7.7 Cancel a visit
+### 8.7 Cancel a visit
 ```
 PUT /visits/<visitId>/cancel
-# Login as reception01 or doctor01
+# Role: DOCTOR, RECEPTION_STAFF, ADMIN
 # Works on WAITING or IN_CONSULTATION visits only
 ```
 
-### 7.8 Doctor completes the visit
+### 8.8 Doctor completes the visit
 ```
 PUT /visits/<visitId>/complete
-# Login as doctor01
-# Sets status → COMPLETED, sets closedAt timestamp
+# Role: DOCTOR (must be the assigned doctor)
+# Status: IN_CONSULTATION → COMPLETED. Sets closedAt.
 ```
 
 ---
 
-## 8. Prescription Routes
+## 9. Prescription Routes
 
-### Doctor creates prescription (do this before completing the visit)
+### Doctor creates a prescription
 ```
 POST /visits/<visitId>/prescription
-# Login as doctor01
+# Role: DOCTOR (must be assigned to this visit)
 Body:
 {
   "notes": "Take after meals",
@@ -302,117 +320,150 @@ Body:
   ]
 }
 ```
+> One prescription per visit — creating a second one returns `409`.
 
-### View prescription
+### View the prescription for a visit
 ```
 GET /visits/<visitId>/prescription
-# Login as doctor01, pharmacy01, or patient01
+# Role: DOCTOR, PHARMACY_STAFF, PATIENT, ADMIN
 ```
 
-### Pharmacy views undispensed queue
+### Pharmacy views all undispensed prescriptions
 ```
 GET /prescriptions/pending
-# Login as pharmacy01
+# Role: PHARMACY_STAFF, ADMIN
 ```
 
 ### Pharmacy marks prescription as dispensed
 ```
 PUT /prescriptions/<prescriptionId>/dispense
-# Login as pharmacy01
+# Role: PHARMACY_STAFF
 ```
 
 ---
 
-## 9. Lab Routes
+## 10. Lab Routes
 
 ### Doctor requests a lab test
 ```
 POST /visits/<visitId>/lab-requests
-# Login as doctor01
+# Role: DOCTOR (must be assigned to this visit)
 Body: { "testName": "CBC - Complete Blood Count" }
 ```
 
-### View lab requests for a visit
+### View all lab requests for a visit
 ```
 GET /visits/<visitId>/lab-requests
-# Login as doctor01, lab01, or patient01
+# Role: DOCTOR, PATIENT, LAB_STAFF, ADMIN
 ```
 
-### Lab staff views pending orders
+### Lab staff views all pending test orders
 ```
 GET /lab-requests/pending
-# Login as lab01
+# Role: LAB_STAFF, ADMIN
 ```
 
-### Lab staff uploads report
+### Lab staff uploads a report
 ```
 POST /lab-requests/<labRequestId>/report
-# Login as lab01
+# Role: LAB_STAFF
 Body: { "reportUrl": "https://storage.example.com/reports/cbc-001.pdf" }
 ```
 
 ---
 
-## 10. End-to-End Happy Path (quick smoke test)
+## 11. End-to-End Smoke Test
 
-Run these in order using Postman or Bruno. Replace all `<ids>` from actual responses.
+Run these in order. Swap tokens between role logins. Replace all `<ids>` with values from actual responses.
 
 ```
-1.  POST   /auth/login                          (reception01)
-2.  GET    /patients/qr/QR001                   (reception01) → get patientId
-3.  POST   /visits                              (reception01) → get visitId
-4.  POST   /auth/login                          (doctor01)
-5.  POST   /doctors/me/checkin                  (doctor01)
-6.  GET    /visits/my-queue                     (doctor01)
-7.  PUT    /visits/<visitId>/claim              (doctor01)
-8.  PUT    /visits/<visitId>/consultation       (doctor01)
-9.  POST   /visits/<visitId>/prescription       (doctor01) → get prescriptionId
-10. POST   /visits/<visitId>/lab-requests       (doctor01) → get labRequestId
-11. PUT    /visits/<visitId>/complete           (doctor01)
-12. POST   /doctors/me/checkout                 (doctor01)
-13. POST   /auth/login                          (pharmacy01)
-14. GET    /prescriptions/pending               (pharmacy01)
-15. PUT    /prescriptions/<prescriptionId>/dispense (pharmacy01)
-16. POST   /auth/login                          (lab01)
-17. GET    /lab-requests/pending                (lab01)
-18. POST   /lab-requests/<labRequestId>/report  (lab01)
+1.  POST  /auth/login                                { ldapId: "reception01" }
+2.  GET   /patients/qr/QR001                         → copy patientId
+3.  POST  /visits                                    { patientId, visitType: "OPD", vitals: {...} } → copy visitId
+
+4.  POST  /auth/login                                { ldapId: "doctor01" }
+5.  POST  /doctors/me/checkin
+6.  GET   /visits/my-queue
+7.  PUT   /visits/<visitId>/claim
+8.  PUT   /visits/<visitId>/consultation             { consultationNotes: "..." }
+9.  POST  /visits/<visitId>/prescription             { items: [{ medicineId, dosage, duration }] } → copy prescriptionId
+10. POST  /visits/<visitId>/lab-requests             { testName: "CBC" } → copy labRequestId
+11. PUT   /visits/<visitId>/complete
+12. POST  /doctors/me/checkout
+
+13. POST  /auth/login                                { ldapId: "pharmacy01" }
+14. GET   /prescriptions/pending
+15. PUT   /prescriptions/<prescriptionId>/dispense
+
+16. POST  /auth/login                                { ldapId: "lab01" }
+17. GET   /lab-requests/pending
+18. POST  /lab-requests/<labRequestId>/report        { reportUrl: "https://..." }
 ```
+
+All 18 steps should return `200` or `201` with no errors.
 
 ---
 
-## 11. Expected HTTP Status Codes
+## 12. Expected HTTP Status Codes
 
-| Scenario | Status |
-|----------|--------|
+| Scenario | Code |
+|----------|------|
 | Successful fetch | `200` |
 | Successful creation | `201` |
-| Missing/invalid fields | `400` |
-| No token / bad token | `401` |
-| Wrong role for endpoint | `403` |
+| Missing or invalid fields | `400` |
+| No token / expired token | `401` |
+| Wrong role for this endpoint | `403` |
 | Record not found | `404` |
-| Already exists (e.g. duplicate prescription) | `409` |
+| Already exists (duplicate) | `409` |
 
 ---
 
-## 12. Common Mistakes
+## 13. Common Mistakes
 
-| Problem | Fix |
-|---------|-----|
-| `401 Unauthorized request` | Missing `Authorization: Bearer <token>` header |
-| `403 Access denied` | Logged in as wrong role for that endpoint |
-| `404 Doctor profile not found` | User exists in User table but no matching Doctor row |
-| `404 Patient not found` | Passing User `id` instead of Patient profile `id` |
-| `400 Already checked in` | Call `/doctors/me/checkout` first |
-| `409 Prescription already exists` | One prescription per visit — can't create twice |
-| `400 Visit is not in WAITING state` | Can only claim a WAITING visit |
-| Login works but `LDAP_URL` 501 error | You set `LDAP_URL` in `.env` — remove it for dev |
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `401 Unauthorized request` | No auth header | Add `Authorization: Bearer <token>` |
+| `403 Access denied` | Wrong role | Re-login with the correct role account |
+| `404 Doctor profile not found` | User row exists but no Doctor row | Add a Doctor row in Prisma Studio |
+| `404 Patient not found` | Passing User `id` instead of Patient `id` | Use the Patient table's `id`, not User's |
+| `400 Already checked in` | Checkin called twice | Call `/doctors/me/checkout` first |
+| `409 Prescription already exists` | Created twice for same visit | One prescription per visit only |
+| `400 Visit is not in WAITING state` | Trying to claim a non-WAITING visit | Check current visit status first |
+| `501 LDAP integration not configured` | `LDAP_URL` is set in `.env` | Leave `LDAP_URL` blank for dev mode |
+| Prisma Studio shows empty tables | Migration not run | Run `npx prisma migrate dev` |
 
 ---
 
-## 13. Updating This File
+## 14. Updating This File
 
 When a new module/route is added:
-1. Add a new numbered section under the relevant sprint heading
-2. Include: method, path, required login role, request body, and a note on what to save from the response
-3. Add the happy-path step to section 10
-4. Add any new common mistakes to section 12
+1. Add a new numbered section with: method, path, required role, request body, and what to save from the response
+2. Add the relevant step(s) to the smoke test in section 11
+3. Add any new gotchas to section 13
+
+---
+
+---
+
+## Appendix: Local PostgreSQL Setup (alternative to Prisma Cloud)
+
+Only needed if you can't use Prisma Cloud (e.g. offline development).
+
+```bash
+# Ubuntu/Debian
+sudo apt install postgresql
+
+sudo -u postgres psql <<SQL
+CREATE DATABASE phc_dev;
+CREATE USER phc_user WITH PASSWORD 'phc_pass';
+GRANT ALL PRIVILEGES ON DATABASE phc_dev TO phc_user;
+SQL
+```
+
+Then set in `.env`:
+```
+DATABASE_URL=postgresql://phc_user:phc_pass@localhost:5432/phc_dev
+```
+
+Everything else in this guide works the same. Note that Prisma Studio
+connecting to a local DB doesn't need `?sslmode=require`.
