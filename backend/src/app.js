@@ -35,10 +35,16 @@ app.get("/", (req, res) => {
 
 // Import routes
 import healthcheckRoutes from "./routes/healthcheck.routes.js";
+import authRoutes from "./routes/auth.routes.js";
 
+// Import error handler
+import { errorHandler } from "./middlewares/errorHandler.middleware.js";
 
 // Mount routes
 app.use("/api/v1/healthcheck", healthcheckRoutes);
+app.use("/api/v1/auth", authRoutes);
 
+// Global error handler — must be last
+app.use(errorHandler);
 
 export { app };
