@@ -1,0 +1,18 @@
+info:
+  name: Login and get a token
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8000/api/v1/auth/login
+  body:
+    type: json
+    data: '{ "ldapId": "doctor01", "password": "anything" }'
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,18 @@
+info:
+  name: Doctor views waiting queue
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: http://localhost:8000/api/v1/visits/my-queue
+  headers:
+    - name: Authorization
+      value: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI0ODhiYjc1Ni04M2YxLTRmYWYtOTY1NS1jOGQ3MDRmZjVjNjgiLCJsZGFwSWQiOiJkb2N0b3IwMSIsInJvbGUiOiJET0NUT1IiLCJpYXQiOjE3NzIxNzk5MzMsImV4cCI6MTc3Mjc4NDczM30.9xEGMYgRx6vF_eYdms2cnNHTK7dFQrmT4fkBiI1gqcQ
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

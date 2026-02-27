@@ -1,0 +1,21 @@
+info:
+  name: Patient updates own profile
+  type: http
+  seq: 2
+
+http:
+  method: PUT
+  url: http://localhost:8000/api/v1/patients/me
+  headers:
+    - name: Authorization
+      value: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMzcyNWMyMy1lYTE5LTRiMmQtOTBhMy0zYTM1NzA3MGEzY2EiLCJsZGFwSWQiOiJwYXRpZW50MDEiLCJyb2xlIjoiUEFUSUVOVCIsImlhdCI6MTc3MjE4MDExNywiZXhwIjoxNzcyNzg0OTE3fQ.wDjFmP8ri1FX2EiqqlIts9WMEIxSbUSkiaOOGRfR2fo
+  body:
+    type: json
+    data: '{ "phone": "9999999999", "bloodGroup": "O+" }'
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
