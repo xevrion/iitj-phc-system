@@ -5,7 +5,7 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 **Stack:** Node.js + Express · PostgreSQL (Prisma Cloud) · React · JWT auth · IITJ LDAP
 
 > See [TESTING.md](TESTING.md) for setup and testing instructions.
-> See [SRS 2.0](/docs/SRS%202.0.pdf) for the full requirements specification.
+<!-- > See [SRS 2.0](/docs/SRS%202.0.pdf) for the full requirements specification. -->
 
 ---
 
