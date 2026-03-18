@@ -20,4 +20,4 @@ Show
 Type "bash tapes/scripts/02-appointment-flow.sh"
 Sleep 500ms
 Enter
-Sleep 30s
+Sleep 10s

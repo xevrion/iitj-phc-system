@@ -20,4 +20,4 @@ Show
 Type "bash tapes/scripts/01-patient-visit-flow.sh"
 Sleep 500ms
 Enter
-Sleep 60s
+Sleep 16s

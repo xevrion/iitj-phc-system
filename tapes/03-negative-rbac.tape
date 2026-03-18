@@ -20,4 +20,4 @@ Show
 Type "bash tapes/scripts/03-negative-rbac.sh"
 Sleep 500ms
 Enter
-Sleep 60s
+Sleep 16s

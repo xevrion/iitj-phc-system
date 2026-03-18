@@ -20,4 +20,4 @@ Show
 Type "bash tapes/scripts/04-performance.sh"
 Sleep 500ms
 Enter
-Sleep 90s
+Sleep 40s
