@@ -1,2 +1,7 @@
-meta:
+info:
   name: Document
+  type: folder
+  seq: 11
+
+request:
+  auth: inherit

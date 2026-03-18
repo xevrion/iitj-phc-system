@@ -622,31 +622,31 @@ Run these in order. Swap tokens between role logins. Replace all `<ids>` with va
 1.  POST  /auth/login                                { ldapId: "reception01" }
 2.  POST  /checkin                                   { qrCode: "QR001", visitType: "OPD", vitals: {...} } → copy visitId, patientId
 
-4.  POST  /auth/login                                { ldapId: "doctor01" }
-5.  POST  /doctors/me/checkin
-6.  GET   /visits/my-queue
-7.  PUT   /visits/<visitId>/claim
-8.  PUT   /visits/<visitId>/consultation             { consultationNotes: "..." }
-9.  GET   /medicines                                 → copy medicineId (Paracetamol 500mg)
-10. POST  /visits/<visitId>/prescription             { items: [{ medicineId, dosage: "500mg", duration: "3 days" }] } → copy prescriptionId
-11. POST  /visits/<visitId>/lab-requests             { testName: "CBC" } → copy labRequestId
-12. PUT   /visits/<visitId>/complete
-13. POST  /doctors/me/checkout
+3.  POST  /auth/login                                { ldapId: "doctor01" }
+4.  POST  /doctors/me/checkin
+5.  GET   /visits/my-queue
+6.  PUT   /visits/<visitId>/claim
+7.  PUT   /visits/<visitId>/consultation             { consultationNotes: "..." }
+8.  GET   /medicines                                 → copy medicineId (Paracetamol 500mg)
+9.  POST  /visits/<visitId>/prescription             { items: [{ medicineId, dosage: "500mg", duration: "3 days" }] } → copy prescriptionId
+10. POST  /visits/<visitId>/lab-requests             { testName: "CBC" } → copy labRequestId
+11. PUT   /visits/<visitId>/complete
+12. POST  /doctors/me/checkout
 
-14. POST  /auth/login                                { ldapId: "pharmacy01" }
-15. GET   /prescriptions/pending
-16. PUT   /prescriptions/<prescriptionId>/dispense
-17. POST  /visits/<visitId>/bill                     { items: [{ medicineId, quantity: 2 }] } → copy billId
-18. GET   /bills/unpaid
-19. PUT   /bills/<billId>/pay
+13. POST  /auth/login                                { ldapId: "pharmacy01" }
+14. GET   /prescriptions/pending
+15. PUT   /prescriptions/<prescriptionId>/dispense
+16. POST  /visits/<visitId>/bill                     { items: [{ medicineId, quantity: 2 }] } → copy billId
+17. GET   /bills/unpaid
+18. PUT   /bills/<billId>/pay
 
-20. POST  /auth/login                                { ldapId: "lab01" }
-21. GET   /lab-requests/pending
-22. POST  /lab-requests/<labRequestId>/report        { reportUrl: "https://..." }
+19. POST  /auth/login                                { ldapId: "lab01" }
+20. GET   /lab-requests/pending
+21. POST  /lab-requests/<labRequestId>/report        { reportUrl: "https://..." }
 ```
 
-All steps should return `200` or `201` with no errors.
-Stock for Paracetamol 500mg starts at 200 — billing step 17 will decrement it by 2.
+All 21 steps should return `200` or `201` with no errors.
+Stock for Paracetamol 500mg starts at 200 — billing step 16 will decrement it by 2.
 
 ---
 
