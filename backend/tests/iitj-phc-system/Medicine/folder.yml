@@ -1,2 +1,7 @@
-meta:
+info:
   name: Medicine
+  type: folder
+  seq: 7
+
+request:
+  auth: inherit
