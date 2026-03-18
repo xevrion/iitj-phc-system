@@ -101,6 +101,11 @@ if [ -z "$RECEPTION_TOKEN" ] || [ -z "$DOCTOR_TOKEN" ] || [ -z "$PATIENT_TOKEN" 
 fi
 echo -e "  ${GREEN}✓ All 6 role tokens acquired${NC}"
 
+# ── Reset doctor state before grabbing IDs ────────────────────────────
+# Checkout first (idempotent), then restore availability so GET /doctors returns results
+req POST "$BASE/doctors/me/checkout" "$DOCTOR_TOKEN" "" > /dev/null 2>&1
+req PUT "$BASE/doctors/me/availability" "$DOCTOR_TOKEN" '{"isAvailable":true}' > /dev/null 2>&1
+
 # ── Grab stable IDs ───────────────────────────────────────────────────
 req GET "$BASE/doctors" "$RECEPTION_TOKEN" ""
 DOCTOR_ID=$(jv "d['data'][0]['id']")
@@ -110,9 +115,6 @@ PATIENT_ID=$(jv "d['data']['id']")
 
 req GET "$BASE/medicines" "$DOCTOR_TOKEN" ""
 MEDICINE_ID=$(jv "next(m['id'] for m in d['data'] if 'Paracetamol' in m['name'])")
-
-# Reset doctor attendance — ignore errors if already checked out
-req POST "$BASE/doctors/me/checkout" "$DOCTOR_TOKEN" "" > /dev/null 2>&1
 
 # ════════════════════════════════════════════════════════════════════
 section "Functional Tests — Positive (TC-F-001 to TC-F-025)"
