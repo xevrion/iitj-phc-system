@@ -1,9 +1,13 @@
 Output demo.mp4
 
 Set Shell "bash"
-Set FontSize 13
-Set Width 900
-Set Height 600
+Set FontSize 40
+Set Width 3600
+Set Height 2400
+Set WindowBar Colorful
+Set Margin 20
+Set MarginFill "#1a1a2e"
+Set BorderRadius 10
 Set Theme "Dracula"
 Set PlaybackSpeed 1.5
 
