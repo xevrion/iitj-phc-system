@@ -1,0 +1,23 @@
+info:
+  name: Patient books appointment
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: http://localhost:8000/api/v1/appointments
+  headers:
+    - name: Authorization
+      value: Bearer PATIENT_TOKEN
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: '{ "doctorId": "DOCTOR_ID", "appointmentTime": "2026-03-20T10:00:00.000Z", "slotDuration": 15 }'
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

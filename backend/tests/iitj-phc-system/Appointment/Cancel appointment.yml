@@ -1,0 +1,18 @@
+info:
+  name: Cancel appointment
+  type: http
+  seq: 5
+
+http:
+  method: PUT
+  url: http://localhost:8000/api/v1/appointments/APPOINTMENT_ID/cancel
+  headers:
+    - name: Authorization
+      value: Bearer PATIENT_TOKEN
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
