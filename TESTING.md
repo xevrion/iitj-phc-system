@@ -5,7 +5,22 @@
 
 ---
 
-## 1. Prerequisites
+## 1. Automated Test Script
+
+For a quick full-system verification, run the automated test suite:
+
+```bash
+cd backend
+bash smoke_test.sh
+# or with a custom URL:
+bash smoke_test.sh http://localhost:8000/api/v1
+```
+
+This runs all 45 test cases (functional, negative, boundary, performance) automatically and prints a Pass/Fail result for each. Requires the server to be running and the DB to be seeded first (steps 3–5 below).
+
+---
+
+## 2. Prerequisites
 
 - Node.js v20+
 - npm
