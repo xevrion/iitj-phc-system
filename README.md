@@ -11,7 +11,7 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 
 # Sprint Progress
 
-> **Sprint Plan Period:** Jan 15, 2026 – Apr 30, 2026 | **Current Date:** Feb 27, 2026 (Sprint 3)
+> **Sprint Plan Period:** Jan 15, 2026 – Apr 30, 2026 | **Current Date:** Mar 18, 2026 (Sprint 4)
 >
 > Tracks all deliverables sprint by sprint. Tick = implemented and committed.
 
@@ -95,7 +95,7 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 ---
 
 ## Sprint 3 — Diagnostics & Prescription
-**Dates:** Feb 22 – Mar 7, 2026 | **Status: In Progress**
+**Dates:** Feb 22 – Mar 7, 2026 | **Status: Complete**
 
 ### Prescription Module
 - [x] `POST /api/v1/visits/:visitId/prescription` — doctor creates digital prescription (REQ-44, REQ-48)
@@ -117,31 +117,35 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 ---
 
 ## Sprint 4 — Operational Modules
-**Dates:** Mar 8 – Mar 21, 2026 | **Status: Not Started**
+**Dates:** Mar 8 – Mar 21, 2026 | **Status: Complete**
+
+### Medicine Inventory
+- [x] `GET /api/v1/medicines` — view medicine inventory (REQ-66)
+- [x] `GET /api/v1/medicines/:id` — get single medicine
+- [x] `POST /api/v1/medicines` — admin adds medicine to inventory
+- [x] `PUT /api/v1/medicines/:id/stock` — pharmacy updates stock quantity
 
 ### Pharmacy & Billing
-- [ ] `GET /api/v1/medicines` — view medicine inventory (REQ-66)
-- [ ] `POST /api/v1/medicines` — admin adds medicine to inventory
-- [ ] `PUT /api/v1/medicines/:id/stock` — pharmacy updates stock quantity
-- [ ] `POST /api/v1/visits/:visitId/bill` — pharmacy generates medicine bill (REQ-64)
-- [ ] `GET /api/v1/visits/:visitId/bill` — view bill for a visit (REQ-65)
-- [ ] Inventory deduction on bill generation (REQ-66)
-- [ ] Low-stock notification trigger (REQ-66)
+- [x] `POST /api/v1/visits/:visitId/bill` — pharmacy generates medicine bill; atomically deducts stock (REQ-64, REQ-66)
+- [x] `GET /api/v1/visits/:visitId/bill` — view bill with line items (REQ-65)
+- [x] `GET /api/v1/bills/unpaid` — pharmacy queue of all unpaid bills
+- [x] `PUT /api/v1/bills/:billId/pay` — mark bill as PAID
 
 ### Appointment Booking (Specialist slots)
-- [ ] `GET /api/v1/doctors/:id/appointments` — view available slots (REQ-30)
-- [ ] `POST /api/v1/doctors/:id/appointments` — patient books a slot (REQ-30, REQ-31)
-- [ ] `DELETE /api/v1/appointments/:id` — cancel appointment (REQ-33)
-- [ ] Block booking when specialist is unavailable (REQ-33)
-- [ ] Emergency slot flag (`isEmergency`) handling (REQ-32)
+- [x] `GET /api/v1/doctors/:id/appointments` — list doctor's appointments (REQ-30)
+- [x] `POST /api/v1/appointments` — patient or reception books appointment (REQ-30, REQ-31)
+- [x] `GET /api/v1/appointments/my` — patient views own appointments
+- [x] `GET /api/v1/doctors/me/appointments` — doctor views own schedule
+- [x] `PUT /api/v1/appointments/:id/cancel` — cancel appointment (REQ-33)
+- [x] Block booking when doctor unavailable unless `isEmergency: true` (REQ-32, REQ-33)
 
 ### QR Check-In Flow
-- [ ] `POST /api/v1/checkin` — full QR scan → fetch patient → auto-fill → create visit in one flow (REQ-14 through REQ-18)
+- [x] `POST /api/v1/checkin` — QR scan → resolve patient → create visit + vitals atomically (REQ-14 through REQ-18)
 
 ### External Document Digitization
-- [ ] `POST /api/v1/patients/:id/documents` — staff uploads external medical document (REQ-59, REQ-60)
-- [ ] `GET /api/v1/patients/:id/documents` — list patient's external documents (REQ-63)
-- [ ] Document category tagging (`PRESCRIPTION`, `LAB_REPORT`, `DISCHARGE`) (REQ-61, REQ-62)
+- [x] `POST /api/v1/patients/:id/documents` — upload external medical document (REQ-59, REQ-60)
+- [x] `GET /api/v1/patients/:id/documents` — list patient's external documents (REQ-63)
+- [x] Document type tagging: `PRESCRIPTION` | `LAB_REPORT` | `DISCHARGE` (REQ-61, REQ-62)
 
 ---
 
@@ -236,3 +240,19 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 | GET | `/api/v1/visits/:visitId/lab-requests` | DOCTOR, PATIENT, LAB_STAFF, ADMIN | REQ-55,56 |
 | GET | `/api/v1/lab-requests/pending` | LAB_STAFF, ADMIN | REQ-54 |
 | POST | `/api/v1/lab-requests/:id/report` | LAB_STAFF | REQ-54,55 |
+| GET | `/api/v1/medicines` | All auth | REQ-66 |
+| GET | `/api/v1/medicines/:id` | All auth | — |
+| POST | `/api/v1/medicines` | ADMIN | — |
+| PUT | `/api/v1/medicines/:id/stock` | PHARMACY_STAFF, ADMIN | REQ-66 |
+| POST | `/api/v1/visits/:visitId/bill` | PHARMACY_STAFF, ADMIN | REQ-64,66 |
+| GET | `/api/v1/visits/:visitId/bill` | PHARMACY_STAFF, DOCTOR, PATIENT, ADMIN | REQ-65 |
+| GET | `/api/v1/bills/unpaid` | PHARMACY_STAFF, ADMIN | — |
+| PUT | `/api/v1/bills/:billId/pay` | PHARMACY_STAFF, ADMIN | — |
+| GET | `/api/v1/doctors/:id/appointments` | All auth | REQ-30 |
+| POST | `/api/v1/appointments` | PATIENT, RECEPTION_STAFF | REQ-30,31 |
+| GET | `/api/v1/appointments/my` | PATIENT | — |
+| GET | `/api/v1/doctors/me/appointments` | DOCTOR | — |
+| PUT | `/api/v1/appointments/:id/cancel` | PATIENT, RECEPTION_STAFF, ADMIN | REQ-33 |
+| POST | `/api/v1/checkin` | RECEPTION_STAFF | REQ-14–18 |
+| POST | `/api/v1/patients/:id/documents` | DOCTOR, RECEPTION_STAFF, PATIENT, ADMIN | REQ-59,60 |
+| GET | `/api/v1/patients/:id/documents` | DOCTOR, RECEPTION_STAFF, PATIENT, ADMIN | REQ-63 |

@@ -93,7 +93,7 @@ All API requests are pre-built as a Bruno collection. No manual setup needed —
 1. Download and install [Bruno](https://www.usebruno.com/) (free)
 2. Open Bruno → click **Open Collection**
 3. Navigate to `backend/tests/iitj-phc-system/` inside this repo and select that folder
-4. The collection opens with 6 folders — one per module:
+4. The collection opens with 11 folders — one per module:
 
 ```
 Auth/           — Login, Get current user
@@ -102,6 +102,11 @@ Doctor/         — List, Availability, Check-in/out, Attendance
 Visit/          — Create, Queue, Vitals, Claim, Consult, Complete, Cancel
 Prescription/   — Create, View, Pending queue, Dispense
 Lab/            — Request test, View requests, Pending queue, Upload report
+Medicine/       — List, Get single, Add, Update stock
+Billing/        — Generate bill, View bill, List unpaid, Mark paid
+Appointment/    — List for doctor, Book, My appointments, Cancel
+Checkin/        — QR check-in (creates visit atomically)
+Document/       — Upload, List patient documents
 ```
 
 ### Updating tokens
@@ -124,16 +129,19 @@ Requests that operate on a specific record use placeholder strings in the URL:
 |-------------|------------------------|
 | `PATIENT_PROFILE_ID` | `id` from `GET /patients/qr/QR001` response |
 | `DOCTOR_PROFILE_ID` | `id` from `GET /doctors` response |
-| `VISIT_ID` | `id` from `POST /visits` response |
+| `VISIT_ID` | `id` from `POST /visits` or `POST /checkin` response |
 | `PRESCRIPTION_ID` | `id` from `POST /visits/.../prescription` response |
 | `LAB_REQUEST_ID` | `id` from `POST /visits/.../lab-requests` response |
-| `MEDICINE_ID` | `id` from Prisma Studio → Medicine table |
+| `MEDICINE_ID` | `id` from `GET /medicines` response |
+| `BILL_ID` | `id` from `POST /visits/.../bill` response |
+| `APPOINTMENT_ID` | `id` from `POST /appointments` response |
+| `PATIENT_QR_CODE` | `QR001` (seeded) or from patient profile |
 
 Edit the URL directly in Bruno before sending.
 
 ### Recommended testing flow
 
-Follow the smoke test order in §13 using Bruno. A typical session looks like:
+Follow the smoke test order in §18 using Bruno. A typical session looks like:
 
 ```
 1. Auth/Login and get a token       → ldapId: "reception01" → copy token
@@ -449,37 +457,196 @@ Body: { "reportUrl": "https://storage.example.com/reports/cbc-001.pdf" }
 
 ---
 
-## 13. End-to-End Smoke Test
+## 13. Medicine Routes
+
+> Any authenticated user can list medicines. Admin adds. Pharmacy restocks.
+
+### List all medicines
+```
+GET /medicines
+# Role: any authenticated user
+```
+
+### Get a specific medicine
+```
+GET /medicines/<medicineId>
+# Role: any authenticated user
+```
+
+### Admin adds a medicine
+```
+POST /medicines
+# Role: ADMIN
+Body: { "name": "Ibuprofen 400mg", "stockQuantity": 200, "unitPrice": 5.00 }
+```
+
+### Pharmacy updates stock
+```
+PUT /medicines/<medicineId>/stock
+# Role: PHARMACY_STAFF, ADMIN
+Body: { "stockQuantity": 150 }
+```
+
+---
+
+## 14. Billing Routes
+
+### Pharmacy generates a bill
+```
+POST /visits/<visitId>/bill
+# Role: PHARMACY_STAFF, ADMIN
+Body:
+{
+  "items": [
+    { "medicineId": "<id>", "quantity": 2 }
+  ]
+}
+```
+> Atomically deducts stock. Returns `400` if any item has insufficient stock.
+> One bill per visit — second attempt returns `409`.
+
+### View bill for a visit
+```
+GET /visits/<visitId>/bill
+# Role: PHARMACY_STAFF, DOCTOR, PATIENT, ADMIN
+```
+
+### List all unpaid bills
+```
+GET /bills/unpaid
+# Role: PHARMACY_STAFF, ADMIN
+```
+
+### Mark a bill as paid
+```
+PUT /bills/<billId>/pay
+# Role: PHARMACY_STAFF, ADMIN
+```
+
+---
+
+## 15. Appointment Routes
+
+### List appointments for a doctor
+```
+GET /doctors/<doctorId>/appointments
+# Role: any authenticated user
+```
+
+### Book an appointment (as patient)
+```
+POST /appointments
+# Role: PATIENT
+Body: { "doctorId": "<id>", "appointmentTime": "2026-03-20T10:00:00.000Z", "slotDuration": 15 }
+```
+> Add `"isEmergency": true` to bypass doctor unavailability check.
+
+### Book on behalf of patient (as reception)
+```
+POST /appointments
+# Role: RECEPTION_STAFF
+Body: { "patientId": "<id>", "doctorId": "<id>", "appointmentTime": "...", "slotDuration": 15 }
+```
+
+### Patient views own appointments
+```
+GET /appointments/my
+# Role: PATIENT
+```
+
+### Doctor views own appointments
+```
+GET /doctors/me/appointments
+# Role: DOCTOR
+```
+
+### Cancel an appointment
+```
+PUT /appointments/<appointmentId>/cancel
+# Role: PATIENT, RECEPTION_STAFF, ADMIN
+```
+
+---
+
+## 16. QR Check-In Route
+
+> Combines patient lookup + visit creation in one atomic call. Preferred flow at the reception desk.
+
+```
+POST /checkin
+# Role: RECEPTION_STAFF
+Body:
+{
+  "qrCode": "QR001",
+  "visitType": "OPD",
+  "vitals": {
+    "weight": 65.5,
+    "temperature": 98.6,
+    "bloodPressure": "120/80"
+  }
+}
+```
+> `vitals` is optional. `visitType` must be `OPD` | `ADMIT` | `EMERGENCY`.
+> Returns the created visit with patient info.
+
+---
+
+## 17. External Document Routes
+
+### Upload a document for a patient
+```
+POST /patients/<patientId>/documents
+# Role: DOCTOR, RECEPTION_STAFF, PATIENT, ADMIN
+Body:
+{
+  "documentType": "LAB_REPORT",
+  "fileUrl": "https://storage.example.com/reports/abc123.pdf",
+  "visitId": "<visitId>"   ← optional
+}
+```
+> `documentType` must be `PRESCRIPTION` | `LAB_REPORT` | `DISCHARGE`.
+
+### List all documents for a patient
+```
+GET /patients/<patientId>/documents
+# Role: DOCTOR, RECEPTION_STAFF, PATIENT, ADMIN
+```
+
+---
+
+## 18. End-to-End Smoke Test
 
 Run these in order. Swap tokens between role logins. Replace all `<ids>` with values from actual responses.
 
 ```
 1.  POST  /auth/login                                { ldapId: "reception01" }
-2.  GET   /patients/qr/QR001                         → copy patientId
-3.  POST  /visits                                    { patientId, visitType: "OPD", vitals: {...} } → copy visitId
+2.  POST  /checkin                                   { qrCode: "QR001", visitType: "OPD", vitals: {...} } → copy visitId, patientId
 
 4.  POST  /auth/login                                { ldapId: "doctor01" }
 5.  POST  /doctors/me/checkin
 6.  GET   /visits/my-queue
 7.  PUT   /visits/<visitId>/claim
 8.  PUT   /visits/<visitId>/consultation             { consultationNotes: "..." }
-9.  POST  /visits/<visitId>/prescription             { items: [{ medicineId, dosage, duration }] } → copy prescriptionId
-10. POST  /visits/<visitId>/lab-requests             { testName: "CBC" } → copy labRequestId
-11. PUT   /visits/<visitId>/complete
-12. POST  /doctors/me/checkout
+9.  GET   /medicines                                 → copy medicineId (Paracetamol 500mg)
+10. POST  /visits/<visitId>/prescription             { items: [{ medicineId, dosage: "500mg", duration: "3 days" }] } → copy prescriptionId
+11. POST  /visits/<visitId>/lab-requests             { testName: "CBC" } → copy labRequestId
+12. PUT   /visits/<visitId>/complete
+13. POST  /doctors/me/checkout
 
-13. POST  /auth/login                                { ldapId: "pharmacy01" }
-14. GET   /prescriptions/pending
-15. PUT   /prescriptions/<prescriptionId>/dispense
+14. POST  /auth/login                                { ldapId: "pharmacy01" }
+15. GET   /prescriptions/pending
+16. PUT   /prescriptions/<prescriptionId>/dispense
+17. POST  /visits/<visitId>/bill                     { items: [{ medicineId, quantity: 2 }] } → copy billId
+18. GET   /bills/unpaid
+19. PUT   /bills/<billId>/pay
 
-16. POST  /auth/login                                { ldapId: "lab01" }
-17. GET   /lab-requests/pending
-18. POST  /lab-requests/<labRequestId>/report        { reportUrl: "https://..." }
+20. POST  /auth/login                                { ldapId: "lab01" }
+21. GET   /lab-requests/pending
+22. POST  /lab-requests/<labRequestId>/report        { reportUrl: "https://..." }
 ```
 
-All 18 steps should return `200` or `201` with no errors.
-
-> To get `medicineId` for step 9: look it up in Prisma Studio under the Medicine table, or call `GET /doctors` — the response includes the doctor profile but not medicines; use Studio instead.
+All steps should return `200` or `201` with no errors.
+Stock for Paracetamol 500mg starts at 200 — billing step 17 will decrement it by 2.
 
 ---
 
