@@ -10,14 +10,14 @@ echo -e "${YELLOW}║   TC-F-020  TC-F-021  TC-N-009  TC-B-004        ║${NC}"
 echo -e "${YELLOW}╚══════════════════════════════════════════════════╝${NC}"
 
 # Doctor is available (setup.sh ensures this)
-run_tc "TC-F-020" "Patient books appointment with available doctor" \
+run_tc "TC-F-020" "Patient books appointment with available doctor" 201 \
   POST /appointments \
   -H "Authorization: Bearer $PATIENT_TOKEN" \
   -H "Content-Type: application/json" \
   -d "{\"doctorId\":\"$DOCTOR_ID\",\"appointmentTime\":\"2026-05-01T10:00:00.000Z\",\"slotDuration\":15}"
 APPOINTMENT_ID=$(jv '.data.id')
 
-run_tc "TC-F-021" "Patient cancels appointment" \
+run_tc "TC-F-021" "Patient cancels appointment" 200 \
   PUT "/appointments/$APPOINTMENT_ID/cancel" \
   -H "Authorization: Bearer $PATIENT_TOKEN"
 
@@ -28,13 +28,13 @@ curl -s -X PUT "$BASE/doctors/me/availability" \
   -d '{"isAvailable":false}' > /dev/null 2>&1
 echo -e "\n  ${CYAN}(doctor set to unavailable for TC-N-009 and TC-B-004)${NC}"
 
-run_tc "TC-N-009" "Booking unavailable doctor without emergency flag → 400" \
+run_tc "TC-N-009" "Booking unavailable doctor without emergency flag → 400" 400 \
   POST /appointments \
   -H "Authorization: Bearer $PATIENT_TOKEN" \
   -H "Content-Type: application/json" \
   -d "{\"doctorId\":\"$DOCTOR_ID\",\"appointmentTime\":\"2026-05-02T10:00:00.000Z\",\"slotDuration\":15,\"isEmergency\":false}"
 
-run_tc "TC-B-004" "Emergency booking bypasses unavailability → 201" \
+run_tc "TC-B-004" "Emergency booking bypasses unavailability → 201" 201 \
   POST /appointments \
   -H "Authorization: Bearer $PATIENT_TOKEN" \
   -H "Content-Type: application/json" \

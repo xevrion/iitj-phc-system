@@ -57,9 +57,9 @@ echo -e " ${GREEN}done${NC}"
 # ── Helpers ───────────────────────────────────────────────────────
 LAST_BODY=""
 
-# run_tc TC_ID TITLE METHOD ENDPOINT [extra curl args...]
+# run_tc TC_ID TITLE EXPECTED_HTTP METHOD ENDPOINT [extra curl args...]
 run_tc() {
-  local tc="$1" title="$2" method="$3" endpoint="$4"; shift 4
+  local tc="$1" title="$2" expected="$3" method="$4" endpoint="$5"; shift 5
   echo
   echo -e "${YELLOW}━━━ [$tc] $title ━━━${NC}"
   echo -e "${CYAN}$method $BASE$endpoint${NC}"
@@ -67,10 +67,10 @@ run_tc() {
   status=$(curl -s -X "$method" "$BASE$endpoint" "$@" \
     --output /tmp/phc_resp --write-out '%{http_code}')
   LAST_BODY=$(cat /tmp/phc_resp)
-  if [ "$status" -lt 400 ]; then
-    echo -e "${GREEN}→ HTTP $status${NC}"
+  if [ "$status" -eq "$expected" ]; then
+    echo -e "${GREEN}→ HTTP $status ✓${NC}"
   else
-    echo -e "${RED}→ HTTP $status${NC}"
+    echo -e "${RED}→ HTTP $status (expected $expected) ✗${NC}"
   fi
   echo "$LAST_BODY" | jq . 2>/dev/null || echo "$LAST_BODY"
 }
