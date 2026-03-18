@@ -1,0 +1,23 @@
+info:
+  name: Admin adds medicine
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: http://localhost:8000/api/v1/medicines
+  headers:
+    - name: Authorization
+      value: Bearer ADMIN_TOKEN
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: '{ "name": "Ibuprofen 400mg", "stockQuantity": 200, "unitPrice": 5.00 }'
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

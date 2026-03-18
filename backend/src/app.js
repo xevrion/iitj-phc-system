@@ -44,6 +44,7 @@ import {
   prescriptionRouter,
 } from "./routes/prescription.routes.js";
 import { visitLabRouter, labRouter } from "./routes/lab.routes.js";
+import medicineRoutes from "./routes/medicine.routes.js";
 
 // Import error handler
 import { errorHandler } from "./middlewares/errorHandler.middleware.js";
@@ -58,6 +59,7 @@ app.use("/api/v1/visits/:visitId/prescription", visitPrescriptionRouter);
 app.use("/api/v1/prescriptions", prescriptionRouter);
 app.use("/api/v1/visits/:visitId/lab-requests", visitLabRouter);
 app.use("/api/v1/lab-requests", labRouter);
+app.use("/api/v1/medicines", medicineRoutes);
 
 // Global error handler — must be last
 app.use(errorHandler);
