@@ -323,6 +323,81 @@ req POST "$BASE/checkin" "$RECEPTION_TOKEN" \
 check "TC-P-005" "QR check-in (atomic visit + vitals) < ${T}ms" 201 "$HTTP_STATUS" "$RESPONSE_TIME" "$TOK"
 
 # ════════════════════════════════════════════════════════════════════
+section "Repeatability / Stability Tests (15 runs each)"
+echo -e "  Each test is executed 15 consecutive times."
+echo -e "  Pass = HTTP 200/201 AND response time within threshold."
+echo -e "  Threshold: ${CYAN}3000ms${NC}  (SRS §5.1)\n"
+
+REPEAT_N=15
+REPEAT_T=3000
+
+# ── TC-R-001: Login endpoint ──────────────────────────────────────────
+R_PASS=0; R_FAIL=0; R_TIMES=""
+for i in $(seq 1 $REPEAT_N); do
+  req POST "$BASE/auth/login" "" '{"ldapId":"patient01","password":"anything"}'
+  if [ "$HTTP_STATUS" -eq 200 ] && [ "$RESPONSE_TIME" -le "$REPEAT_T" ]; then
+    R_PASS=$((R_PASS+1))
+  else
+    R_FAIL=$((R_FAIL+1))
+  fi
+  R_TIMES="$R_TIMES $RESPONSE_TIME"
+done
+R_AVG=$(echo "$R_TIMES" | tr ' ' '\n' | grep -v '^$' | awk '{s+=$1;c++} END{printf "%d",s/c}')
+R_MAX=$(echo "$R_TIMES" | tr ' ' '\n' | grep -v '^$' | sort -n | tail -1)
+R_MIN=$(echo "$R_TIMES" | tr ' ' '\n' | grep -v '^$' | sort -n | head -1)
+if [ "$R_FAIL" -eq 0 ]; then
+  printf "  ${GREEN}✓ PASS${NC}  [TC-R-001] Login endpoint (${REPEAT_N}x)  ${CYAN}min=%sms avg=%sms max=%sms  all passed${NC}\n" "$R_MIN" "$R_AVG" "$R_MAX"
+  PASS=$((PASS+1))
+else
+  printf "  ${RED}✗ FAIL${NC}  [TC-R-001] Login endpoint (${REPEAT_N}x)  ${CYAN}min=%sms avg=%sms max=%sms  %d/%d failed${NC}\n" "$R_MIN" "$R_AVG" "$R_MAX" "$R_FAIL" "$REPEAT_N"
+  FAIL=$((FAIL+1))
+fi
+
+# ── TC-R-002: Patient record retrieval ───────────────────────────────
+R_PASS=0; R_FAIL=0; R_TIMES=""
+for i in $(seq 1 $REPEAT_N); do
+  req GET "$BASE/patients/me" "$PATIENT_TOKEN" ""
+  if [ "$HTTP_STATUS" -eq 200 ] && [ "$RESPONSE_TIME" -le "$REPEAT_T" ]; then
+    R_PASS=$((R_PASS+1))
+  else
+    R_FAIL=$((R_FAIL+1))
+  fi
+  R_TIMES="$R_TIMES $RESPONSE_TIME"
+done
+R_AVG=$(echo "$R_TIMES" | tr ' ' '\n' | grep -v '^$' | awk '{s+=$1;c++} END{printf "%d",s/c}')
+R_MAX=$(echo "$R_TIMES" | tr ' ' '\n' | grep -v '^$' | sort -n | tail -1)
+R_MIN=$(echo "$R_TIMES" | tr ' ' '\n' | grep -v '^$' | sort -n | head -1)
+if [ "$R_FAIL" -eq 0 ]; then
+  printf "  ${GREEN}✓ PASS${NC}  [TC-R-002] Patient profile retrieval (${REPEAT_N}x)  ${CYAN}min=%sms avg=%sms max=%sms  all passed${NC}\n" "$R_MIN" "$R_AVG" "$R_MAX"
+  PASS=$((PASS+1))
+else
+  printf "  ${RED}✗ FAIL${NC}  [TC-R-002] Patient profile retrieval (${REPEAT_N}x)  ${CYAN}min=%sms avg=%sms max=%sms  %d/%d failed${NC}\n" "$R_MIN" "$R_AVG" "$R_MAX" "$R_FAIL" "$REPEAT_N"
+  FAIL=$((FAIL+1))
+fi
+
+# ── TC-R-003: Atomic QR check-in ─────────────────────────────────────
+R_PASS=0; R_FAIL=0; R_TIMES=""
+for i in $(seq 1 $REPEAT_N); do
+  req POST "$BASE/checkin" "$RECEPTION_TOKEN" '{"qrCode":"QR001","visitType":"OPD"}'
+  if [ "$HTTP_STATUS" -eq 201 ] && [ "$RESPONSE_TIME" -le "$REPEAT_T" ]; then
+    R_PASS=$((R_PASS+1))
+  else
+    R_FAIL=$((R_FAIL+1))
+  fi
+  R_TIMES="$R_TIMES $RESPONSE_TIME"
+done
+R_AVG=$(echo "$R_TIMES" | tr ' ' '\n' | grep -v '^$' | awk '{s+=$1;c++} END{printf "%d",s/c}')
+R_MAX=$(echo "$R_TIMES" | tr ' ' '\n' | grep -v '^$' | sort -n | tail -1)
+R_MIN=$(echo "$R_TIMES" | tr ' ' '\n' | grep -v '^$' | sort -n | head -1)
+if [ "$R_FAIL" -eq 0 ]; then
+  printf "  ${GREEN}✓ PASS${NC}  [TC-R-003] Atomic QR check-in (${REPEAT_N}x)  ${CYAN}min=%sms avg=%sms max=%sms  all passed${NC}\n" "$R_MIN" "$R_AVG" "$R_MAX"
+  PASS=$((PASS+1))
+else
+  printf "  ${RED}✗ FAIL${NC}  [TC-R-003] Atomic QR check-in (${REPEAT_N}x)  ${CYAN}min=%sms avg=%sms max=%sms  %d/%d failed${NC}\n" "$R_MIN" "$R_AVG" "$R_MAX" "$R_FAIL" "$REPEAT_N"
+  FAIL=$((FAIL+1))
+fi
+
+# ════════════════════════════════════════════════════════════════════
 echo
 echo -e "${YELLOW}══════════════════════════════════════════════════${NC}"
 TOTAL=$((PASS+FAIL))
