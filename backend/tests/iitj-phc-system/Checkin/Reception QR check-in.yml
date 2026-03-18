@@ -1,0 +1,23 @@
+info:
+  name: Reception QR check-in
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8000/api/v1/checkin
+  headers:
+    - name: Authorization
+      value: Bearer RECEPTION_TOKEN
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: '{ "qrCode": "PATIENT_QR_CODE", "visitType": "OPD", "vitals": { "weight": 65.5, "temperature": 98.6, "bloodPressure": "120/80" } }'
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
