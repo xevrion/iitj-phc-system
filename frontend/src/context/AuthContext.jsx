@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/endpoints";
+import { getDefaultRouteForRole } from "../utils/roles";
 
 const AuthContext = createContext(null);
 
@@ -35,8 +36,10 @@ export function AuthProvider({ children }) {
     const nextToken = res.data.token;
     localStorage.setItem("phc_access_token", nextToken);
     setToken(nextToken);
-    setUser(res.data.user);
-    navigate("/app", { replace: true });
+
+    const me = await api.auth.me();
+    setUser(me.data);
+    navigate(getDefaultRouteForRole(me.data.role), { replace: true });
   };
 
   const logout = () => {
