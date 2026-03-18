@@ -10,7 +10,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  if (token) return <Navigate to="/app" replace />;
+  if (token) return <Navigate to="/" replace />;
 
   const onSubmit = async (e) => {
     e.preventDefault();
