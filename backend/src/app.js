@@ -48,6 +48,7 @@ import medicineRoutes from "./routes/medicine.routes.js";
 import { visitBillingRouter, billRouter } from "./routes/billing.routes.js";
 import appointmentRoutes from "./routes/appointment.routes.js";
 import checkinRoutes from "./routes/checkin.routes.js";
+import documentRoutes from "./routes/document.routes.js";
 
 // Import error handler
 import { errorHandler } from "./middlewares/errorHandler.middleware.js";
@@ -67,6 +68,7 @@ app.use("/api/v1/visits/:visitId/bill", visitBillingRouter);
 app.use("/api/v1/bills", billRouter);
 app.use("/api/v1/appointments", appointmentRoutes);
 app.use("/api/v1/checkin", checkinRoutes);
+app.use("/api/v1/patients/:id/documents", documentRoutes);
 
 // Global error handler — must be last
 app.use(errorHandler);

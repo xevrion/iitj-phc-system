@@ -1,0 +1,23 @@
+info:
+  name: Upload external document
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8000/api/v1/patients/PATIENT_ID/documents
+  headers:
+    - name: Authorization
+      value: Bearer DOCTOR_TOKEN
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: '{ "documentType": "LAB_REPORT", "fileUrl": "https://storage.example.com/reports/abc123.pdf", "visitId": "VISIT_ID" }'
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
