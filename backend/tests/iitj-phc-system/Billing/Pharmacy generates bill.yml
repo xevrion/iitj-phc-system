@@ -1,0 +1,23 @@
+info:
+  name: Pharmacy generates bill
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8000/api/v1/visits/VISIT_ID/bill
+  headers:
+    - name: Authorization
+      value: Bearer PHARMACY_TOKEN
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: '{ "items": [ { "medicineId": "MEDICINE_ID", "quantity": 2 } ] }'
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

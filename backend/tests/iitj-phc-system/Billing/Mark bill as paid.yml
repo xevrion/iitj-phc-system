@@ -1,0 +1,18 @@
+info:
+  name: Mark bill as paid
+  type: http
+  seq: 4
+
+http:
+  method: PUT
+  url: http://localhost:8000/api/v1/bills/BILL_ID/pay
+  headers:
+    - name: Authorization
+      value: Bearer PHARMACY_TOKEN
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

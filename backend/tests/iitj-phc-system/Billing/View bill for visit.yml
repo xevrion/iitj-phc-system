@@ -1,0 +1,18 @@
+info:
+  name: View bill for visit
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: http://localhost:8000/api/v1/visits/VISIT_ID/bill
+  headers:
+    - name: Authorization
+      value: Bearer TOKEN
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
