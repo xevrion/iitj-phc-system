@@ -16,7 +16,7 @@ bash smoke_test.sh
 bash smoke_test.sh http://localhost:8000/api/v1
 ```
 
-This runs all 45 test cases (functional, negative, boundary, performance) automatically and prints a Pass/Fail result for each. Requires the server to be running and the DB to be seeded first (steps 3–5 below).
+This runs all 53 test cases (functional, negative, boundary, performance, repeatability) automatically and prints a Pass/Fail result for each. Requires the server to be running and the DB to be seeded first (steps 3–5 below).
 
 ---
 
@@ -108,7 +108,7 @@ All API requests are pre-built as a Bruno collection. No manual setup needed —
 1. Download and install [Bruno](https://www.usebruno.com/) (free)
 2. Open Bruno → click **Open Collection**
 3. Navigate to `backend/tests/iitj-phc-system/` inside this repo and select that folder
-4. The collection opens with 11 folders — one per module:
+4. The collection opens with 13 folders — one per module:
 
 ```
 Auth/           — Login, Get current user
@@ -122,6 +122,8 @@ Billing/        — Generate bill, View bill, List unpaid, Mark paid
 Appointment/    — List for doctor, Book, My appointments, Cancel
 Checkin/        — QR check-in (creates visit atomically)
 Document/       — Upload, List patient documents
+Admin/          — User management, events, usage/attendance reports
+Events/         — Public upcoming PHC event listing
 ```
 
 ### Updating tokens
@@ -150,13 +152,14 @@ Requests that operate on a specific record use placeholder strings in the URL:
 | `MEDICINE_ID` | `id` from `GET /medicines` response |
 | `BILL_ID` | `id` from `POST /visits/.../bill` response |
 | `APPOINTMENT_ID` | `id` from `POST /appointments` response |
+| `USER_ID` | `id` from `POST /admin/users` response |
 | `PATIENT_QR_CODE` | `QR001` (seeded) or from patient profile |
 
 Edit the URL directly in Bruno before sending.
 
 ### Recommended testing flow
 
-Follow the smoke test order in §18 using Bruno. A typical session looks like:
+Follow the smoke test order in §19 using Bruno. A typical session looks like:
 
 ```
 1. Auth/Login and get a token       → ldapId: "reception01" → copy token
@@ -180,6 +183,9 @@ Follow the smoke test order in §18 using Bruno. A typical session looks like:
 16. Auth/Login and get a token      → ldapId: "lab01" → copy token
 17. Lab/Lab staff views pending requests
 18. Lab/Lab staff uploads report    → paste labRequestId in URL
+19. Patient/Patient views own lab reports
+20. Admin/Admin creates user
+21. Admin/Admin publishes PHC event
 ```
 
 ---
@@ -457,6 +463,12 @@ GET /visits/<visitId>/lab-requests
 # Role: DOCTOR, PATIENT, LAB_STAFF, ADMIN
 ```
 
+### View a single lab request and uploaded report
+```
+GET /lab-requests/<labRequestId>
+# Role: DOCTOR, PATIENT, LAB_STAFF, ADMIN
+```
+
 ### Lab staff views all pending test orders
 ```
 GET /lab-requests/pending
@@ -629,7 +641,67 @@ GET /patients/<patientId>/documents
 
 ---
 
-## 18. End-to-End Smoke Test
+## 18. Admin & Events Routes
+
+### Admin creates a managed user
+```
+POST /admin/users
+# Role: ADMIN
+Body:
+{
+  "ldapId": "doctor02",
+  "role": "DOCTOR",
+  "profile": {
+    "name": "Dr. Mehta",
+    "doctorType": "SPECIALIST",
+    "specialization": "Dermatology",
+    "isAvailable": false
+  }
+}
+```
+
+### Admin lists users with filters
+```
+GET /admin/users?role=DOCTOR&isActive=true
+# Role: ADMIN
+# Optional filters: role, isActive, ldapId
+```
+
+### Admin updates or deactivates a user
+```
+PUT /admin/users/<userId>
+# Role: ADMIN
+Body: { "isActive": false }
+```
+
+### Admin publishes a PHC event
+```
+POST /admin/events
+# Role: ADMIN
+Body:
+{
+  "title": "Blood Donation Camp",
+  "description": "Campus-wide donor registration and screening.",
+  "eventDate": "2026-04-02T10:00:00.000Z"
+}
+```
+
+### Public list of upcoming PHC events
+```
+GET /events
+# Role: public
+```
+
+### Admin usage and attendance reports
+```
+GET /admin/reports/usage
+GET /admin/reports/attendance
+# Role: ADMIN
+```
+
+---
+
+## 19. End-to-End Smoke Test
 
 Run these in order. Swap tokens between role logins. Replace all `<ids>` with values from actual responses.
 
@@ -658,14 +730,24 @@ Run these in order. Swap tokens between role logins. Replace all `<ids>` with va
 19. POST  /auth/login                                { ldapId: "lab01" }
 20. GET   /lab-requests/pending
 21. POST  /lab-requests/<labRequestId>/report        { reportUrl: "https://..." }
+22. GET   /lab-requests/<labRequestId>               (patient or doctor token)
+
+23. POST  /auth/login                                { ldapId: "admin01" }
+24. POST  /admin/users                               { ldapId: "<unique>", role: "DOCTOR", profile: {...} } → copy userId
+25. GET   /admin/users?ldapId=<unique>
+26. PUT   /admin/users/<userId>                      { isActive: false }
+27. POST  /admin/events                              { title: "...", eventDate: "..." }
+28. GET   /events
+29. GET   /admin/reports/usage
+30. GET   /admin/reports/attendance
 ```
 
-All 21 steps should return `200` or `201` with no errors.
+All 30 steps should return `200` or `201` with no errors.
 Stock for Paracetamol 500mg starts at 200 — billing step 16 will decrement it by 2.
 
 ---
 
-## 14. Expected HTTP Status Codes
+## 20. Expected HTTP Status Codes
 
 | Scenario | Code |
 |----------|------|
@@ -679,7 +761,7 @@ Stock for Paracetamol 500mg starts at 200 — billing step 16 will decrement it 
 
 ---
 
-## 15. Common Mistakes
+## 21. Common Mistakes
 
 | Error | Cause | Fix |
 |-------|-------|-----|
@@ -690,6 +772,8 @@ Stock for Paracetamol 500mg starts at 200 — billing step 16 will decrement it 
 | `400 Already checked in` | Checkin called twice (leftover from previous test run) | Call `POST /doctors/me/checkout` first |
 | `409 Prescription already exists` | Created twice for same visit | One prescription per visit only |
 | `400 Visit is not in WAITING state` | Trying to claim a non-WAITING visit | Check current visit status first |
+| `400 doctorType must be one of ...` | Creating/updating a doctor user without `doctorType` | Provide `doctorType: "SPECIALIST"` or `"PHYSICIAN"` |
+| `400 Cannot change role for ... existing records` | Admin attempted to role-switch a user with linked clinical/audit data | Deactivate the account instead of changing role |
 | `501 LDAP integration not configured` | `LDAP_URL` is set in `.env` | Leave `LDAP_URL` blank for dev mode |
 | Prisma Studio shows empty tables | Migration not run | Run `npx prisma migrate dev` |
 | Seed script fails with connection error | `DATABASE_URL` not set | Check `.env` has the correct `prisma+postgres://` URL |
@@ -697,13 +781,13 @@ Stock for Paracetamol 500mg starts at 200 — billing step 16 will decrement it 
 
 ---
 
-## 16. Updating This File
+## 22. Updating This File
 
 When a new module/route is added:
 1. Add a new numbered section with: method, path, required role, request body, and what to save from the response
-2. Add the relevant step(s) to the smoke test in §13
+2. Add the relevant step(s) to the smoke test in §19
 3. Add the Bruno request files under `backend/tests/iitj-phc-system/<Folder>/`
-4. Add any new gotchas to §15
+4. Add any new gotchas to §21
 
 ---
 

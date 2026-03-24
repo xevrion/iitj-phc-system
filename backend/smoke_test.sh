@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ════════════════════════════════════════════════════════════════════
 #  PHC Integrated Digital System — Automated Test Suite
-#  45 test cases: Functional, Negative, Boundary, Performance (NFR)
+#  53 test cases: Functional, Negative, Boundary, Performance (NFR)
 #
 #  Usage:  bash smoke_test.sh [BASE_URL]
 #  Default BASE_URL: http://localhost:8000/api/v1
@@ -16,6 +16,7 @@
 BASE="${1:-http://localhost:8000/api/v1}"
 PASS=0
 FAIL=0
+FUTURE_EVENT_DATE=$(date -u -d '+10 days' '+%Y-%m-%dT09:00:00.000Z' 2>/dev/null || date -u -v+10d '+%Y-%m-%dT09:00:00.000Z')
 
 # ── Colours ──────────────────────────────────────────────────────────
 GREEN='\033[0;32m'
@@ -76,7 +77,7 @@ login() {
 echo
 echo -e "${YELLOW}╔══════════════════════════════════════════════════╗${NC}"
 echo -e "${YELLOW}║   PHC Integrated Digital System — Test Suite     ║${NC}"
-echo -e "${YELLOW}║   45 Test Cases  ·  Sprints 1–4                  ║${NC}"
+echo -e "${YELLOW}║   53 Test Cases  ·  Sprints 1–5                  ║${NC}"
 echo -e "${YELLOW}╚══════════════════════════════════════════════════╝${NC}"
 echo -e "  Base URL: ${CYAN}$BASE${NC}"
 
@@ -117,7 +118,7 @@ req GET "$BASE/medicines" "$DOCTOR_TOKEN" ""
 MEDICINE_ID=$(jv "next(m['id'] for m in d['data'] if 'Paracetamol' in m['name'])")
 
 # ════════════════════════════════════════════════════════════════════
-section "Functional Tests — Positive (TC-F-001 to TC-F-025)"
+section "Functional Tests — Positive (TC-F-001 to TC-F-033)"
 
 req POST "$BASE/auth/login" "" '{"ldapId":"doctor01","password":"anything"}'
 check "TC-F-001" "Login with valid credentials returns JWT" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
@@ -185,29 +186,57 @@ req POST "$BASE/lab-requests/$LAB_REQUEST_ID/report" "$LAB_TOKEN" \
   '{"reportUrl":"https://storage.example.com/reports/cbc-001.pdf"}'
 check "TC-F-019" "Lab staff uploads diagnostic report" 201 "$HTTP_STATUS" "$RESPONSE_TIME"
 
+req GET "$BASE/lab-requests/$LAB_REQUEST_ID" "$PATIENT_TOKEN" ""
+check "TC-F-020" "Patient views a single completed lab request/report" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
+
 req PUT "$BASE/doctors/me/availability" "$DOCTOR_TOKEN" '{"isAvailable":true}'
 req POST "$BASE/appointments" "$PATIENT_TOKEN" \
   "{\"doctorId\":\"$DOCTOR_ID\",\"appointmentTime\":\"2026-04-01T10:00:00.000Z\",\"slotDuration\":15}"
-check "TC-F-020" "Patient books appointment with available doctor" 201 "$HTTP_STATUS" "$RESPONSE_TIME"
+check "TC-F-021" "Patient books appointment with available doctor" 201 "$HTTP_STATUS" "$RESPONSE_TIME"
 APPOINTMENT_ID=$(jv "d['data']['id']")
 
 req PUT "$BASE/appointments/$APPOINTMENT_ID/cancel" "$PATIENT_TOKEN" ""
-check "TC-F-021" "Patient cancels appointment" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
+check "TC-F-022" "Patient cancels appointment" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
 
 req POST "$BASE/medicines" "$ADMIN_TOKEN" \
   '{"name":"Test Medicine TC","stockQuantity":50,"unitPrice":3.50}'
-check "TC-F-022" "Admin adds new medicine to inventory" 201 "$HTTP_STATUS" "$RESPONSE_TIME"
+check "TC-F-023" "Admin adds new medicine to inventory" 201 "$HTTP_STATUS" "$RESPONSE_TIME"
 NEW_MED_ID=$(jv "d['data']['id']")
 
 req PUT "$BASE/medicines/$NEW_MED_ID/stock" "$PHARMACY_TOKEN" '{"stockQuantity":150}'
-check "TC-F-023" "Pharmacy updates medicine stock quantity" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
+check "TC-F-024" "Pharmacy updates medicine stock quantity" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
 
 req POST "$BASE/patients/$PATIENT_ID/documents" "$DOCTOR_TOKEN" \
   '{"documentType":"LAB_REPORT","fileUrl":"https://storage.example.com/test-doc.pdf"}'
-check "TC-F-024" "Doctor uploads external document for patient" 201 "$HTTP_STATUS" "$RESPONSE_TIME"
+check "TC-F-025" "Doctor uploads external document for patient" 201 "$HTTP_STATUS" "$RESPONSE_TIME"
 
 req GET "$BASE/patients/$PATIENT_ID/documents" "$DOCTOR_TOKEN" ""
-check "TC-F-025" "View all external documents for patient" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
+check "TC-F-026" "View all external documents for patient" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
+
+NEW_USER_LDAP="admin-tc-$$"
+req POST "$BASE/admin/users" "$ADMIN_TOKEN" \
+  "{\"ldapId\":\"$NEW_USER_LDAP\",\"role\":\"DOCTOR\",\"profile\":{\"name\":\"Dr. Test Admin\",\"doctorType\":\"SPECIALIST\",\"specialization\":\"ENT\",\"isAvailable\":false}}"
+check "TC-F-027" "Admin creates a managed user account" 201 "$HTTP_STATUS" "$RESPONSE_TIME"
+MANAGED_USER_ID=$(jv "d['data']['id']")
+
+req GET "$BASE/admin/users?ldapId=$NEW_USER_LDAP" "$ADMIN_TOKEN" ""
+check "TC-F-028" "Admin lists users with filters" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
+
+req PUT "$BASE/admin/users/$MANAGED_USER_ID" "$ADMIN_TOKEN" '{"isActive":false}'
+check "TC-F-029" "Admin deactivates a managed user account" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
+
+req POST "$BASE/admin/events" "$ADMIN_TOKEN" \
+  "{\"title\":\"PHC Screening Camp TC\",\"description\":\"Automated smoke test event\",\"eventDate\":\"$FUTURE_EVENT_DATE\"}"
+check "TC-F-030" "Admin publishes a PHC event" 201 "$HTTP_STATUS" "$RESPONSE_TIME"
+
+req GET "$BASE/events" "" ""
+check "TC-F-031" "Public route lists upcoming PHC events" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
+
+req GET "$BASE/admin/reports/usage" "$ADMIN_TOKEN" ""
+check "TC-F-032" "Admin fetches usage report" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
+
+req GET "$BASE/admin/reports/attendance" "$ADMIN_TOKEN" ""
+check "TC-F-033" "Admin fetches attendance summary report" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
 
 # ════════════════════════════════════════════════════════════════════
 section "Negative Tests (TC-N-001 to TC-N-010)"
