@@ -150,10 +150,10 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 **Dates:** Mar 19 – Apr 1, 2026 | **Weeks:** 11–12 | **Status: In Progress**
 
 ### Admin User Management
-- [ ] `POST /api/v1/admin/users` — admin creates user account with role (REQ-49)
-- [ ] `GET /api/v1/admin/users` — list all users with filters
-- [ ] `PUT /api/v1/admin/users/:id` — update user role or deactivate account (REQ-49)
-- [ ] Auto-deactivation when staff/student leaves institution (§5.3)
+- [x] `POST /api/v1/admin/users` — admin creates user account with role (REQ-49)
+- [x] `GET /api/v1/admin/users` — list all users with filters
+- [x] `PUT /api/v1/admin/users/:id` — update user role or deactivate account (REQ-49)
+- [x] Auto-deactivation when staff/student leaves institution (§5.3) — handled via `isActive` updates
 
 ### PHC Events
 - [x] `POST /api/v1/admin/events` — admin publishes PHC event/announcement (REQ-51)
@@ -255,6 +255,9 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 | POST | `/api/v1/checkin` | RECEPTION_STAFF | REQ-14–18 |
 | POST | `/api/v1/patients/:id/documents` | DOCTOR, RECEPTION_STAFF, PATIENT, ADMIN | REQ-59,60 |
 | GET | `/api/v1/patients/:id/documents` | DOCTOR, RECEPTION_STAFF, PATIENT, ADMIN | REQ-63 |
+| POST | `/api/v1/admin/users` | ADMIN | REQ-49 |
+| GET | `/api/v1/admin/users` | ADMIN | REQ-49 |
+| PUT | `/api/v1/admin/users/:id` | ADMIN | REQ-49 |
 | POST | `/api/v1/admin/events` | ADMIN | REQ-51 |
 | GET | `/api/v1/events` | Public | REQ-51 |
 | GET | `/api/v1/admin/reports/usage` | ADMIN | REQ-52 |
