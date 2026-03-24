@@ -15,7 +15,7 @@ export const create = asyncHandler(async (req, res) => {
 });
 
 export const getByVisit = asyncHandler(async (req, res) => {
-  const requests = await getLabRequestsByVisit(req.params.visitId);
+  const requests = await getLabRequestsByVisit(req.params.visitId, req.user);
   return res
     .status(200)
     .json(new ApiResponse(200, requests, "Lab requests fetched"));

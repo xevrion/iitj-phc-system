@@ -3,8 +3,33 @@ import { ApiError } from "../utils/ApiError.js";
 
 const VALID_DOCUMENT_TYPES = ["PRESCRIPTION", "LAB_REPORT", "DISCHARGE"];
 
+const assertDocumentAccess = async (patientId, requester) => {
+  if (requester.role !== "PATIENT") {
+    return;
+  }
+
+  const patient = await prisma.patient.findUnique({
+    where: { userId: requester.id },
+    select: { id: true },
+  });
+
+  if (!patient) {
+    throw new ApiError(404, "Patient profile not found");
+  }
+
+  if (patient.id !== patientId) {
+    throw new ApiError(403, "Access denied");
+  }
+};
+
 // Upload external document for a patient (optionally tied to a visit)
-export const uploadDocument = async (patientId, { documentType, fileUrl, visitId }) => {
+export const uploadDocument = async (
+  patientId,
+  requester,
+  { documentType, fileUrl, visitId }
+) => {
+  await assertDocumentAccess(patientId, requester);
+
   if (!documentType || !fileUrl)
     throw new ApiError(400, "documentType and fileUrl are required");
 
@@ -31,7 +56,9 @@ export const uploadDocument = async (patientId, { documentType, fileUrl, visitId
   });
 };
 
-export const listDocuments = async (patientId) => {
+export const listDocuments = async (patientId, requester) => {
+  await assertDocumentAccess(patientId, requester);
+
   const patient = await prisma.patient.findUnique({ where: { id: patientId } });
   if (!patient) throw new ApiError(404, "Patient not found");
 

@@ -5,6 +5,7 @@ import {
   getPatient,
   getPatientByQR,
   getVisitHistory,
+  getMyLabReportsList,
 } from "../controllers/patient.controller.js";
 import { verifyJWT, authorizeRoles } from "../middlewares/auth.middleware.js";
 
@@ -15,6 +16,7 @@ router.use(verifyJWT);
 // Patient views/updates own profile (REQ-12)
 router.get("/me", authorizeRoles("PATIENT"), getMyProfile);
 router.put("/me", authorizeRoles("PATIENT"), updateMyProfile);
+router.get("/me/lab-reports", authorizeRoles("PATIENT"), getMyLabReportsList);
 
 // QR-based identification at reception desk (REQ-15)
 router.get(

@@ -1,6 +1,33 @@
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 
+const getPatientProfileForUser = async (userId) => {
+  const patient = await prisma.patient.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+
+  if (!patient) {
+    throw new ApiError(404, "Patient profile not found");
+  }
+
+  return patient;
+};
+
+const assertPatientOwnsRecord = async (patientId, requester) => {
+  if (requester.role !== "PATIENT") {
+    return patientId;
+  }
+
+  const patient = await getPatientProfileForUser(requester.id);
+
+  if (patient.id !== patientId) {
+    throw new ApiError(403, "Access denied");
+  }
+
+  return patient.id;
+};
+
 export const getPatientByUserId = async (userId) => {
   const patient = await prisma.patient.findUnique({
     where: { userId },
@@ -48,7 +75,9 @@ export const updatePatientProfile = async (userId, data) => {
 };
 
 // REQ-10: store and retrieve patient visit history
-export const getPatientVisitHistory = async (patientId) => {
+export const getPatientVisitHistory = async (patientId, requester) => {
+  await assertPatientOwnsRecord(patientId, requester);
+
   const patient = await prisma.patient.findUnique({ where: { id: patientId } });
   if (!patient) throw new ApiError(404, "Patient not found");
 
@@ -62,5 +91,39 @@ export const getPatientVisitHistory = async (patientId) => {
       prescription: { select: { id: true, isDispensed: true, createdAt: true } },
     },
     orderBy: { createdAt: "desc" },
+  });
+};
+
+export const getMyLabReports = async (userId) => {
+  const patient = await getPatientProfileForUser(userId);
+
+  return prisma.labRequest.findMany({
+    where: {
+      visit: {
+        patientId: patient.id,
+      },
+      report: {
+        isNot: null,
+      },
+    },
+    include: {
+      visit: {
+        select: {
+          id: true,
+          visitType: true,
+          visitStatus: true,
+          createdAt: true,
+          doctor: {
+            select: {
+              id: true,
+              name: true,
+              specialization: true,
+            },
+          },
+        },
+      },
+      report: true,
+    },
+    orderBy: { id: "asc" },
   });
 };

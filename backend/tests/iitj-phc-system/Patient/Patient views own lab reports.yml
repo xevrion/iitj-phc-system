@@ -1,0 +1,18 @@
+info:
+  name: Patient views own lab reports
+  type: http
+  seq: 6
+
+http:
+  method: GET
+  url: http://localhost:8000/api/v1/patients/me/lab-reports
+  headers:
+    - name: Authorization
+      value: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMzcyNWMyMy1lYTE5LTRiMmQtOTBhMy0zYTM1NzA3MGEzY2EiLCJsZGFwSWQiOiJwYXRpZW50MDEiLCJyb2xlIjoiUEFUSUVOVCIsImlhdCI6MTc3MjE4MDExNywiZXhwIjoxNzcyNzg0OTE3fQ.wDjFmP8ri1FX2EiqqlIts9WMEIxSbUSkiaOOGRfR2fo
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

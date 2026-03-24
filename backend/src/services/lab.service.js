@@ -19,7 +19,26 @@ export const createLabRequest = async (visitId, doctorUserId, { testName }) => {
 };
 
 // REQ-55: link lab reports to patient visit
-export const getLabRequestsByVisit = async (visitId) => {
+export const getLabRequestsByVisit = async (visitId, requester) => {
+  const visit = await prisma.visit.findUnique({
+    where: { id: visitId },
+    include: {
+      patient: {
+        select: {
+          userId: true,
+        },
+      },
+    },
+  });
+
+  if (!visit) {
+    throw new ApiError(404, "Visit not found");
+  }
+
+  if (requester.role === "PATIENT" && visit.patient.userId !== requester.id) {
+    throw new ApiError(403, "Access denied");
+  }
+
   return prisma.labRequest.findMany({
     where: { visitId },
     include: { report: true },
