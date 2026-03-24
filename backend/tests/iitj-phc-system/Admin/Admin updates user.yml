@@ -1,0 +1,23 @@
+info:
+  name: Admin updates user
+  type: http
+  seq: 6
+
+http:
+  method: PUT
+  url: http://localhost:8000/api/v1/admin/users/USER_ID
+  headers:
+    - name: Authorization
+      value: Bearer ADMIN_TOKEN
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: '{ "isActive": false }'
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

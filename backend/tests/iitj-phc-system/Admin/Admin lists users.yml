@@ -1,0 +1,18 @@
+info:
+  name: Admin lists users
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: http://localhost:8000/api/v1/admin/users?role=DOCTOR&isActive=true
+  headers:
+    - name: Authorization
+      value: Bearer ADMIN_TOKEN
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

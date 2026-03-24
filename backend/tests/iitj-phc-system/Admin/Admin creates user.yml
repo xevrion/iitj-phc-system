@@ -1,0 +1,23 @@
+info:
+  name: Admin creates user
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: http://localhost:8000/api/v1/admin/users
+  headers:
+    - name: Authorization
+      value: Bearer ADMIN_TOKEN
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: '{ "ldapId": "doctor02", "role": "DOCTOR", "profile": { "name": "Dr. Mehta", "doctorType": "SPECIALIST", "specialization": "Dermatology", "isAvailable": false } }'
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
