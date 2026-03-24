@@ -11,7 +11,7 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 
 # Sprint Progress
 
-> **Sprint Plan Period:** Jan 15, 2026 – Apr 30, 2026 | **Current Date:** Mar 18, 2026 (Sprint 4)
+> **Sprint Plan Period:** Jan 15, 2026 – Apr 30, 2026 | **Current Date:** Mar 24, 2026 (Sprint 5)
 >
 > Tracks all deliverables sprint by sprint. Tick = implemented and committed.
 
@@ -110,7 +110,7 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 - [x] `POST /api/v1/lab-requests/:id/report` — lab staff uploads report with audit trail (REQ-54, REQ-55)
 
 ### Pending / Not Started
-- [ ] Patient views their own lab reports (REQ-57) — access control on existing endpoint covers this; needs patient-specific route
+- [x] `GET /api/v1/patients/me/lab-reports` — patient views their own lab reports (REQ-57)
 - [ ] Doctor views lab reports during consultation (REQ-56) — covered by visit fetch; explicit dedicated endpoint TBD
 - [ ] Medicine inventory management endpoints (add/update stock) — needed before billing (Sprint 4)
 
@@ -150,7 +150,7 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 ---
 
 ## Sprint 5 — System Integration & Admin
-**Dates:** Mar 22 – Apr 4, 2026 | **Status: Not Started**
+**Dates:** Mar 22 – Apr 4, 2026 | **Status: In Progress**
 
 ### Admin User Management
 - [ ] `POST /api/v1/admin/users` — admin creates user account with role (REQ-49)
@@ -159,12 +159,12 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 - [ ] Auto-deactivation when staff/student leaves institution (§5.3)
 
 ### PHC Events
-- [ ] `POST /api/v1/admin/events` — admin publishes PHC event/announcement (REQ-51)
-- [ ] `GET /api/v1/events` — public listing of upcoming PHC events
+- [x] `POST /api/v1/admin/events` — admin publishes PHC event/announcement (REQ-51)
+- [x] `GET /api/v1/events` — public listing of upcoming PHC events
 
 ### System Reports
-- [ ] `GET /api/v1/admin/reports/usage` — generate system usage report (REQ-52)
-- [ ] `GET /api/v1/admin/reports/attendance` — attendance summary report
+- [x] `GET /api/v1/admin/reports/usage` — generate system usage report (REQ-52)
+- [x] `GET /api/v1/admin/reports/attendance` — attendance summary report
 
 ### Integration & Full Backend Build
 - [ ] End-to-end test of complete visit → consultation → prescription → lab → bill flow
@@ -215,6 +215,7 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 | GET | `/api/v1/auth/me` | All | — |
 | GET | `/api/v1/patients/me` | PATIENT | REQ-12 |
 | PUT | `/api/v1/patients/me` | PATIENT | — |
+| GET | `/api/v1/patients/me/lab-reports` | PATIENT | REQ-57 |
 | GET | `/api/v1/patients/qr/:qrCode` | RECEPTION_STAFF, ADMIN | REQ-15 |
 | GET | `/api/v1/patients/:id` | DOCTOR, ADMIN, RECEPTION_STAFF | REQ-11 |
 | GET | `/api/v1/patients/:id/visits` | DOCTOR, ADMIN, RECEPTION_STAFF, PATIENT | REQ-10 |
@@ -256,3 +257,7 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 | POST | `/api/v1/checkin` | RECEPTION_STAFF | REQ-14–18 |
 | POST | `/api/v1/patients/:id/documents` | DOCTOR, RECEPTION_STAFF, PATIENT, ADMIN | REQ-59,60 |
 | GET | `/api/v1/patients/:id/documents` | DOCTOR, RECEPTION_STAFF, PATIENT, ADMIN | REQ-63 |
+| POST | `/api/v1/admin/events` | ADMIN | REQ-51 |
+| GET | `/api/v1/events` | Public | REQ-51 |
+| GET | `/api/v1/admin/reports/usage` | ADMIN | REQ-52 |
+| GET | `/api/v1/admin/reports/attendance` | ADMIN | REQ-50,52 |
