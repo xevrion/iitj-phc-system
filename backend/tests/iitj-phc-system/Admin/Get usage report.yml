@@ -1,0 +1,18 @@
+info:
+  name: Get usage report
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: http://localhost:8000/api/v1/admin/reports/usage
+  headers:
+    - name: Authorization
+      value: Bearer ADMIN_TOKEN
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
