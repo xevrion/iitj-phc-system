@@ -2,6 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import {
   createLabRequest,
+  getLabRequestById,
   getLabRequestsByVisit,
   getPendingLabRequests,
   uploadLabReport,
@@ -26,6 +27,13 @@ export const pending = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, requests, "Pending lab requests fetched"));
+});
+
+export const getById = asyncHandler(async (req, res) => {
+  const request = await getLabRequestById(req.params.id, req.user);
+  return res
+    .status(200)
+    .json(new ApiResponse(200, request, "Lab request fetched"));
 });
 
 export const uploadReport = asyncHandler(async (req, res) => {

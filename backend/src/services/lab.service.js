@@ -46,6 +46,85 @@ export const getLabRequestsByVisit = async (visitId, requester) => {
   });
 };
 
+export const getLabRequestById = async (labRequestId, requester) => {
+  const request = await prisma.labRequest.findUnique({
+    where: { id: labRequestId },
+    include: {
+      doctor: {
+        select: {
+          id: true,
+          name: true,
+          specialization: true,
+          userId: true,
+        },
+      },
+      visit: {
+        select: {
+          id: true,
+          visitType: true,
+          visitStatus: true,
+          patient: {
+            select: {
+              id: true,
+              name: true,
+              userId: true,
+            },
+          },
+        },
+      },
+      report: {
+        include: {
+          uploadedByStaff: {
+            select: {
+              id: true,
+              userId: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!request) {
+    throw new ApiError(404, "Lab request not found");
+  }
+
+  if (requester.role === "PATIENT" && request.visit.patient.userId !== requester.id) {
+    throw new ApiError(403, "Access denied");
+  }
+
+  if (requester.role === "DOCTOR" && request.doctor.userId !== requester.id) {
+    throw new ApiError(403, "Access denied");
+  }
+
+  const { doctor, visit, report, ...requestData } = request;
+
+  return {
+    ...requestData,
+    doctor: {
+      id: doctor.id,
+      name: doctor.name,
+      specialization: doctor.specialization,
+    },
+    visit: {
+      ...visit,
+      patient: {
+        id: visit.patient.id,
+        name: visit.patient.name,
+      },
+    },
+    report: report
+      ? {
+          id: report.id,
+          labRequestId: report.labRequestId,
+          reportUrl: report.reportUrl,
+          uploadedAt: report.uploadedAt,
+          uploadedByStaffId: report.uploadedByStaff?.id ?? null,
+        }
+      : null,
+  };
+};
+
 // REQ-54: lab staff views all pending (REQUESTED) test orders
 export const getPendingLabRequests = async () => {
   return prisma.labRequest.findMany({

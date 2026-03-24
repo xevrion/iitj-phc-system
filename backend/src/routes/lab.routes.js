@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   create,
+  getById,
   getByVisit,
   pending,
   uploadReport,
@@ -23,6 +24,7 @@ const labRouter = Router();
 labRouter.use(verifyJWT);
 
 labRouter.get("/pending", authorizeRoles("LAB_STAFF", "ADMIN"), pending);
+labRouter.get("/:id", authorizeRoles("DOCTOR", "PATIENT", "LAB_STAFF", "ADMIN"), getById);
 labRouter.post("/:id/report", authorizeRoles("LAB_STAFF"), uploadReport);
 
 export { visitLabRouter, labRouter };
