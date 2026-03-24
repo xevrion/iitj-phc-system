@@ -18,7 +18,7 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 ---
 
 ## Sprint 0 — Project Initiation & SRS Drafting
-**Dates:** Jan 15 – Jan 24, 2026 | **Status: Complete**
+**Dates:** Jan 15 – Jan 24, 2026 | **Weeks:** 1–2 | **Status: Complete**
 
 - [x] Initial requirements gathering and system scope definition
 - [x] SRS v1.0 draft (core features: patient records, prescriptions, lab, pharmacy, billing)
@@ -28,7 +28,7 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 ---
 
 ## Sprint 1 — Architecture Foundation
-**Dates:** Jan 25 – Feb 7, 2026 | **Status: Complete**
+**Dates:** Jan 25 – Feb 7, 2026 | **Weeks:** 3–4 | **Status: Complete**
 
 ### Auth & Infrastructure
 - [x] LDAP auth design with JWT session management (REQ-1 through REQ-8)
@@ -67,7 +67,7 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 ---
 
 ## Sprint 2 — Core Clinical Workflow
-**Dates:** Feb 8 – Feb 21, 2026 | **Status: Complete**
+**Dates:** Feb 8 – Feb 21, 2026 | **Weeks:** 5–6 | **Status: Complete**
 
 ### Visit Lifecycle
 - [x] `POST /api/v1/visits` — reception creates visit with optional vitals (REQ-17, REQ-28)
@@ -93,7 +93,7 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 ---
 
 ## Sprint 3 — Diagnostics & Prescription
-**Dates:** Feb 22 – Mar 7, 2026 | **Status: Complete**
+**Dates:** Feb 22 – Mar 7, 2026 | **Weeks:** 7–8 | **Status: Complete**
 
 ### Prescription Module
 - [x] `POST /api/v1/visits/:visitId/prescription` — doctor creates digital prescription (REQ-44, REQ-48)
@@ -114,7 +114,7 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 ---
 
 ## Sprint 4 — Operational Modules
-**Dates:** Mar 8 – Mar 21, 2026 | **Status: Complete**
+**Dates:** Mar 8 – Mar 18, 2026 | **Weeks:** 9–10 | **Status: Complete**
 
 ### Medicine Inventory
 - [x] `GET /api/v1/medicines` — view medicine inventory (REQ-66)
@@ -146,8 +146,8 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 
 ---
 
-## Sprint 5 — System Integration & Admin
-**Dates:** Mar 22 – Apr 4, 2026 | **Status: In Progress**
+## Sprint 5 — System Integration
+**Dates:** Mar 19 – Apr 1, 2026 | **Weeks:** 11–12 | **Status: In Progress**
 
 ### Admin User Management
 - [ ] `POST /api/v1/admin/users` — admin creates user account with role (REQ-49)
@@ -172,7 +172,7 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 ---
 
 ## Sprint 6 — Frontend & UX Integration
-**Dates:** Apr 5 – Apr 18, 2026 | **Status: Not Started**
+**Dates:** Apr 2 – Apr 15, 2026 | **Weeks:** 13–14 | **Status: Not Started**
 
 ### Role-Based Dashboards
 - [ ] Patient dashboard — medical records, prescriptions, lab reports, appointment booking
@@ -191,7 +191,7 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 ---
 
 ## Sprint 7 — Testing & Stabilization
-**Dates:** Apr 19 – Apr 30, 2026 | **Status: Not Started**
+**Dates:** Apr 16 – Apr 20, 2026 | **Weeks:** 15–16 | **Status: Not Started**
 
 - [ ] Unit tests for all service functions (happy path + error cases)
 - [ ] Integration tests for all API routes
