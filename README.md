@@ -88,8 +88,6 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 - [x] `GET /api/v1/doctors/attendance/records` — admin views attendance (REQ-50)
 
 ### Pending / Not Started
-- [ ] `GET /api/v1/doctors/me/appointments` — specialist views booked appointment slots
-- [ ] Appointment booking endpoints (REQ-30, REQ-31) — moved to Sprint 4
 - [ ] Doctor unavailability notification broadcast (REQ-34, REQ-41) — needs notification service
 
 ---
@@ -106,13 +104,12 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 ### Lab Module
 - [x] `POST /api/v1/visits/:visitId/lab-requests` — doctor requests a lab test (REQ-26)
 - [x] `GET /api/v1/visits/:visitId/lab-requests` — view all lab requests for a visit (REQ-55, REQ-56)
+- [x] `GET /api/v1/lab-requests/:id` — doctor/patient/lab/admin views a single lab request/report during consultation or follow-up (REQ-56, REQ-57)
 - [x] `GET /api/v1/lab-requests/pending` — lab staff views outstanding test orders (REQ-54)
 - [x] `POST /api/v1/lab-requests/:id/report` — lab staff uploads report with audit trail (REQ-54, REQ-55)
 
-### Pending / Not Started
+### Follow-up Delivered Later
 - [x] `GET /api/v1/patients/me/lab-reports` — patient views their own lab reports (REQ-57)
-- [ ] Doctor views lab reports during consultation (REQ-56) — covered by visit fetch; explicit dedicated endpoint TBD
-- [ ] Medicine inventory management endpoints (add/update stock) — needed before billing (Sprint 4)
 
 ---
 
@@ -239,6 +236,7 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 | PUT | `/api/v1/prescriptions/:id/dispense` | PHARMACY_STAFF | REQ-46 |
 | POST | `/api/v1/visits/:visitId/lab-requests` | DOCTOR | REQ-26 |
 | GET | `/api/v1/visits/:visitId/lab-requests` | DOCTOR, PATIENT, LAB_STAFF, ADMIN | REQ-55,56 |
+| GET | `/api/v1/lab-requests/:id` | DOCTOR, PATIENT, LAB_STAFF, ADMIN | REQ-56,57 |
 | GET | `/api/v1/lab-requests/pending` | LAB_STAFF, ADMIN | REQ-54 |
 | POST | `/api/v1/lab-requests/:id/report` | LAB_STAFF | REQ-54,55 |
 | GET | `/api/v1/medicines` | All auth | REQ-66 |
