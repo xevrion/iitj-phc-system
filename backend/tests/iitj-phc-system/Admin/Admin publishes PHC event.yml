@@ -1,0 +1,23 @@
+info:
+  name: Admin publishes PHC event
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8000/api/v1/admin/events
+  headers:
+    - name: Authorization
+      value: Bearer ADMIN_TOKEN
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: '{ "title": "Blood Donation Camp", "description": "Campus-wide donor registration and screening.", "eventDate": "2026-04-02T10:00:00.000Z" }'
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
