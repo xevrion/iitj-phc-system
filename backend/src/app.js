@@ -51,6 +51,7 @@ import checkinRoutes from "./routes/checkin.routes.js";
 import documentRoutes from "./routes/document.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import eventRoutes from "./routes/event.routes.js";
+import notificationRoutes from "./routes/notification.routes.js";
 
 // Import error handler
 import { errorHandler } from "./middlewares/errorHandler.middleware.js";
@@ -73,6 +74,7 @@ app.use("/api/v1/checkin", checkinRoutes);
 app.use("/api/v1/patients/:id/documents", documentRoutes);
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/events", eventRoutes);
+app.use("/api/v1/notifications", notificationRoutes);
 
 // Global error handler — must be last
 app.use(errorHandler);

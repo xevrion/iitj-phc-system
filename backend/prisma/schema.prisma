@@ -58,6 +58,11 @@ enum DocumentType {
   DISCHARGE
 }
 
+enum NotificationType {
+  SPECIALIST_UNAVAILABLE
+  PHYSICIAN_UNAVAILABLE
+}
+
 // ─── Core Identity ────────────────────────────────────────────────────────────
 
 model User {
@@ -73,6 +78,7 @@ model User {
   pharmacyStaff  PharmacyStaff?
   labStaff       LabStaff?
   phcEvents      PHCEvent[]
+  notifications  Notification[]
 }
 
 // ─── Role Profiles ────────────────────────────────────────────────────────────
@@ -108,6 +114,7 @@ model Doctor {
   prescriptions Prescription[]
   labRequests   LabRequest[]
   attendance    DoctorAttendance[]
+  notifications Notification[]
 }
 
 model ReceptionStaff {
@@ -174,6 +181,7 @@ model Appointment {
 
   patient Patient @relation(fields: [patientId], references: [id])
   doctor  Doctor  @relation(fields: [doctorId], references: [id])
+  notifications Notification[]
 }
 
 model Prescription {
@@ -290,4 +298,20 @@ model PHCEvent {
   publishedByUserId String?
 
   publishedBy User? @relation(fields: [publishedByUserId], references: [id])
+}
+
+model Notification {
+  id               String           @id @default(uuid())
+  userId           String
+  doctorId         String?
+  appointmentId    String?
+  title            String
+  message          String
+  notificationType NotificationType
+  createdAt        DateTime         @default(now())
+  readAt           DateTime?
+
+  user        User         @relation(fields: [userId], references: [id])
+  doctor      Doctor?      @relation(fields: [doctorId], references: [id])
+  appointment Appointment? @relation(fields: [appointmentId], references: [id])
 }

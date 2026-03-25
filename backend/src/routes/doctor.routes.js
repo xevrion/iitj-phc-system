@@ -6,6 +6,7 @@ import {
   checkIn,
   checkOut,
   attendance,
+  markUnavailable,
 } from "../controllers/doctor.controller.js";
 import {
   myAppointmentsDoctor,
@@ -32,6 +33,9 @@ router.get("/me/appointments", authorizeRoles("DOCTOR"), myAppointmentsDoctor);
 
 // REQ-50: admin views attendance records
 router.get("/attendance/records", authorizeRoles("ADMIN"), attendance);
+
+// REQ-40, REQ-41: staff/admin can mark a physician unavailable via absence form
+router.post("/:id/absence", authorizeRoles("RECEPTION_STAFF", "ADMIN"), markUnavailable);
 
 // Must come after /me/* routes to avoid "me" matching :id
 router.get("/:id", getDoctor);

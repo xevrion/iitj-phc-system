@@ -1,6 +1,131 @@
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 
+const getDoctorOrThrow = async (where) => {
+  const doctor = await prisma.doctor.findUnique({
+    where,
+    select: {
+      id: true,
+      userId: true,
+      name: true,
+      doctorType: true,
+      specialization: true,
+      isAvailable: true,
+    },
+  });
+
+  if (!doctor) throw new ApiError(404, "Doctor profile not found");
+  return doctor;
+};
+
+const buildSpecialistUnavailableMessage = (doctor, appointmentTime) => {
+  const when = new Date(appointmentTime).toLocaleString("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Kolkata",
+  });
+
+  return `${doctor.name || "The specialist"} is unavailable for your appointment on ${when}. Please book another slot or contact the PHC.`;
+};
+
+const createSpecialistUnavailableNotifications = async (tx, doctor) => {
+  const appointments = await tx.appointment.findMany({
+    where: {
+      doctorId: doctor.id,
+      status: "BOOKED",
+      appointmentTime: { gte: new Date() },
+    },
+    include: {
+      patient: {
+        select: {
+          userId: true,
+        },
+      },
+    },
+  });
+
+  if (!appointments.length) {
+    return { affectedAppointments: 0, notificationsCreated: 0 };
+  }
+
+  await tx.appointment.updateMany({
+    where: {
+      id: { in: appointments.map((appointment) => appointment.id) },
+    },
+    data: { status: "CANCELLED" },
+  });
+
+  await tx.notification.createMany({
+    data: appointments.map((appointment) => ({
+      userId: appointment.patient.userId,
+      doctorId: doctor.id,
+      appointmentId: appointment.id,
+      title: "Specialist unavailable",
+      message: buildSpecialistUnavailableMessage(doctor, appointment.appointmentTime),
+      notificationType: "SPECIALIST_UNAVAILABLE",
+    })),
+  });
+
+  return {
+    affectedAppointments: appointments.length,
+    notificationsCreated: appointments.length,
+  };
+};
+
+const createPhysicianBroadcastNotifications = async (tx, doctor, reason = null) => {
+  const users = await tx.user.findMany({
+    where: {
+      isActive: true,
+      id: { not: doctor.userId },
+    },
+    select: { id: true },
+  });
+
+  if (!users.length) {
+    return { notificationsCreated: 0 };
+  }
+
+  const reasonSuffix = reason ? ` Reason: ${reason}.` : "";
+
+  await tx.notification.createMany({
+    data: users.map((user) => ({
+      userId: user.id,
+      doctorId: doctor.id,
+      title: "Physician unavailable",
+      message: `${doctor.name || "A physician"} has been marked unavailable.${reasonSuffix}`,
+      notificationType: "PHYSICIAN_UNAVAILABLE",
+    })),
+  });
+
+  return { notificationsCreated: users.length };
+};
+
+const setDoctorAvailabilityState = async (tx, doctor, isAvailable, notificationReason = null) => {
+  let notificationSummary = {
+    affectedAppointments: 0,
+    notificationsCreated: 0,
+  };
+
+  if (doctor.isAvailable !== isAvailable && !isAvailable) {
+    if (doctor.doctorType === "SPECIALIST") {
+      notificationSummary = await createSpecialistUnavailableNotifications(tx, doctor);
+    } else {
+      notificationSummary = await createPhysicianBroadcastNotifications(
+        tx,
+        doctor,
+        notificationReason
+      );
+    }
+  }
+
+  const updatedDoctor = await tx.doctor.update({
+    where: { id: doctor.id },
+    data: { isAvailable },
+  });
+
+  return { doctor: updatedDoctor, notificationSummary };
+};
+
 // REQ-43: real-time doctor availability for patient and staff dashboards
 export const listAvailableDoctors = async () => {
   return prisma.doctor.findMany({
@@ -32,19 +157,20 @@ export const getDoctorProfile = async (doctorId) => {
 
 // REQ-20: doctor sets availability status manually
 export const setAvailability = async (userId, isAvailable) => {
-  const doctor = await prisma.doctor.findUnique({ where: { userId } });
-  if (!doctor) throw new ApiError(404, "Doctor profile not found");
+  if (typeof isAvailable !== "boolean") {
+    throw new ApiError(400, "isAvailable must be a boolean");
+  }
 
-  return prisma.doctor.update({
-    where: { userId },
-    data: { isAvailable },
+  const doctor = await getDoctorOrThrow({ userId });
+
+  return prisma.$transaction(async (tx) => {
+    return setDoctorAvailabilityState(tx, doctor, isAvailable);
   });
 };
 
 // REQ-35, REQ-36: specialist checks in — marks available, opens attendance record
 export const checkInDoctor = async (userId) => {
-  const doctor = await prisma.doctor.findUnique({ where: { userId } });
-  if (!doctor) throw new ApiError(404, "Doctor profile not found");
+  const doctor = await getDoctorOrThrow({ userId });
 
   const openRecord = await prisma.doctorAttendance.findFirst({
     where: { doctorId: doctor.id, checkOut: null },
@@ -66,8 +192,7 @@ export const checkInDoctor = async (userId) => {
 
 // REQ-36, REQ-37, REQ-38: check out — marks unavailable, computes total hours
 export const checkOutDoctor = async (userId) => {
-  const doctor = await prisma.doctor.findUnique({ where: { userId } });
-  if (!doctor) throw new ApiError(404, "Doctor profile not found");
+  const doctor = await getDoctorOrThrow({ userId });
 
   const openRecord = await prisma.doctorAttendance.findFirst({
     where: { doctorId: doctor.id, checkOut: null },
@@ -79,18 +204,23 @@ export const checkOutDoctor = async (userId) => {
     ((checkOut - openRecord.checkIn) / (1000 * 60 * 60)).toFixed(2)
   );
 
-  const [attendance] = await prisma.$transaction([
-    prisma.doctorAttendance.update({
+  return prisma.$transaction(async (tx) => {
+    const attendance = await tx.doctorAttendance.update({
       where: { id: openRecord.id },
       data: { checkOut, totalHours },
-    }),
-    prisma.doctor.update({
-      where: { id: doctor.id },
-      data: { isAvailable: false },
-    }),
-  ]);
+    });
 
-  return attendance;
+    const { notificationSummary } = await setDoctorAvailabilityState(
+      tx,
+      doctor,
+      false
+    );
+
+    return {
+      ...attendance,
+      notificationSummary,
+    };
+  });
 };
 
 // REQ-50: admin views attendance records
@@ -101,5 +231,37 @@ export const getAttendanceRecords = async (doctorId) => {
       doctor: { select: { name: true, doctorType: true } },
     },
     orderBy: { checkIn: "desc" },
+  });
+};
+
+export const markPhysicianUnavailable = async (
+  actorUserId,
+  doctorId,
+  { reason = null } = {}
+) => {
+  const actor = await prisma.user.findUnique({
+    where: { id: actorUserId },
+    select: { id: true, role: true },
+  });
+  if (!actor) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const doctor = await getDoctorOrThrow({ id: doctorId });
+
+  if (doctor.doctorType !== "PHYSICIAN") {
+    throw new ApiError(400, "Only physicians can be marked unavailable via absence form");
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const { doctor: updatedDoctor, notificationSummary } =
+      await setDoctorAvailabilityState(tx, doctor, false, reason?.trim() || null);
+
+    return {
+      doctor: updatedDoctor,
+      markedByUserId: actor.id,
+      reason: reason?.trim() || null,
+      notificationSummary,
+    };
   });
 };

@@ -1,0 +1,21 @@
+info:
+  name: Mark physician unavailable via absence form
+  type: http
+  seq: 8
+
+http:
+  method: POST
+  url: http://localhost:8000/api/v1/doctors/DOCTOR_PROFILE_ID/absence
+  headers:
+    - name: Authorization
+      value: Bearer {{token}}
+  body:
+    type: json
+    data: '{ "reason": "On approved leave" }'
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
