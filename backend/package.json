@@ -7,7 +7,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon --experimental-strip-types src/server.js",
     "start": "node --experimental-strip-types src/server.js",
-    "seed": "npx prisma db seed"
+    "seed": "npx prisma db seed",
+    "test:e2e": "node --experimental-strip-types scripts/e2e-full-flow.js",
+    "migrate:deploy": "npx prisma migrate deploy"
   },
   "type": "module",
   "keywords": [],
