@@ -16,7 +16,14 @@ bash smoke_test.sh
 bash smoke_test.sh http://localhost:8000/api/v1
 ```
 
-This runs all 53 test cases (functional, negative, boundary, performance, repeatability) automatically and prints a Pass/Fail result for each. Requires the server to be running and the DB to be seeded first (steps 3–5 below).
+This runs all 59 smoke test cases (functional, negative, boundary, performance, repeatability) automatically and prints a Pass/Fail result for each. Requires the server to be running and the DB to be seeded first (steps 3–5 below).
+
+For a single-command integration check that boots the backend in-process and drives the complete visit lifecycle, use:
+
+```bash
+cd backend
+npm run test:e2e
+```
 
 ---
 
@@ -108,7 +115,7 @@ All API requests are pre-built as a Bruno collection. No manual setup needed —
 1. Download and install [Bruno](https://www.usebruno.com/) (free)
 2. Open Bruno → click **Open Collection**
 3. Navigate to `backend/tests/iitj-phc-system/` inside this repo and select that folder
-4. The collection opens with 13 folders — one per module:
+4. The collection opens with 14 folders — one per module:
 
 ```
 Auth/           — Login, Get current user
@@ -124,6 +131,7 @@ Checkin/        — QR check-in (creates visit atomically)
 Document/       — Upload, List patient documents
 Admin/          — User management, events, usage/attendance reports
 Events/         — Public upcoming PHC event listing
+Notification/   — User notification listing and mark-as-read
 ```
 
 ### Updating tokens
@@ -153,6 +161,7 @@ Requests that operate on a specific record use placeholder strings in the URL:
 | `BILL_ID` | `id` from `POST /visits/.../bill` response |
 | `APPOINTMENT_ID` | `id` from `POST /appointments` response |
 | `USER_ID` | `id` from `POST /admin/users` response |
+| `NOTIFICATION_ID` | `id` from `GET /notifications/mine` response |
 | `PATIENT_QR_CODE` | `QR001` (seeded) or from patient profile |
 
 Edit the URL directly in Bruno before sending.

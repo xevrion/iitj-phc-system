@@ -11,7 +11,7 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 
 # Sprint Progress
 
-> **Sprint Plan Period:** Jan 15, 2026 – Apr 30, 2026 | **Current Date:** Mar 24, 2026 (Sprint 5)
+> **Sprint Plan Period:** Jan 15, 2026 – Apr 30, 2026 | **Current Date:** Mar 25, 2026 (Sprint 5)
 >
 > Tracks all deliverables sprint by sprint. Tick = implemented and committed.
 
@@ -147,7 +147,7 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 ---
 
 ## Sprint 5 — System Integration
-**Dates:** Mar 19 – Apr 1, 2026 | **Weeks:** 11–12 | **Status: In Progress**
+**Dates:** Mar 19 – Apr 1, 2026 | **Weeks:** 11–12 | **Status: Complete**
 
 ### Admin User Management
 - [x] `POST /api/v1/admin/users` — admin creates user account with role (REQ-49)
@@ -164,10 +164,14 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 - [x] `GET /api/v1/admin/reports/attendance` — attendance summary report
 
 ### Integration & Full Backend Build
-- [ ] End-to-end test of complete visit → consultation → prescription → lab → bill flow
-- [ ] API documentation (route index or Swagger/Postman collection)
-- [ ] Database migration run against staging DB
-- [ ] `.env` secrets audit — remove any committed credentials
+- [x] End-to-end test of complete visit → consultation → prescription → lab → bill flow
+  - `npm run test:e2e` boots the backend in-process and verifies the complete HTTP flow
+- [x] API documentation (route index or Swagger/Postman collection)
+  - Route index added in `backend/API_DOCUMENTATION.md`
+- [x] Database migration deploy step verified against the configured cloud database
+  - `npm run migrate:deploy`
+- [x] `.env` secrets audit — remove any committed credentials
+  - Verified that only `.env.example` files are tracked; local `.env` files remain untracked
 
 ---
 
@@ -222,6 +226,7 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 | POST | `/api/v1/doctors/me/checkin` | DOCTOR | REQ-35,36 |
 | POST | `/api/v1/doctors/me/checkout` | DOCTOR | REQ-37,38 |
 | GET | `/api/v1/doctors/attendance/records` | ADMIN | REQ-50 |
+| POST | `/api/v1/doctors/:id/absence` | RECEPTION_STAFF, ADMIN | REQ-40,41 |
 | POST | `/api/v1/visits` | RECEPTION_STAFF, ADMIN | REQ-17,28 |
 | GET | `/api/v1/visits/my-queue` | DOCTOR | REQ-21 |
 | GET | `/api/v1/visits/:id` | DOCTOR, ADMIN, RECEPTION_STAFF, PHARMACY_STAFF, LAB_STAFF | — |
@@ -262,3 +267,5 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 | GET | `/api/v1/events` | Public | REQ-51 |
 | GET | `/api/v1/admin/reports/usage` | ADMIN | REQ-52 |
 | GET | `/api/v1/admin/reports/attendance` | ADMIN | REQ-50,52 |
+| GET | `/api/v1/notifications/mine` | All auth | REQ-34,41 |
+| PUT | `/api/v1/notifications/:id/read` | All auth | REQ-34,41 |

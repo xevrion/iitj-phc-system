@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ════════════════════════════════════════════════════════════════════
 #  PHC Integrated Digital System — Automated Test Suite
-#  53 test cases: Functional, Negative, Boundary, Performance (NFR)
+#  59 test cases: Functional, Negative, Boundary, Performance (NFR)
 #
 #  Usage:  bash smoke_test.sh [BASE_URL]
 #  Default BASE_URL: http://localhost:8000/api/v1
@@ -77,7 +77,7 @@ login() {
 echo
 echo -e "${YELLOW}╔══════════════════════════════════════════════════╗${NC}"
 echo -e "${YELLOW}║   PHC Integrated Digital System — Test Suite     ║${NC}"
-echo -e "${YELLOW}║   53 Test Cases  ·  Sprints 1–5                  ║${NC}"
+echo -e "${YELLOW}║   59 Test Cases  ·  Sprints 1–5                  ║${NC}"
 echo -e "${YELLOW}╚══════════════════════════════════════════════════╝${NC}"
 echo -e "  Base URL: ${CYAN}$BASE${NC}"
 
@@ -118,7 +118,7 @@ req GET "$BASE/medicines" "$DOCTOR_TOKEN" ""
 MEDICINE_ID=$(jv "next(m['id'] for m in d['data'] if 'Paracetamol' in m['name'])")
 
 # ════════════════════════════════════════════════════════════════════
-section "Functional Tests — Positive (TC-F-001 to TC-F-033)"
+section "Functional Tests — Positive (TC-F-001 to TC-F-036)"
 
 req POST "$BASE/auth/login" "" '{"ldapId":"doctor01","password":"anything"}'
 check "TC-F-001" "Login with valid credentials returns JWT" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
@@ -237,6 +237,17 @@ check "TC-F-032" "Admin fetches usage report" 200 "$HTTP_STATUS" "$RESPONSE_TIME
 
 req GET "$BASE/admin/reports/attendance" "$ADMIN_TOKEN" ""
 check "TC-F-033" "Admin fetches attendance summary report" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
+
+req POST "$BASE/doctors/$DOCTOR_ID/absence" "$ADMIN_TOKEN" \
+  '{"reason":"On approved leave"}'
+check "TC-F-034" "Admin marks physician unavailable via absence form" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
+
+req GET "$BASE/notifications/mine" "$PATIENT_TOKEN" ""
+check "TC-F-035" "Patient lists own notifications" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
+NOTIFICATION_ID=$(jv "d['data'][0]['id']")
+
+req PUT "$BASE/notifications/$NOTIFICATION_ID/read" "$PATIENT_TOKEN" ""
+check "TC-F-036" "Patient marks notification as read" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
 
 # ════════════════════════════════════════════════════════════════════
 section "Negative Tests (TC-N-001 to TC-N-010)"
