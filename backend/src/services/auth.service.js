@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { Client } from "ldapts";
 import { config } from "../config/index.js";
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -11,15 +12,36 @@ const generateToken = (user) => {
   );
 };
 
-// Verifies credentials against IITJ LDAP when LDAP_URL is configured (TBD-7).
-// Falls back to existence check in dev mode when LDAP_URL is not set.
+const getUserDn = (ldapId) =>
+  `uid=${ldapId},${config.ldap.usersOu},${config.ldap.baseDn}`;
+
 const verifyLdapCredentials = async (ldapId, password) => {
-  if (config.ldap.url) {
-    // TODO: bind against ldap.url using ldapjs when TBD-7 is resolved
-    throw new ApiError(501, "LDAP integration not yet configured (TBD-7)");
+  if (!config.ldap.url) {
+    throw new ApiError(500, "LDAP_URL is not configured");
   }
-  // Dev mode: credential verification is skipped, user existence is enough
-  return true;
+
+  const client = new Client({
+    url: config.ldap.url,
+    timeout: 5000,
+    connectTimeout: 5000,
+  });
+
+  try {
+    await client.bind(getUserDn(ldapId), password);
+    return true;
+  } catch (error) {
+    if (
+      error?.name === "InvalidCredentialsError" ||
+      error?.message?.includes("InvalidCredentialsError") ||
+      error?.message?.includes("invalidCredentials")
+    ) {
+      throw new ApiError(401, "Invalid credentials");
+    }
+
+    throw new ApiError(503, "LDAP authentication service unavailable");
+  } finally {
+    await client.unbind().catch(() => {});
+  }
 };
 
 export const loginUser = async (ldapId, password) => {

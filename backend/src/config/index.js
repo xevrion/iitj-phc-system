@@ -4,9 +4,9 @@ export const config = {
     expiry: process.env.JWT_EXPIRY || "7d",
   },
   ldap: {
-    // TBD-7: LDAP integration details. Set LDAP_URL in env to enable real auth.
-    url: process.env.LDAP_URL || null,
+    url: process.env.LDAP_URL || "ldap://127.0.0.1:1389",
     baseDn: process.env.LDAP_BASE_DN || "dc=iitj,dc=ac,dc=in",
+    usersOu: process.env.LDAP_USERS_OU || "ou=users",
   },
   nodeEnv: process.env.NODE_ENV || "development",
 };

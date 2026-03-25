@@ -133,8 +133,16 @@ const request = async (baseUrl, method, path, { token, body, expectedStatus } = 
 };
 
 const login = async (baseUrl, ldapId) => {
+  const passwordMap = {
+    doctor01: "doctor01pass",
+    reception01: "reception01pass",
+    patient01: "patient01pass",
+    pharmacy01: "pharmacy01pass",
+    lab01: "lab01pass",
+    admin01: "admin01pass",
+  };
   const { payload } = await request(baseUrl, "POST", "/auth/login", {
-    body: { ldapId, password: "anything" },
+    body: { ldapId, password: passwordMap[ldapId] },
     expectedStatus: 200,
   });
   return payload.data.token;

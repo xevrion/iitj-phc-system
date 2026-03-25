@@ -9,7 +9,9 @@
     "start": "node --experimental-strip-types src/server.js",
     "seed": "npx prisma db seed",
     "test:e2e": "node --experimental-strip-types scripts/e2e-full-flow.js",
-    "migrate:deploy": "npx prisma migrate deploy"
+    "migrate:deploy": "npx prisma migrate deploy",
+    "ldap:up": "docker compose up -d ldap",
+    "ldap:down": "docker compose down"
   },
   "type": "module",
   "keywords": [],
@@ -23,6 +25,7 @@
     "express": "^5.2.1",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
+    "ldapts": "^8.1.7",
     "morgan": "^1.10.1",
     "nodemon": "^3.1.11",
     "pg": "^8.18.0"

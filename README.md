@@ -34,7 +34,7 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 - [x] LDAP auth design with JWT session management (REQ-1 through REQ-8)
   - `POST /api/v1/auth/login` — accepts ldapId/password, issues JWT
   - `GET /api/v1/auth/me` — returns current user with profile
-  - LDAP bind stubbed; activates when `LDAP_URL` env is set (TBD-7)
+  - Local LDAP-backed bind flow wired through Docker Compose dev infrastructure
 - [x] `verifyJWT` middleware — protects all non-public routes
 - [x] `authorizeRoles(...roles)` middleware — RBAC enforcement per endpoint
 - [x] Global error handler middleware — normalizes all errors to `ApiError` shape
@@ -88,7 +88,8 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 - [x] `GET /api/v1/doctors/attendance/records` — admin views attendance (REQ-50)
 
 ### Pending / Not Started
-- [ ] Doctor unavailability notification broadcast (REQ-34, REQ-41) — needs notification service
+- [x] Doctor unavailability notification broadcast (REQ-34, REQ-41)
+  - Specialists notify affected patients; physician absence form broadcasts in-app notifications
 
 ---
 
@@ -269,3 +270,28 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 | GET | `/api/v1/admin/reports/attendance` | ADMIN | REQ-50,52 |
 | GET | `/api/v1/notifications/mine` | All auth | REQ-34,41 |
 | PUT | `/api/v1/notifications/:id/read` | All auth | REQ-34,41 |
+
+---
+
+## Local LDAP Dev Setup
+
+From the repo root:
+
+```bash
+docker compose up -d ldap
+cd backend
+npm install
+npm run seed
+npm run dev
+```
+
+Seeded LDAP credentials for development:
+
+| ldapId | Password |
+|--------|----------|
+| `doctor01` | `doctor01pass` |
+| `reception01` | `reception01pass` |
+| `patient01` | `patient01pass` |
+| `pharmacy01` | `pharmacy01pass` |
+| `lab01` | `lab01pass` |
+| `admin01` | `admin01pass` |

@@ -1,0 +1,19 @@
+services:
+  ldap:
+    build:
+      context: .
+      dockerfile: infra/ldap/Dockerfile
+    container_name: iitj-phc-ldap
+    ports:
+      - "1389:389"
+    environment:
+      LDAP_ORGANISATION: IIT Jodhpur
+      LDAP_DOMAIN: iitj.ac.in
+      LDAP_ADMIN_PASSWORD: adminpassword
+      LDAP_CONFIG_PASSWORD: configpassword
+      LDAP_TLS: "false"
+    healthcheck:
+      test: ["CMD-SHELL", "ldapsearch -x -H ldap://localhost:389 -D 'cn=admin,dc=iitj,dc=ac,dc=in' -w adminpassword -b 'dc=iitj,dc=ac,dc=in' '(uid=doctor01)' uid >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10

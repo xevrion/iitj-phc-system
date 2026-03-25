@@ -31,6 +31,7 @@ npm run test:e2e
 
 - Node.js v20+
 - npm
+- Docker + Docker Compose
 - A **Prisma Postgres** cloud database (see setup below)
 - [Bruno](https://www.usebruno.com/) — the API client used for this project (free, open-source)
 
@@ -51,6 +52,9 @@ npm run test:e2e
 ## 3. First-Time Setup
 
 ```bash
+cd ..
+docker compose up -d ldap
+
 cd backend
 
 # 1. Install dependencies
@@ -98,6 +102,17 @@ What gets created:
 | `pharmacy01` | `PHARMACY_STAFF` | thin profile |
 | `lab01` | `LAB_STAFF` | thin profile |
 | `admin01` | `ADMIN` | no profile table (role only) |
+
+LDAP passwords for the seeded users:
+
+| ldapId | Password |
+|--------|----------|
+| `doctor01` | `doctor01pass` |
+| `reception01` | `reception01pass` |
+| `patient01` | `patient01pass` |
+| `pharmacy01` | `pharmacy01pass` |
+| `lab01` | `lab01pass` |
+| `admin01` | `admin01pass` |
 
 | Medicine | Stock | Unit price |
 |----------|-------|-----------|
@@ -230,15 +245,15 @@ npx prisma studio
 
 > **Base URL for all routes:** `http://localhost:8000/api/v1`
 >
-> Dev mode (`LDAP_URL` not set in `.env`) — **any password is accepted**,
-> the system only checks that the `ldapId` exists in the User table.
+> Authentication is LDAP-backed in local development as well.
+> Start LDAP first with `docker compose up -d ldap` from the repo root.
 
 ### Login and get a token
 ```
 POST /auth/login
 Content-Type: application/json
 
-{ "ldapId": "doctor01", "password": "anything" }
+{ "ldapId": "doctor01", "password": "doctor01pass" }
 ```
 Response:
 ```json
@@ -783,7 +798,8 @@ Stock for Paracetamol 500mg starts at 200 — billing step 16 will decrement it 
 | `400 Visit is not in WAITING state` | Trying to claim a non-WAITING visit | Check current visit status first |
 | `400 doctorType must be one of ...` | Creating/updating a doctor user without `doctorType` | Provide `doctorType: "SPECIALIST"` or `"PHYSICIAN"` |
 | `400 Cannot change role for ... existing records` | Admin attempted to role-switch a user with linked clinical/audit data | Deactivate the account instead of changing role |
-| `501 LDAP integration not configured` | `LDAP_URL` is set in `.env` | Leave `LDAP_URL` blank for dev mode |
+| `401 Invalid credentials` | Wrong LDAP password | Use the seeded LDAP password for that user |
+| `503 LDAP authentication service unavailable` | LDAP container is down | Start it with `docker compose up -d ldap` |
 | Prisma Studio shows empty tables | Migration not run | Run `npx prisma migrate dev` |
 | Seed script fails with connection error | `DATABASE_URL` not set | Check `.env` has the correct `prisma+postgres://` URL |
 | Bruno token gives `401` | Token expired | Re-login and paste fresh token into the request |

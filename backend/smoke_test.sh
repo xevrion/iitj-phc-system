@@ -69,7 +69,8 @@ section() {
 }
 
 login() {
-  req POST "$BASE/auth/login" "" "{\"ldapId\":\"$1\",\"password\":\"anything\"}"
+  local password="${2:-${1}pass}"
+  req POST "$BASE/auth/login" "" "{\"ldapId\":\"$1\",\"password\":\"$password\"}"
   jv "d['data']['token']"
 }
 
@@ -120,7 +121,7 @@ MEDICINE_ID=$(jv "next(m['id'] for m in d['data'] if 'Paracetamol' in m['name'])
 # ════════════════════════════════════════════════════════════════════
 section "Functional Tests — Positive (TC-F-001 to TC-F-036)"
 
-req POST "$BASE/auth/login" "" '{"ldapId":"doctor01","password":"anything"}'
+req POST "$BASE/auth/login" "" '{"ldapId":"doctor01","password":"doctor01pass"}'
 check "TC-F-001" "Login with valid credentials returns JWT" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
 
 req GET "$BASE/auth/me" "$DOCTOR_TOKEN" ""
@@ -337,7 +338,7 @@ echo -e "  Thresholds: general ops < ${CYAN}3000ms${NC}, atomic ops < ${CYAN}500
 T=3000
 T_ATOMIC=5000
 
-req POST "$BASE/auth/login" "" '{"ldapId":"doctor01","password":"anything"}'
+req POST "$BASE/auth/login" "" '{"ldapId":"doctor01","password":"doctor01pass"}'
 [ "$RESPONSE_TIME" -le "$T" ] && TOK=true || TOK=false
 check "TC-P-001" "Login response time < ${T}ms" 200 "$HTTP_STATUS" "$RESPONSE_TIME" "$TOK"
 
@@ -374,7 +375,7 @@ REPEAT_T=3000
 # ── TC-R-001: Login endpoint ──────────────────────────────────────────
 R_PASS=0; R_FAIL=0; R_TIMES=""
 for i in $(seq 1 $REPEAT_N); do
-  req POST "$BASE/auth/login" "" '{"ldapId":"patient01","password":"anything"}'
+  req POST "$BASE/auth/login" "" '{"ldapId":"patient01","password":"patient01pass"}'
   if [ "$HTTP_STATUS" -eq 200 ] && [ "$RESPONSE_TIME" -le "$REPEAT_T" ]; then
     R_PASS=$((R_PASS+1))
   else

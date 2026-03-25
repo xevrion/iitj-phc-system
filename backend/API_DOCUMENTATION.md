@@ -23,13 +23,13 @@ Errors are normalized by the global error handler into the same shape.
 
 - `POST /auth/login`
   - Public
-  - Body: `{ "ldapId": "doctor01", "password": "anything" }`
+  - Body: `{ "ldapId": "doctor01", "password": "doctor01pass" }`
   - Returns JWT token plus current user role.
 - `GET /auth/me`
   - Any authenticated user
   - Returns the current user plus role-specific profile data when present.
 
-In development mode, any password is accepted if the `ldapId` exists. Real LDAP bind behavior activates only when `LDAP_URL` is configured.
+Authentication is performed through LDAP bind using the configured LDAP server. For local development, the repository provides a Docker Compose LDAP server seeded with the PHC test users.
 
 ## Module route index
 
@@ -131,6 +131,7 @@ In development mode, any password is accepted if the `ldapId` exists. Real LDAP 
 From `backend/`:
 
 ```bash
+npm run ldap:up
 npm run seed
 npm run test:e2e
 bash smoke_test.sh

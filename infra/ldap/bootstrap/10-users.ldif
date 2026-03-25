@@ -1,0 +1,69 @@
+dn: ou=users,dc=iitj,dc=ac,dc=in
+objectClass: organizationalUnit
+ou: users
+
+dn: uid=doctor01,ou=users,dc=iitj,dc=ac,dc=in
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: doctor01
+sn: doctor01
+uid: doctor01
+mail: doctor01@iitj.ac.in
+userPassword: doctor01pass
+
+dn: uid=reception01,ou=users,dc=iitj,dc=ac,dc=in
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: reception01
+sn: reception01
+uid: reception01
+mail: reception01@iitj.ac.in
+userPassword: reception01pass
+
+dn: uid=patient01,ou=users,dc=iitj,dc=ac,dc=in
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: patient01
+sn: patient01
+uid: patient01
+mail: patient01@iitj.ac.in
+userPassword: patient01pass
+
+dn: uid=pharmacy01,ou=users,dc=iitj,dc=ac,dc=in
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: pharmacy01
+sn: pharmacy01
+uid: pharmacy01
+mail: pharmacy01@iitj.ac.in
+userPassword: pharmacy01pass
+
+dn: uid=lab01,ou=users,dc=iitj,dc=ac,dc=in
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: lab01
+sn: lab01
+uid: lab01
+mail: lab01@iitj.ac.in
+userPassword: lab01pass
+
+dn: uid=admin01,ou=users,dc=iitj,dc=ac,dc=in
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: admin01
+sn: admin01
+uid: admin01
+mail: admin01@iitj.ac.in
+userPassword: admin01pass
