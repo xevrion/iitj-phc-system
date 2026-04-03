@@ -1,0 +1,6 @@
+metric,threshold_ms,actual_ms,headroom_ms,utilization_pct
+Login,3000,77,2923,2.57
+Patient retrieval,3000,233,2767,7.77
+Prescription retrieval,3000,1215,1785,40.5
+Bill generation,5000,1151,3849,23.02
+QR check-in,3000,796,2204,26.53

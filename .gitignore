@@ -1,3 +1,10 @@
 # Reference documents — not for version control
 docs/
+!docs/
+docs/*
+!docs/Lab 9 10/
+!docs/Lab 9 10/**
+docs/Lab 9 10/*.aux
+docs/Lab 9 10/*.log
+docs/Lab 9 10/*.out
 tapes/*.mp4

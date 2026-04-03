@@ -1,0 +1,81 @@
+{
+  "generated_at": "2026-04-03T19:01:20",
+  "loc_metrics": {
+    "production_sloc": 2859,
+    "backend_src_sloc": 2505,
+    "service_sloc": 1608,
+    "controller_sloc": 411,
+    "route_sloc": 246,
+    "file_count": 58
+  },
+  "schema_model_count": 20,
+  "endpoint_count": 57,
+  "function_points": {
+    "counts": {
+      "EI": 28,
+      "EO": 4,
+      "EQ": 25,
+      "ILF": 20,
+      "EIF": 1
+    },
+    "weights": {
+      "EI": 4,
+      "EO": 5,
+      "EQ": 4,
+      "ILF": 10,
+      "EIF": 5
+    },
+    "ufp": 437,
+    "vaf": 1.11,
+    "total_di": 46,
+    "fp": 485.07
+  },
+  "halstead": {
+    "distinct_operators": 55,
+    "distinct_operands": 536,
+    "total_operators": 11799,
+    "total_operands": 4931,
+    "program_vocabulary": 591,
+    "program_length": 16730,
+    "volume": 154033.35,
+    "difficulty": 252.99,
+    "effort": 38968856.88,
+    "time_seconds": 2164936.49,
+    "estimated_delivered_bugs": 51.34
+  },
+  "cocomo": {
+    "mode": "Organic",
+    "kloc": 2.859,
+    "eaf": 0.786,
+    "effort_person_months": 7.58,
+    "development_time_months": 5.4,
+    "average_staffing": 1.4,
+    "productivity_kloc_per_pm": 0.377,
+    "cost_drivers": {
+      "RELY": 1.15,
+      "DATA": 1.08,
+      "CPLX": 1.15,
+      "TIME": 1.0,
+      "STOR": 1.0,
+      "VIRT": 1.0,
+      "TURN": 1.0,
+      "ACAP": 0.86,
+      "AEXP": 0.91,
+      "PCAP": 0.86,
+      "VEXP": 1.0,
+      "LEXP": 0.95,
+      "MODP": 0.91,
+      "TOOL": 0.91,
+      "SCED": 1.04
+    }
+  },
+  "test_metrics": {
+    "documented_test_cases": 48,
+    "pass_count": 48,
+    "fail_count": 0,
+    "pass_rate_pct": 100.0
+  },
+  "throughput_summary": {
+    "feature_commit_count": 21
+  }
+}
