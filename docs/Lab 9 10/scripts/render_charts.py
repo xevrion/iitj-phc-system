@@ -167,8 +167,8 @@ def render_line_chart(title: str, categories: list[str], series: list[tuple[str,
 
 
 def render_risk_matrix(output_name: str) -> None:
-    width, height = 1600, 980
-    left, top = 240, 190
+    width, height = 2080, 1120
+    left, top = 500, 250
     cell_w, cell_h = 220, 110
     rows, cols = 5, 5
     grid_w, grid_h = cell_w * cols, cell_h * rows
@@ -211,15 +211,15 @@ def render_risk_matrix(output_name: str) -> None:
         "</linearGradient>",
         "</defs>",
         '<rect width="100%" height="100%" fill="url(#bg)"/>',
-        '<text x="800" y="70" text-anchor="middle" font-family="Arial" font-size="52" font-weight="700">5x5 Risk Matrix for PHC System</text>',
-        '<text x="800" y="120" text-anchor="middle" font-family="Arial" font-size="28" font-weight="700">Impact</text>',
-        '<text x="800" y="155" text-anchor="middle" font-family="Arial" font-size="24" font-style="italic">How severe would the outcome be if the risk occurred?</text>',
-        f'<line x1="{left}" y1="180" x2="{left + grid_w}" y2="180" stroke="#6366F1" stroke-width="6"/>',
-        f'<polygon points="{left + grid_w},{180-10} {left + grid_w + 18},180 {left + grid_w},{180+10}" fill="#6366F1"/>',
-        f'<text x="65" y="{top + grid_h / 2}" text-anchor="middle" font-family="Arial" font-size="28" font-weight="700" transform="rotate(-90 65 {top + grid_h / 2})">Probability</text>',
-        f'<text x="110" y="{top + grid_h / 2}" text-anchor="middle" font-family="Arial" font-size="24" font-style="italic" transform="rotate(-90 110 {top + grid_h / 2})">What is the probability the risk will happen?</text>',
-        f'<line x1="180" y1="{top + grid_h}" x2="180" y2="{top}" stroke="#6366F1" stroke-width="6"/>',
-        f'<polygon points="{180-10},{top} 180,{top-18} {180+10},{top}" fill="#6366F1"/>',
+        '<text x="1040" y="82" text-anchor="middle" font-family="Arial" font-size="52" font-weight="700">5x5 Risk Matrix for PHC System</text>',
+        '<text x="1040" y="142" text-anchor="middle" font-family="Arial" font-size="28" font-weight="700">Impact</text>',
+        '<text x="1040" y="180" text-anchor="middle" font-family="Arial" font-size="24" font-style="italic">How severe would the outcome be if the risk occurred?</text>',
+        f'<line x1="{left}" y1="210" x2="{left + grid_w}" y2="210" stroke="#6366F1" stroke-width="6"/>',
+        f'<polygon points="{left + grid_w},{210-10} {left + grid_w + 18},210 {left + grid_w},{210+10}" fill="#6366F1"/>',
+        f'<text x="102" y="{top + grid_h / 2}" text-anchor="middle" font-family="Arial" font-size="28" font-weight="700" transform="rotate(-90 102 {top + grid_h / 2})">Probability</text>',
+        f'<text x="165" y="{top + grid_h / 2}" text-anchor="middle" font-family="Arial" font-size="24" font-style="italic" transform="rotate(-90 165 {top + grid_h / 2})">What is the probability the risk will happen?</text>',
+        f'<line x1="330" y1="{top + grid_h}" x2="330" y2="{top}" stroke="#6366F1" stroke-width="6"/>',
+        f'<polygon points="{330-10},{top} 330,{top-18} {330+10},{top}" fill="#6366F1"/>',
     ]
 
     header_fill = "#E5E7EB"
