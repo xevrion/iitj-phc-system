@@ -166,6 +166,87 @@ def render_line_chart(title: str, categories: list[str], series: list[tuple[str,
     (FIG_DIR / f"{output_name}.svg").write_text(svg_footer(lines), encoding="utf-8")
 
 
+def render_risk_matrix(output_name: str) -> None:
+    width, height = 1600, 980
+    left, top = 240, 190
+    cell_w, cell_h = 220, 110
+    rows, cols = 5, 5
+    grid_w, grid_h = cell_w * cols, cell_h * rows
+
+    row_labels = [
+        "5 Almost Certain",
+        "4 Likely",
+        "3 Moderate",
+        "2 Unlikely",
+        "1 Rare",
+    ]
+    col_labels = [
+        "Insignificant\n1",
+        "Minor\n2",
+        "Significant\n3",
+        "Major\n4",
+        "Severe\n5",
+    ]
+    cell_text = [
+        ["Medium 5", "High 10", "Very high 15", "Extreme 20", "Extreme 25"],
+        ["Medium 4", "Medium 8", "High 12", "Very high 16", "Extreme 20"],
+        ["Low 3", "Medium 6", "Medium 9", "High 12", "Very high 15"],
+        ["Very low 2", "Low 4", "Medium 6", "Medium 8", "High 10"],
+        ["Very low 1", "Very low 2", "Low 3", "Medium 4", "Medium 5"],
+    ]
+    cell_colors = [
+        ["#FEE440", "#FF922B", "#F03E3E", "#C92A2A", "#C92A2A"],
+        ["#FEE440", "#FEE440", "#FF922B", "#F03E3E", "#C92A2A"],
+        ["#2B8A3E", "#FEE440", "#FEE440", "#FF922B", "#F03E3E"],
+        ["#37B24D", "#2B8A3E", "#FEE440", "#FEE440", "#FF922B"],
+        ["#37B24D", "#37B24D", "#2B8A3E", "#FEE440", "#FEE440"],
+    ]
+
+    lines = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
+        '<defs>',
+        '<linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">',
+        '<stop offset="0%" stop-color="#F7FAFC"/>',
+        '<stop offset="100%" stop-color="#E2E8F0"/>',
+        "</linearGradient>",
+        "</defs>",
+        '<rect width="100%" height="100%" fill="url(#bg)"/>',
+        '<text x="800" y="70" text-anchor="middle" font-family="Arial" font-size="52" font-weight="700">5x5 Risk Matrix for PHC System</text>',
+        '<text x="800" y="120" text-anchor="middle" font-family="Arial" font-size="28" font-weight="700">Impact</text>',
+        '<text x="800" y="155" text-anchor="middle" font-family="Arial" font-size="24" font-style="italic">How severe would the outcome be if the risk occurred?</text>',
+        f'<line x1="{left}" y1="180" x2="{left + grid_w}" y2="180" stroke="#6366F1" stroke-width="6"/>',
+        f'<polygon points="{left + grid_w},{180-10} {left + grid_w + 18},180 {left + grid_w},{180+10}" fill="#6366F1"/>',
+        f'<text x="65" y="{top + grid_h / 2}" text-anchor="middle" font-family="Arial" font-size="28" font-weight="700" transform="rotate(-90 65 {top + grid_h / 2})">Probability</text>',
+        f'<text x="110" y="{top + grid_h / 2}" text-anchor="middle" font-family="Arial" font-size="24" font-style="italic" transform="rotate(-90 110 {top + grid_h / 2})">What is the probability the risk will happen?</text>',
+        f'<line x1="180" y1="{top + grid_h}" x2="180" y2="{top}" stroke="#6366F1" stroke-width="6"/>',
+        f'<polygon points="{180-10},{top} 180,{top-18} {180+10},{top}" fill="#6366F1"/>',
+    ]
+
+    header_fill = "#E5E7EB"
+    border = "#111827"
+    for idx, label in enumerate(col_labels):
+        x = left + idx * cell_w
+        lines.append(f'<rect x="{x}" y="{top}" width="{cell_w}" height="{cell_h}" fill="{header_fill}" stroke="{border}" stroke-width="2"/>')
+        first, second = label.split("\n")
+        lines.append(f'<text x="{x + cell_w/2}" y="{top + 42}" text-anchor="middle" font-family="Arial" font-size="28" font-weight="700">{first}</text>')
+        lines.append(f'<text x="{x + cell_w/2}" y="{top + 78}" text-anchor="middle" font-family="Arial" font-size="28" font-weight="700">{second}</text>')
+
+    for ridx, label in enumerate(row_labels):
+        y = top + cell_h * (ridx + 1)
+        lines.append(f'<rect x="{left - 260}" y="{y}" width="260" height="{cell_h}" fill="{header_fill}" stroke="{border}" stroke-width="2"/>')
+        lines.append(f'<text x="{left - 130}" y="{y + 67}" text-anchor="middle" font-family="Arial" font-size="28" font-weight="700">{label}</text>')
+        for cidx in range(cols):
+            x = left + cidx * cell_w
+            fill = cell_colors[ridx][cidx]
+            text = cell_text[ridx][cidx]
+            text_color = "white" if fill in {"#2B8A3E", "#37B24D", "#F03E3E", "#C92A2A"} else "black"
+            lines.append(f'<rect x="{x}" y="{y}" width="{cell_w}" height="{cell_h}" fill="{fill}" stroke="{border}" stroke-width="2"/>')
+            lines.append(f'<text x="{x + cell_w/2}" y="{y + 67}" text-anchor="middle" font-family="Arial" font-size="30" fill="{text_color}">{text}</text>')
+
+    lines.append("</svg>")
+    (FIG_DIR / f"{output_name}.svg").write_text("\n".join(lines), encoding="utf-8")
+
+
 def convert_svg_to_png(name: str) -> None:
     svg = FIG_DIR / f"{name}.svg"
     png = FIG_DIR / f"{name}.png"
@@ -241,7 +322,9 @@ def main() -> None:
         "Response time (ms)",
     )
 
-    for name in ("throughput", "cfd", "burndown", "burnup", "code_churn", "nfr"):
+    render_risk_matrix("risk_matrix")
+
+    for name in ("throughput", "cfd", "burndown", "burnup", "code_churn", "nfr", "risk_matrix"):
         convert_svg_to_png(name)
 
 
