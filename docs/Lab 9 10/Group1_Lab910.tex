@@ -280,35 +280,47 @@ The attached template suggests a classic 5x5 probability-impact matrix. That is 
 \end{center}
 
 \subsection{Project-Specific Risk Register}
-The matrix above is only the template. The real value comes from placing our own project risks into it.
+The matrix above provides the visual prioritization frame. For the formal project risk register, we map the PHC system onto the 14 standard risk classes from the provided template and evaluate them using project evidence from the SRS revisions, sprint logs, backend integration work, testing history, and the current state of frontend readiness. \textbf{Impact codes:} C = Critical, S = Serious, Mo = Moderate, Mi = Minor.
 
 \begin{center}
 \rowcolors{2}{SoftGray}{white}
-\begin{longtable}{|p{0.8cm}|p{4.1cm}|p{0.8cm}|p{0.8cm}|p{1.2cm}|p{6cm}|}
+\begin{longtable}{|p{0.8cm}|p{4.9cm}|p{2.1cm}|p{1.4cm}|p{1.9cm}|}
 \hline
 \rowcolor{SoftBlue}
-\textbf{ID} & \textbf{Risk} & \textbf{P} & \textbf{I} & \textbf{Score} & \textbf{Mitigation logic} \\
+\textbf{ID} & \textbf{Risk} & \textbf{Probability (\%)} & \textbf{Impact} & \textbf{Level} \\
 \hline
-R1 & Cross-module integration regression across visits, lab, pharmacy, billing, and notifications & 4 & 4 & 16 & Keep transaction boundaries, maintain the E2E runner, and use smoke tests before documentation freeze. \\
+1 & Mission and Goals & 15 & C & Medium \\
 \hline
-R2 & Late sprint convergence hides unfinished work until very close to milestone deadlines & 4 & 4 & 16 & Break work into smaller visible backlog items and insist on earlier integration checkpoints. \\
+2 & Program Management & 35 & S & Medium \\
 \hline
-R3 & LDAP or authentication instability blocks role-based access and demos & 3 & 5 & 15 & Use Dockerized local LDAP, explicit 401/503 behavior, seeded test users, and auth verification in smoke and E2E tests. \\
+3 & Decision Drivers & 20 & Mo & Low \\
 \hline
-R4 & Database migration or shared-model change damages visit-linked consistency & 3 & 5 & 15 & Use Prisma migrations only, preserve idempotent seed flow, and validate \texttt{migrate deploy}. \\
+4 & Organization Management & 25 & Mo & Low \\
 \hline
-R5 & Documentation drift between README, TESTING, smoke counts, CSV evidence, and report content & 4 & 3 & 12 & Treat docs as first-class deliverables and regenerate report data from scripts rather than manual counting. \\
+5 & Customer/User & 45 & S & High \\
 \hline
-R6 & Frontend lag leaves the project backend-complete but demo-incomplete & 4 & 3 & 12 & Freeze backend scope unless blocked and turn the stable API into role dashboards in Sprint 6. \\
+6 & Project Parameters & 40 & Mo & Medium \\
 \hline
-R7 & RBAC error exposes medical data to the wrong role & 2 & 5 & 10 & Preserve route guards, add more RBAC tests, and keep patient-only endpoints clearly separated. \\
+7 & Product Content & 55 & C & High \\
 \hline
-R8 & Performance and security hardening remain behind functional completion & 2 & 4 & 8 & Reserve Sprint 7 for hardening, load checks, and deployment preparation rather than new features. \\
+8 & Deployment & 30 & S & Medium \\
+\hline
+9 & Development Process & 50 & Mo & Medium \\
+\hline
+10 & Development Environment & 35 & Mi & Low \\
+\hline
+11 & Project Management & 60 & S & High \\
+\hline
+12 & Project Team & 45 & Mo & Medium \\
+\hline
+13 & Technology & 30 & Mo & Medium \\
+\hline
+14 & Maintenance & 20 & Mi & Low \\
 \hline
 \end{longtable}
 \end{center}
 
-The probability assumptions here are not arbitrary. They are tied to what the repository already showed. For example, documentation drift is marked likely because the project already developed a mismatch between the 48-case CSV and the larger smoke suite. Late sprint convergence is marked likely because the burndown/burnup story shows completion clustering near Sprint 5 closeout.
+These values are project-specific rather than generic. For example, \emph{Product Content} is high because the system now spans visits, prescriptions, lab workflows, billing, documents, notifications, reports, and access control; \emph{Customer/User} is high because the backend is mature while the end-user interface is still pending; and \emph{Project Management} is high because visible closure was concentrated in late sprints, increasing schedule sensitivity near the milestone.
 
 \section{Section III: Mapping Risk Mitigation to Sprint Planning}
 This final section is where the report becomes a connected story instead of a list of charts. The project did not merely \emph{have} risks; it already responded to them through sprint ordering.
