@@ -280,7 +280,7 @@ The attached template suggests a classic 5x5 probability-impact matrix. That is 
 \end{center}
 
 \subsection{Project-Specific Risk Register}
-The matrix above provides the visual prioritization frame. For the formal project risk register, we map the PHC system onto the 14 standard risk classes from the provided template and evaluate them using project evidence from the SRS revisions, sprint logs, backend integration work, testing history, and the current state of frontend readiness. \textbf{Impact codes:} C = Critical, S = Serious, Mo = Moderate, Mi = Minor.
+The matrix above provides the visual prioritization frame. For the formal project risk register, we map the PHC system onto the 14 standard risk classes from the provided template and evaluate them using project evidence from the SRS revisions, sprint logs, backend integration work, testing history, and the current state of frontend readiness. The assumed probabilities are based on a combination of repository evidence and team experience: risks already observed in some form during development, such as documentation drift, late-sprint convergence, integration pressure, or environment setup friction, are assigned higher probabilities; risks that remain plausible but were only weakly observed are kept in the low-to-medium range. \textbf{Impact codes:} C = Critical, S = Serious, Mo = Moderate, Mi = Minor.
 
 \begin{center}
 \rowcolors{2}{SoftGray}{white}
@@ -320,7 +320,7 @@ The matrix above provides the visual prioritization frame. For the formal projec
 \end{longtable}
 \end{center}
 
-These values are project-specific rather than generic. For example, \emph{Product Content} is high because the system now spans visits, prescriptions, lab workflows, billing, documents, notifications, reports, and access control; \emph{Customer/User} is high because the backend is mature while the end-user interface is still pending; and \emph{Project Management} is high because visible closure was concentrated in late sprints, increasing schedule sensitivity near the milestone.
+These values are project-specific rather than generic. For example, \emph{Product Content} is high because the system now spans visits, prescriptions, lab workflows, billing, documents, notifications, reports, and access control; \emph{Customer/User} is high because the backend is mature while the end-user interface is still pending; and \emph{Project Management} is high because visible closure was concentrated in late sprints, increasing schedule sensitivity near the milestone. In other words, the probability estimates are not arbitrary numbers; they are reasoned estimates derived from our observed development pattern and from practical software-project judgment about which risks tend to recur once similar signals appear.
 
 \section{Section III: Mapping Risk Mitigation to Sprint Planning}
 This final section is where the report becomes a connected story instead of a list of charts. The project did not merely \emph{have} risks; it already responded to them through sprint ordering.
