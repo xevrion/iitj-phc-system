@@ -661,8 +661,8 @@ def compute_throughput(commits: list[dict]) -> dict:
     feat_commits = [commit for commit in commits if commit["subject"].startswith("feat:")]
     by_week = Counter()
 
-    for commit in feat_commits:
-        dt = datetime.strptime(commit["date"], "%Y-%m-%d").date()
+    for item in WORK_ITEMS:
+        dt = datetime.strptime(item["done"], "%Y-%m-%d").date()
         iso_year, iso_week, _ = dt.isocalendar()
         by_week[f"{iso_year}-W{iso_week:02d}"] += 1
 
@@ -797,22 +797,24 @@ def compute_sprint5_burn_rows() -> list[dict]:
 
 def compute_project_burn_by_sprint_rows() -> list[dict]:
     rows = []
+    sprint_order = [name for name, _, _ in SPRINT_WINDOWS]
+    completed_by_sprint = Counter(item["sprint"] for item in WORK_ITEMS)
+    final_scope = len(WORK_ITEMS)
+    cumulative_completed = 0
+
     for sprint_name, _, end in SPRINT_WINDOWS:
         total_scope = 0
-        completed = 0
         for item in WORK_ITEMS:
             planned_start = datetime.strptime(item["planned_start"], "%Y-%m-%d").date()
-            done_date = datetime.strptime(item["done"], "%Y-%m-%d").date()
             if planned_start <= end:
                 total_scope += 1
-            if done_date <= end:
-                completed += 1
+        cumulative_completed += completed_by_sprint.get(sprint_name, 0)
         rows.append(
             {
                 "sprint": sprint_name,
                 "total_scope": total_scope,
-                "completed": completed,
-                "remaining": total_scope - completed,
+                "completed": cumulative_completed,
+                "remaining": final_scope - cumulative_completed,
             }
         )
     return rows

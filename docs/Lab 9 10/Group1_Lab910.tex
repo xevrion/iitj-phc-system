@@ -44,7 +44,7 @@
 \section{Project Story and Evidence Baseline}
 The PHC Integrated Digital System started as a documentation-heavy academic project, but by the end of Sprint 5 it had become a working backend platform with authentication, patient records, visit lifecycle management, prescription handling, laboratory flows, billing, appointments, notifications, and admin reporting. That progression matters for this lab because the requested metrics are meaningful only if they are tied to the actual engineering story rather than to abstract estimates.
 
-For this report, we used the current repository as the evidence baseline. The measured story comes from \texttt{README.md}, \texttt{TESTING.md}, \texttt{test\_cases.csv}, \texttt{backend/prisma/schema.prisma}, all backend route and service files, SRS revisions through Version 2.2, and git history from January 15, 2026 to April 3, 2026. The resulting snapshot is:
+For this report, we used the current repository as the evidence baseline. The measured story comes from \texttt{README.md}, \texttt{TESTING.md}, \texttt{test\_cases.csv}, \texttt{backend/prisma/schema.prisma}, all backend route and service files, Software Requirements Specification (SRS) revisions through Version 2.2, and git history from January 15, 2026 to April 3, 2026. The resulting snapshot is:
 
 \begin{center}
 \rowcolors{2}{SoftGray}{white}
@@ -98,8 +98,53 @@ Because Sprint 5 was the backend integration sprint, the latest repository evide
 \end{center}
 
 \section{Section I: Metrics and Their Meaning}
+\subsection{Metric Scope and Evidence}
+To keep the numbers defensible, we did not treat the whole repository as one undifferentiated code dump. Size-oriented metrics such as COCOMO and Halstead were computed from the production backend implementation under \texttt{backend/src/}, excluding generated Prisma client code, Bruno collections, LaTeX assets, and local helper artifacts. Function Point Analysis used the implemented Application Programming Interface (API) inventory together with the persisted data model in \texttt{backend/prisma/schema.prisma}. Flow and delivery metrics used git history, sprint windows from the README/SRS timeline, \texttt{TESTING.md}, \texttt{test\_cases.csv}, and the smoke plus end-to-end (E2E) evidence already present in the repository.
+
 \subsection{Intermediate COCOMO}
-We modeled the project as an \emph{Organic} COCOMO system because the team is small, the stack is familiar, and the product is complex enough to require engineering discipline without becoming an embedded or mission-critical real-time system. Using 2.859 KLOC of production code and an effort adjustment factor derived from reliability, data sensitivity, functional complexity, team capability, and tooling assumptions, we obtained the following result:
+We modeled the project as an \emph{Organic} COCOMO system because the team is small, the stack is familiar, and the product is complex enough to require engineering discipline without becoming an embedded or mission-critical real-time system. The KLOC basis was taken from the production backend implementation files under \texttt{backend/src/}, where KLOC means \emph{thousand lines of code}. For Intermediate COCOMO, we did not directly assume the Effort Adjustment Factor (EAF); instead, we derived it from explicit cost-driver ratings selected from the standard COCOMO cost-driver table.
+
+\begin{center}
+\rowcolors{2}{SoftGray}{white}
+\begin{tabular}{|p{1.5cm}|p{4.9cm}|p{1.6cm}|p{1.3cm}|}
+\hline
+\rowcolor{SoftBlue}
+\textbf{Driver} & \textbf{Why this rating fits the project} & \textbf{Rating} & \textbf{Value} \\
+\hline
+RELY & Medical workflow data must be dependable and role-safe & High & 1.15 \\
+\hline
+DATA & Persistent records and visit-linked data are non-trivial in size & High & 1.08 \\
+\hline
+CPLX & Multi-role workflow, state transitions, and transaction logic & High & 1.15 \\
+\hline
+TIME & No hard real-time execution constraint & Nominal & 1.00 \\
+\hline
+STOR & No unusual runtime memory/storage pressure & Nominal & 1.00 \\
+\hline
+VIRT & Standard web/backend execution environment & Nominal & 1.00 \\
+\hline
+TURN & Normal turnaround expectations for an academic web system & Nominal & 1.00 \\
+\hline
+ACAP & Analysis capability improved through repeated SRS/UML refinement & High & 0.86 \\
+\hline
+AEXP & Team has reasonable application familiarity after PHC scoping work & High & 0.91 \\
+\hline
+PCAP & Code structure indicates strong implementation capability & High & 0.86 \\
+\hline
+VEXP & Platform experience is adequate but not highly specialized & Nominal & 1.00 \\
+\hline
+LEXP & Good familiarity with Node/JS/Express stack & High & 0.95 \\
+\hline
+MODP & Structured engineering method is in active use & High & 0.91 \\
+\hline
+TOOL & Git, Prisma, Bruno, Docker LDAP, and reporting tooling are used effectively & High & 0.91 \\
+\hline
+SCED & Semester deadlines keep the schedule slightly compressed & High & 1.04 \\
+\hline
+\end{tabular}
+\end{center}
+
+The driver names used above mean: RELY = required software reliability, DATA = database size, CPLX = product complexity, TIME = run-time performance constraint, STOR = main-memory/storage constraint, VIRT = virtual machine volatility, TURN = turnaround time, ACAP = analyst capability, AEXP = application experience, PCAP = programmer capability, VEXP = virtual machine experience, LEXP = programming language experience, MODP = modern programming practices, TOOL = use of software tools, and SCED = required development schedule. Multiplying these cost-driver values gives an EAF of \(0.786\). Using 2.859 KLOC of production code with that EAF, we obtained the following result:
 
 \begin{center}
 \rowcolors{2}{SoftGray}{white}
@@ -113,7 +158,7 @@ KLOC & 2.859 \\
 Effort Adjustment Factor (EAF) & 0.786 \\
 Estimated effort & 7.58 person-months \\
 Estimated schedule & 5.40 months \\
-Average staffing & 1.40 persons \\
+Approx. average staffing & 2 persons (rounded from 1.40) \\
 Productivity & 0.377 KLOC / PM \\
 \hline
 \end{tabular}
@@ -145,32 +190,32 @@ Estimated delivered bugs & 51.34 \\
 \end{tabular}
 \end{center}
 
-The most important takeaway is not the absolute effort number but what it implies: the backend already has enough vocabulary and domain spread that ad hoc coding would quickly become fragile. That explains why the current layered structure, route-level RBAC, and transaction-protected operations are not optional niceties; they are required to keep the system understandable.
+The most important takeaway is not the absolute effort number but what it implies: the backend already has enough vocabulary and domain spread that ad hoc coding would quickly become fragile. That explains why the current layered structure, route-level role-based access control (RBAC), and transaction-protected operations are not optional niceties; they are required to keep the system understandable.
 
 \subsection{Function Point Analysis}
-Function Point Analysis was derived from the actual route inventory and database model. Endpoints were classified into external inputs, outputs, and inquiries; Prisma models were treated as internal logical files; LDAP was treated as one external interface file.
+Function Point Analysis was derived from the actual route inventory and database model. We followed the Data Element Type (DET) / File Type Referenced (FTR) classification table for transactional functions, where EI means External Input, EO means External Output, and EQ means External Inquiry. For logical files we used the Record Element Type (RET) / DET table, where ILF means Internal Logical File and EIF means External Interface File. In practice, most PHC transactions fall into the \emph{average} bucket because they reference a moderate number of data elements and one to three logical files, while the internal logical files in the Prisma schema are also mostly average-complexity records. Prisma models were treated as ILFs and Lightweight Directory Access Protocol (LDAP) was treated as one EIF.
 
 \begin{center}
 \rowcolors{2}{SoftGray}{white}
-\begin{tabular}{|p{3cm}|p{2.2cm}|p{2.2cm}|p{2.4cm}|}
+\begin{tabular}{|p{2cm}|p{1.6cm}|p{2cm}|p{1.5cm}|p{2cm}|}
 \hline
 \rowcolor{SoftBlue}
-\textbf{Type} & \textbf{Count} & \textbf{Weight} & \textbf{Contribution} \\
+\textbf{Type} & \textbf{Count} & \textbf{Complexity} & \textbf{Weight} & \textbf{Contribution} \\
 \hline
-EI & 28 & 4 & 112 \\
-EO & 4 & 5 & 20 \\
-EQ & 25 & 4 & 100 \\
-ILF & 20 & 10 & 200 \\
-EIF & 1 & 5 & 5 \\
+EI & 28 & Average & 4 & 112 \\
+EO & 4 & Average & 5 & 20 \\
+EQ & 25 & Average & 4 & 100 \\
+ILF & 20 & Average & 10 & 200 \\
+EIF & 1 & Low & 5 & 5 \\
 \hline
-UFP & \multicolumn{3}{c|}{437} \\
-VAF & \multicolumn{3}{c|}{1.11} \\
-Adjusted FP & \multicolumn{3}{c|}{485.07} \\
+UFP & \multicolumn{4}{c|}{437} \\
+VAF & \multicolumn{4}{c|}{1.11} \\
+Adjusted FP & \multicolumn{4}{c|}{485.07} \\
 \hline
 \end{tabular}
 \end{center}
 
-This metric reinforces a pattern already visible in the codebase: the system is not just doing CRUD on a few entities. It has workflow-bearing transactions, state transitions, and role-gated behavior. That is exactly why the project narrative should be told as a connected system story and not as disconnected endpoint counts.
+Here UFP means Unadjusted Function Points and VAF means Value Adjustment Factor. This metric reinforces a pattern already visible in the codebase: the system is not just doing CRUD on a few entities. It has workflow-bearing transactions, state transitions, linked files, and role-gated behavior. Using the DET/FTR/RET classification makes that conclusion defensible because the weights are tied to the structure of the implemented interactions rather than being assigned arbitrarily.
 
 \subsection{Cumulative Flow Diagram}
 The repository does not store Trello history directly, so the cumulative flow view was reconstructed from the sprint plan in the SRS/README and the actual implementation completion pattern visible in git. The figure below summarizes how planned work transitioned from \emph{To Do} to \emph{In Progress} to \emph{Done} across Sprint 0 to Sprint 5.
@@ -182,13 +227,17 @@ The repository does not store Trello history directly, so the cumulative flow vi
 The connected story here is that work did not close uniformly. The CFD shows that a significant amount of scope remained in progress until later sprints, which means the team was relying on staged maturity: foundation first, workflow next, operational modules after that, and only then full integration. That makes sense for this project, but it also explains why Sprint 5 felt dense.
 
 \subsection{Throughput Report}
-Throughput was measured at two levels: completed work items by sprint and feature-delivery behavior by git history. The project-wide sprint throughput shape is shown below.
+Throughput was measured at two levels: completed work items by sprint and feature-delivery behavior by git history. The first view shows sprint-level closure, while the second view shows the weekly bursts in which feature completions were actually recorded.
 
 \begin{center}
 \includegraphics[width=0.92\linewidth]{figures/throughput.png}
 \end{center}
 
-The important observation is that throughput increases toward Sprint 4 and Sprint 5 instead of being flat across the semester. That is a real signal, not noise. It tells us that once the backend architecture stabilized, the team accelerated feature closure. The cost of that acceleration, however, was a more compressed integration phase.
+\begin{center}
+\includegraphics[width=0.92\linewidth]{figures/throughput_week.png}
+\end{center}
+
+The important observation is that throughput increases toward Sprint 4 and Sprint 5 instead of being flat across the semester. The weekly view shows that this closure did not happen smoothly; it happened in concentrated bursts, which is consistent with the late-sprint convergence already visible in the burn and cumulative-flow story. That is a real signal, not noise. It tells us that once the backend architecture stabilized, the team accelerated feature closure, but at the cost of a more compressed integration phase.
 
 \subsection{Project Burndown and Burnup}
 Because the prompt explicitly allows telling the test and project story in our own way, we chose project-wide burn charts instead of a narrow single-sprint chart. This gives a more honest picture of how scope accumulated and how completion caught up over time.
@@ -203,14 +252,14 @@ Because the prompt explicitly allows telling the test and project story in our o
 
 The burndown and burnup together tell a coherent story. Scope expanded in a planned way from Sprint 0 through Sprint 5, but completion rose in steps rather than smoothly. That means the main process weakness was not uncontrolled scope growth; it was late visible closure. This distinction matters because the mitigation is not to reduce ambition, but to make integration and documentation visible earlier.
 
-\subsection{Additional Metric 1: Code Churn}
-Code churn was measured from git additions and deletions aggregated by week.
+\subsection{Additional Metric 1: Team Velocity}
+Team velocity was measured as completed work items per sprint. Unlike the throughput section, which emphasizes delivery timing at both sprint and weekly levels, this chart emphasizes the team's sustained closure capacity from sprint to sprint.
 
 \begin{center}
-\includegraphics[width=0.92\linewidth]{figures/code_churn.png}
+\includegraphics[width=0.92\linewidth]{figures/velocity.png}
 \end{center}
 
-The project had its highest churn during the phase where the backend moved from setup to real implementation. Later churn remained substantial during operational-module work and Sprint 5 integration. This is healthy as long as it is paired with tests and documentation. Without that pairing, churn would instead be a sign of instability.
+The velocity story is consistent with the rest of the report: early sprints built the foundation, middle sprints established clinical workflows, and the strongest closure rate appeared in Sprint 4 and Sprint 5 once the architecture stabilized and the team could complete larger integrated slices. This makes the backend-first delivery pattern easy to see without reducing the story to raw commit counts.
 
 \subsection{Additional Metric 2: Test and Performance Story}
 The second additional metric is a combined quality story: pass rate and NFR timing compliance. The repository currently documents 48 categorized test cases in the CSV, all marked PASS, while the broader smoke automation has grown to 59 checks.

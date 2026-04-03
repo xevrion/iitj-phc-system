@@ -1,7 +1,7 @@
 sprint,total_scope,completed,remaining
-Sprint 0,1,0,1
-Sprint 1,4,0,4
-Sprint 2,6,0,6
-Sprint 3,9,8,1
-Sprint 4,14,13,1
+Sprint 0,1,1,20
+Sprint 1,4,4,17
+Sprint 2,6,6,15
+Sprint 3,9,8,13
+Sprint 4,14,13,8
 Sprint 5,21,21,0
