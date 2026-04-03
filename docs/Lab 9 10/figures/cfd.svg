@@ -50,11 +50,9 @@
 <line x1="284.55" y1="510.87" x2="284.55" y2="650.00" stroke="#555555" stroke-width="3" stroke-dasharray="12 8"/>
 <line x1="808.18" y1="510.87" x2="808.18" y2="650.00" stroke="#555555" stroke-width="3" stroke-dasharray="12 8"/>
 <line x1="284.55" y1="650.00" x2="808.18" y2="348.55" stroke="#555555" stroke-width="3" stroke-dasharray="12 8"/>
-<text x="546.36" y="500.87" text-anchor="middle" font-family="Arial" font-size="18" font-weight="700" fill="#444444">Average Cycle Time</text>
-<text x="526.36" y="489.28" text-anchor="middle" font-family="Arial" font-size="17" font-weight="700" fill="#444444" transform="rotate(-26 526.36 489.28)">Average Throughput</text>
-<text x="686.00" y="168.00" font-family="Arial" font-size="18" font-weight="700" fill="#444444">To-Do</text>
-<text x="282.80" y="381.20" font-family="Arial" font-size="18" font-weight="700" fill="#444444">WIP</text>
-<text x="686.00" y="493.20" font-family="Arial" font-size="18" font-weight="700" fill="#444444">Done</text>
+<text x="743.60" y="195.00" font-family="Arial" font-size="18" font-weight="700" fill="#444444">To-Do</text>
+<text x="263.60" y="571.60" font-family="Arial" font-size="18" font-weight="700" fill="#444444">WIP</text>
+<text x="743.60" y="459.60" font-family="Arial" font-size="18" font-weight="700" fill="#444444">Done</text>
 <text x="36" y="370.00" text-anchor="middle" font-family="Arial" font-size="20" fill="#444444" transform="rotate(-90 36 370.00)">Items</text>
 <text x="590.00" y="738" text-anchor="middle" font-family="Arial" font-size="20" fill="#444444">Weeks</text>
 <rect x="1150" y="76" width="22" height="22" rx="2" fill="#F59E0B"/>

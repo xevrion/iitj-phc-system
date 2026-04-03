@@ -202,13 +202,10 @@ def render_cfd_like_example(output_name: str) -> None:
     lines.append(f'<line x1="{x1:.2f}" y1="{wip_y:.2f}" x2="{x1:.2f}" y2="{top + plot_h:.2f}" stroke="#555555" stroke-width="3" stroke-dasharray="12 8"/>')
     lines.append(f'<line x1="{x2:.2f}" y1="{wip_y:.2f}" x2="{x2:.2f}" y2="{top + plot_h:.2f}" stroke="#555555" stroke-width="3" stroke-dasharray="12 8"/>')
     lines.append(f'<line x1="{x1:.2f}" y1="{done_points[min(2, len(done_points)-1)][1]:.2f}" x2="{x2:.2f}" y2="{done_y:.2f}" stroke="#555555" stroke-width="3" stroke-dasharray="12 8"/>')
-    lines.append(f'<text x="{(x1 + x2)/2:.2f}" y="{wip_y - 10:.2f}" text-anchor="middle" font-family="Arial" font-size="18" font-weight="700" fill="#444444">Average Cycle Time</text>')
-    lines.append(f'<text x="{(x1 + x2)/2 - 20:.2f}" y="{(done_points[min(2, len(done_points)-1)][1] + done_y)/2 - 10:.2f}" text-anchor="middle" font-family="Arial" font-size="17" font-weight="700" fill="#444444" transform="rotate(-26 {(x1 + x2)/2 - 20:.2f} {(done_points[min(2, len(done_points)-1)][1] + done_y)/2 - 10:.2f})">Average Throughput</text>')
-
     # Region labels
-    lines.append(f'<text x="{left + plot_w * 0.60:.2f}" y="{top + 78:.2f}" font-family="Arial" font-size="18" font-weight="700" fill="#444444">To-Do</text>')
-    lines.append(f'<text x="{left + plot_w * 0.18:.2f}" y="{top + plot_h * 0.52:.2f}" font-family="Arial" font-size="18" font-weight="700" fill="#444444">WIP</text>')
-    lines.append(f'<text x="{left + plot_w * 0.60:.2f}" y="{top + plot_h * 0.72:.2f}" font-family="Arial" font-size="18" font-weight="700" fill="#444444">Done</text>')
+    lines.append(f'<text x="{left + plot_w * 0.66:.2f}" y="{top + 105:.2f}" font-family="Arial" font-size="18" font-weight="700" fill="#444444">To-Do</text>')
+    lines.append(f'<text x="{left + plot_w * 0.16:.2f}" y="{top + plot_h * 0.86:.2f}" font-family="Arial" font-size="18" font-weight="700" fill="#444444">WIP</text>')
+    lines.append(f'<text x="{left + plot_w * 0.66:.2f}" y="{top + plot_h * 0.66:.2f}" font-family="Arial" font-size="18" font-weight="700" fill="#444444">Done</text>')
 
     lines.append(f'<text x="{36}" y="{top + plot_h/2:.2f}" text-anchor="middle" font-family="Arial" font-size="20" fill="#444444" transform="rotate(-90 36 {top + plot_h/2:.2f})">Items</text>')
     lines.append(f'<text x="{left + plot_w/2:.2f}" y="{height - 22}" text-anchor="middle" font-family="Arial" font-size="20" fill="#444444">Weeks</text>')
