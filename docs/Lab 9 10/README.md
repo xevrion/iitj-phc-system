@@ -4,8 +4,10 @@ This folder contains the complete Lab 9 & 10 assignment package for the IITJ PHC
 
 ## Main files
 
-- `Group1_Lab910.tex`: LaTeX source for the report
-- `Group1_Lab910.pdf`: compiled submission PDF
+- `Group1_Lab910.tex`: connected-story LaTeX source for the report
+- `Group1_Lab910.pdf`: compiled connected-story PDF
+- `Group1_Lab910_IEEE.tex`: IEEE-format LaTeX variant
+- `Group1_Lab910_IEEE.pdf`: compiled IEEE-format PDF
 - `IEEEtran.cls`: local IEEE conference class file used for compilation
 
 ## Supporting material
@@ -25,6 +27,10 @@ python3 'docs/Lab 9 10/scripts/render_charts.py'
 cd 'docs/Lab 9 10'
 pdflatex -interaction=nonstopmode 'Group1_Lab910.tex'
 pdflatex -interaction=nonstopmode 'Group1_Lab910.tex'
+
+# Or compile the IEEE-format variant
+pdflatex -interaction=nonstopmode 'Group1_Lab910_IEEE.tex'
+pdflatex -interaction=nonstopmode 'Group1_Lab910_IEEE.tex'
 ```
 
 ## Notes
