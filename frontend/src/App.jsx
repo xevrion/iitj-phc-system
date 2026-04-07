@@ -4,6 +4,15 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PatientDashboard from "./features/patient/pages/PatientDashboard";
 import "./App.css";
 
+function RootRedirect() {
+  const { isAuthenticated, user } = useAuthStore();
+  
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  
+  const rolePath = user?.role?.toLowerCase().replace("_", "-");
+  return <Navigate to={`/${rolePath}`} replace />;
+}
+
 function App() {
   return (
     <BrowserRouter>
@@ -21,7 +30,7 @@ function App() {
         />
 
         {/* Root Redirection */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<RootRedirect />} />
 
         {/* Error Pages */}
         <Route path="/unauthorized" element={<div className="flex h-screen items-center justify-center text-red-500 text-xl font-bold">403: Unauthorized Access</div>} />

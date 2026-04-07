@@ -28,9 +28,9 @@ const LoginPage = () => {
         const { user, accessToken } = response.data;
         setAuth(user, accessToken);
         
-        // Success redirection - for now we just go to root
-        // Later we can redirect based on role: navigate(`/${user.role.toLowerCase()}/dashboard`)
-        navigate("/");
+        // Success redirection - based on role
+        const rolePath = user.role.toLowerCase().replace("_", "-");
+        navigate(`/${rolePath}`);
       } else {
         setError(response.message || "Login failed");
       }
