@@ -1,4 +1,5 @@
 import React from "react";
+import { Routes, Route, Navigate } from "react-router";
 import { 
   LayoutDashboard, 
   Calendar, 
@@ -8,6 +9,7 @@ import {
   Clock
 } from "lucide-react";
 import DashboardLayout from "../../../components/layout/DashboardLayout";
+import PatientOverview from "./PatientOverview";
 
 const patientNavItems = [
   { label: "Overview", path: "/patient", icon: LayoutDashboard },
@@ -18,10 +20,18 @@ const patientNavItems = [
   { label: "Profile", path: "/patient/profile", icon: User },
 ];
 
-const PatientDashboard = ({ children }) => {
+const PatientDashboard = () => {
   return (
     <DashboardLayout role="PATIENT" navItems={patientNavItems}>
-      {children || <div className="text-2xl font-bold">Welcome to your Dashboard</div>}
+      <Routes>
+        <Route index element={<PatientOverview />} />
+        <Route path="visits" element={<div>Visit History Placeholder</div>} />
+        <Route path="prescriptions" element={<div>Prescriptions Placeholder</div>} />
+        <Route path="lab-reports" element={<div>Lab Reports Placeholder</div>} />
+        <Route path="appointments/book" element={<div>Book Appointment Placeholder</div>} />
+        <Route path="profile" element={<div>Profile Placeholder</div>} />
+        <Route path="*" element={<Navigate to="/patient" replace />} />
+      </Routes>
     </DashboardLayout>
   );
 };
