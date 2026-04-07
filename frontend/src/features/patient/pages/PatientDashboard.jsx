@@ -13,6 +13,7 @@ import PatientOverview from "./PatientOverview";
 import VisitHistory from "./VisitHistory";
 import Prescriptions from "./Prescriptions";
 import LabReports from "./LabReports";
+import BookAppointment from "./BookAppointment";
 
 const patientNavItems = [
   { label: "Overview", path: "/patient", icon: LayoutDashboard },
@@ -31,8 +32,8 @@ const PatientDashboard = () => {
         <Route path="visits" element={<VisitHistory />} />
         <Route path="prescriptions" element={<Prescriptions />} />
         <Route path="lab-reports" element={<LabReports />} />
-        <Route path="appointments/book" element={<div>Book Appointment Placeholder</div>} />
-        <Route path="profile" element={<div>Profile Placeholder</div>} />
+        <Route path="appointments/book" element={<BookAppointment />} />
+        <Route path="profile" element={<div className="p-8 bg-white rounded-xl border border-gray-100 shadow-sm">Patient Profile Placeholder</div>} />
         <Route path="*" element={<Navigate to="/patient" replace />} />
       </Routes>
     </DashboardLayout>
