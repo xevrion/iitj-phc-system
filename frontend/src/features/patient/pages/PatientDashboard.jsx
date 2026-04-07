@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import DashboardLayout from "../../../components/layout/DashboardLayout";
 import PatientOverview from "./PatientOverview";
+import VisitHistory from "./VisitHistory";
 
 const patientNavItems = [
   { label: "Overview", path: "/patient", icon: LayoutDashboard },
@@ -25,7 +26,7 @@ const PatientDashboard = () => {
     <DashboardLayout role="PATIENT" navItems={patientNavItems}>
       <Routes>
         <Route index element={<PatientOverview />} />
-        <Route path="visits" element={<div>Visit History Placeholder</div>} />
+        <Route path="visits" element={<VisitHistory />} />
         <Route path="prescriptions" element={<div>Prescriptions Placeholder</div>} />
         <Route path="lab-reports" element={<div>Lab Reports Placeholder</div>} />
         <Route path="appointments/book" element={<div>Book Appointment Placeholder</div>} />
