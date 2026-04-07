@@ -8,7 +8,11 @@ import {
   ClipboardList
 } from "lucide-react";
 import { Link } from "react-router";
+import { cn } from "../../../utils/cn";
 import OverviewCard from "../components/OverviewCard";
+import { 
+  Clock 
+} from "lucide-react";
 import Button from "../../../components/ui/Button";
 
 const PatientOverview = () => {
