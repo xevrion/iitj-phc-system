@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router";
+import useAuthStore from "./store/useAuthStore";
 import LoginPage from "./features/auth/pages/LoginPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PatientDashboard from "./features/patient/pages/PatientDashboard";
