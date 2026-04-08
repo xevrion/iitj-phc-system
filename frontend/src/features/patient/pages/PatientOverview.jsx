@@ -1,51 +1,98 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Calendar, 
   FileText, 
   FlaskConical, 
   PlusCircle, 
   ArrowRight,
-  ClipboardList
+  ClipboardList,
+  Clock,
+  Loader2
 } from "lucide-react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { cn } from "../../../utils/cn";
 import OverviewCard from "../components/OverviewCard";
-import { 
-  Clock 
-} from "lucide-react";
 import Button from "../../../components/ui/Button";
+import useAuthStore from "../../../store/useAuthStore";
+import { getMyVisits, getMyAppointments, getMyLabReports } from "../services/patient.service";
 
 const PatientOverview = () => {
-  // Static data for now, will be fetched from API later
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
+  const [data, setData] = useState({
+    visits: [],
+    appointments: [],
+    labReports: [],
+    loading: true
+  });
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      if (!user?.patient?.id) return;
+      try {
+        const [vRes, aRes, lRes] = await Promise.all([
+          getMyVisits(user.patient.id),
+          getMyAppointments(),
+          getMyLabReports()
+        ]);
+
+        setData({
+          visits: vRes.success ? vRes.data : [],
+          appointments: aRes.success ? aRes.data : [],
+          labReports: lRes.success ? lRes.data : [],
+          loading: false
+        });
+      } catch (err) {
+        console.error("Dashboard fetch error:", err);
+        setData(prev => ({ ...prev, loading: false }));
+      }
+    };
+    fetchDashboardData();
+  }, [user]);
+
+  if (data.loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-2" />
+        <p className="text-gray-500 font-medium">Synchronizing your health records...</p>
+      </div>
+    );
+  }
+
+  const upcomingAppt = data.appointments.find(a => new Date(a.appointmentDate) > new Date());
+  const pendingLabs = data.labReports.filter(l => l.status === "PENDING").length;
+  const latestVisit = data.visits[0];
+
   const stats = [
     {
       title: "Next Appointment",
-      value: "Apr 12, 10:30 AM",
-      subtext: "With Dr. Sharma (Physician)",
+      value: upcomingAppt ? new Date(upcomingAppt.appointmentDate).toLocaleDateString() : "None Scheduled",
+      subtext: upcomingAppt ? `With ${upcomingAppt.doctor?.user?.fullName}` : "Book a slot today",
       icon: Calendar,
       colorClass: "bg-blue-500",
     },
     {
-      title: "Recent Prescription",
-      value: "Paracetamol + 2 more",
-      subtext: "Issued on Mar 25, 2026",
-      icon: FileText,
+      title: "Total Visits",
+      value: data.visits.length.toString(),
+      subtext: latestVisit ? `Last visit: ${new Date(latestVisit.createdAt).toLocaleDateString()}` : "No history yet",
+      icon: Clock,
       colorClass: "bg-emerald-500",
     },
     {
-      title: "Pending Lab Tests",
-      value: "CBC, Blood Sugar",
-      subtext: "Requested on Mar 24",
+      title: "Lab Requests",
+      value: data.labReports.length.toString(),
+      subtext: `${pendingLabs} results pending`,
       icon: FlaskConical,
       colorClass: "bg-amber-500",
     },
   ];
 
-  const recentActivities = [
-    { id: 1, type: "Visit", title: "General Consultation", date: "Mar 25, 2026", status: "Completed" },
-    { id: 2, type: "Lab", title: "Blood Test Report Uploaded", date: "Mar 20, 2026", status: "Available" },
-    { id: 3, type: "Appointment", title: "Follow-up Scheduled", date: "Mar 18, 2026", status: "Upcoming" },
-  ];
+  // Combine all for recent activity
+  const activities = [
+    ...data.visits.slice(0, 2).map(v => ({ id: v.id, type: "Visit", title: "Medical Consultation", date: new Date(v.createdAt).toLocaleDateString(), status: v.status })),
+    ...data.appointments.slice(0, 1).map(a => ({ id: a.id, type: "Appt", title: "Specialist Appointment", date: new Date(a.appointmentDate).toLocaleDateString(), status: a.status })),
+    ...data.labReports.slice(0, 1).map(l => ({ id: l.id, type: "Lab", title: l.testName, date: new Date(l.createdAt).toLocaleDateString(), status: l.status }))
+  ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
 
   return (
     <div className="space-y-8">
@@ -82,7 +129,7 @@ const PatientOverview = () => {
             </Link>
           </div>
           <div className="divide-y divide-gray-100">
-            {recentActivities.map((activity) => (
+            {activities.map((activity) => (
               <div key={activity.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
                 <div className="flex items-center gap-4">
                   <div className={cn(
@@ -100,13 +147,18 @@ const PatientOverview = () => {
                 </div>
                 <span className={cn(
                   "px-2.5 py-0.5 rounded-full text-xs font-medium",
-                  activity.status === "Completed" ? "bg-gray-100 text-gray-600" :
-                  activity.status === "Available" ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"
+                  activity.status === "COMPLETED" || activity.status === "SUCCESS" ? "bg-emerald-100 text-emerald-700" :
+                  activity.status === "PENDING" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
                 )}>
                   {activity.status}
                 </span>
               </div>
             ))}
+            {activities.length === 0 && (
+              <div className="p-8 text-center text-gray-500 text-sm">
+                No recent activity recorded.
+              </div>
+            )}
           </div>
         </div>
 

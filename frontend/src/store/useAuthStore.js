@@ -13,6 +13,24 @@ const useAuthStore = create((set) => ({
     set({ user, token, isAuthenticated: true, error: null });
   },
 
+  checkAuth: async () => {
+    set({ loading: true });
+    try {
+      const { getMe } = await import("../features/auth/services/auth.service");
+      const response = await getMe();
+      if (response.success) {
+        localStorage.setItem("user", JSON.stringify(response.data));
+        set({ user: response.data, isAuthenticated: true });
+      }
+    } catch (err) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      set({ user: null, token: null, isAuthenticated: false });
+    } finally {
+      set({ loading: false });
+    }
+  },
+
   logout: () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");

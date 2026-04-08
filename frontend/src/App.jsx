@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router";
 import useAuthStore from "./store/useAuthStore";
 import LoginPage from "./features/auth/pages/LoginPage";
@@ -6,8 +7,9 @@ import PatientDashboard from "./features/patient/pages/PatientDashboard";
 import "./App.css";
 
 function RootRedirect() {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, loading } = useAuthStore();
   
+  if (loading) return null;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   
   const rolePath = user?.role?.toLowerCase().replace("_", "-");
@@ -15,6 +17,18 @@ function RootRedirect() {
 }
 
 function App() {
+  const { checkAuth, token, loading } = useAuthStore();
+
+  useEffect(() => {
+    if (token) {
+      checkAuth();
+    }
+  }, []);
+
+  if (loading && !token) {
+    return <div className="flex h-screen items-center justify-center">Loading Application...</div>;
+  }
+
   return (
     <BrowserRouter>
       <Routes>

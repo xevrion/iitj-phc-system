@@ -1,33 +1,52 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Calendar, User, Clipboard, AlertCircle, CheckCircle2 } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
+import { getDoctors, bookAppointment } from "../services/patient.service";
 
 const BookAppointment = () => {
   const [formData, setFormData] = useState({
     doctorId: "",
     date: "",
     reason: "",
-    isEmergency: false
   });
+  const [doctors, setDoctors] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [error, setError] = useState("");
 
-  // Static doctors for now
-  const doctors = [
-    { id: "d1", name: "Dr. Ananya Sharma (Physician)", available: true },
-    { id: "d2", name: "Dr. Rajesh Kumar (Orthopedic)", available: true },
-    { id: "d3", name: "Dr. S. K. Singh (Cardiologist)", available: false },
-  ];
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        const response = await getDoctors();
+        if (response.success) {
+          setDoctors(response.data);
+        }
+      } catch (err) {
+        console.error("Failed to load doctors", err);
+      }
+    };
+    fetchDoctors();
+  }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    setError("");
+
+    try {
+      const response = await bookAppointment({
+        ...formData,
+        appointmentDate: new Date(formData.date).toISOString()
+      });
+      if (response.success) {
+        setIsSuccess(true);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to book appointment. Please try again.");
+    } finally {
       setIsLoading(false);
-      setIsSuccess(true);
-    }, 1500);
+    }
   };
 
   if (isSuccess) {
@@ -69,14 +88,21 @@ const BookAppointment = () => {
               >
                 <option value="">Choose a doctor...</option>
                 {doctors.map(doc => (
-                  <option key={doc.id} value={doc.id} disabled={!doc.available}>
-                    {doc.name} {!doc.available ? "(Unavailable)" : ""}
+                  <option key={doc.id} value={doc.id} disabled={!doc.isAvailable}>
+                    {doc.user?.fullName} ({doc.doctorType}) {!doc.isAvailable ? " - Unavailable" : ""}
                   </option>
                 ))}
               </select>
               <User className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
             </div>
           </div>
+
+          {error && (
+            <div className="p-3 bg-red-50 text-red-600 text-sm rounded-md border border-red-100 flex gap-2 items-center">
+              <AlertCircle size={16} />
+              {error}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input 

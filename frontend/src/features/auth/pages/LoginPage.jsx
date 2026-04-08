@@ -23,13 +23,16 @@ const LoginPage = () => {
     try {
       const response = await login(ldapId, password);
       
-      // Based on common ApiResponse structure: { success: true, data: { user, accessToken }, message: "..." }
       if (response.success) {
-        const { user, accessToken } = response.data;
-        setAuth(user, accessToken);
+        const { user, token } = response.data;
+        // Set basic auth first
+        useAuthStore.getState().setAuth(user, token);
         
-        // Success redirection - based on role
-        const rolePath = user.role.toLowerCase().replace("_", "-");
+        // Fetch full profile (with patient info) before navigating
+        await useAuthStore.getState().checkAuth();
+        
+        const currentUser = useAuthStore.getState().user;
+        const rolePath = currentUser.role.toLowerCase().replace("_", "-");
         navigate(`/${rolePath}`);
       } else {
         setError(response.message || "Login failed");

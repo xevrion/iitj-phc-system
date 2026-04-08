@@ -7,7 +7,228 @@ datasource db {
   provider = "postgresql"
 }
 
-// ─── Enums ────────────────────────────────────────────────────────────────────
+model User {
+  id             String          @id @default(uuid())
+  ldapId         String?         @unique
+  role           UserRole
+  createdAt      DateTime        @default(now())
+  isActive       Boolean         @default(true)
+  doctor         Doctor?
+  labStaff       LabStaff?
+  notifications  Notification[]
+  phcEvents      PHCEvent[]
+  patient        Patient?
+  pharmacyStaff  PharmacyStaff?
+  receptionStaff ReceptionStaff?
+}
+
+model Patient {
+  id                String             @id @default(uuid())
+  userId            String             @unique
+  name              String?
+  dob               DateTime?          @db.Date
+  email             String?
+  bloodGroup        String?
+  phone             String?
+  address           String?
+  qrCode            String?            @unique
+  appointments      Appointment[]
+  externalDocuments ExternalDocument[]
+  user              User               @relation(fields: [userId], references: [id])
+  visits            Visit[]
+}
+
+model Doctor {
+  id             String             @id @default(uuid())
+  userId         String             @unique
+  name           String?
+  doctorType     DoctorType
+  specialization String?
+  isAvailable    Boolean            @default(false)
+  appointments   Appointment[]
+  user           User               @relation(fields: [userId], references: [id])
+  attendance     DoctorAttendance[]
+  labRequests    LabRequest[]
+  notifications  Notification[]
+  prescriptions  Prescription[]
+  visits         Visit[]
+}
+
+model ReceptionStaff {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model PharmacyStaff {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model LabStaff {
+  id         String      @id @default(uuid())
+  userId     String      @unique
+  labReports LabReport[]
+  user       User        @relation(fields: [userId], references: [id])
+}
+
+model Visit {
+  id                String             @id @default(uuid())
+  patientId         String
+  doctorId          String?
+  visitStatus       VisitStatus        @default(WAITING)
+  visitType         VisitType
+  consultationNotes String?
+  createdAt         DateTime           @default(now())
+  closedAt          DateTime?
+  bill              Bill?
+  externalDocuments ExternalDocument[]
+  labRequests       LabRequest[]
+  prescription      Prescription?
+  doctor            Doctor?            @relation(fields: [doctorId], references: [id])
+  patient           Patient            @relation(fields: [patientId], references: [id])
+  vitals            VisitVitals?
+}
+
+model VisitVitals {
+  id            String  @id @default(uuid())
+  visitId       String  @unique
+  weight        Float?
+  temperature   Float?
+  bloodPressure String?
+  visit         Visit   @relation(fields: [visitId], references: [id])
+}
+
+model Appointment {
+  id              String            @id @default(uuid())
+  patientId       String
+  doctorId        String
+  appointmentTime DateTime
+  slotDuration    Int
+  isEmergency     Boolean           @default(false)
+  status          AppointmentStatus @default(BOOKED)
+  doctor          Doctor            @relation(fields: [doctorId], references: [id])
+  patient         Patient           @relation(fields: [patientId], references: [id])
+  notifications   Notification[]
+}
+
+model Prescription {
+  id          String             @id @default(uuid())
+  visitId     String             @unique
+  doctorId    String
+  notes       String?
+  isDispensed Boolean            @default(false)
+  createdAt   DateTime           @default(now())
+  doctor      Doctor             @relation(fields: [doctorId], references: [id])
+  visit       Visit              @relation(fields: [visitId], references: [id])
+  items       PrescriptionItem[]
+}
+
+model PrescriptionItem {
+  id             String       @id @default(uuid())
+  prescriptionId String
+  medicineId     String
+  dosage         String?
+  duration       String?
+  medicine       Medicine     @relation(fields: [medicineId], references: [id])
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id])
+}
+
+model LabRequest {
+  id       String           @id @default(uuid())
+  visitId  String
+  doctorId String
+  testName String
+  status   LabRequestStatus @default(REQUESTED)
+  report   LabReport?
+  doctor   Doctor           @relation(fields: [doctorId], references: [id])
+  visit    Visit            @relation(fields: [visitId], references: [id])
+}
+
+model LabReport {
+  id                   String     @id @default(uuid())
+  labRequestId         String     @unique
+  uploadedByLabStaffId String?
+  reportUrl            String
+  uploadedAt           DateTime   @default(now())
+  labRequest           LabRequest @relation(fields: [labRequestId], references: [id])
+  uploadedByStaff      LabStaff?  @relation(fields: [uploadedByLabStaffId], references: [id])
+}
+
+model ExternalDocument {
+  id           String       @id @default(uuid())
+  patientId    String
+  visitId      String?
+  documentType DocumentType
+  fileUrl      String
+  uploadedAt   DateTime     @default(now())
+  patient      Patient      @relation(fields: [patientId], references: [id])
+  visit        Visit?       @relation(fields: [visitId], references: [id])
+}
+
+model Medicine {
+  id                String             @id @default(uuid())
+  name              String
+  stockQuantity     Int
+  unitPrice         Decimal            @db.Decimal(10, 2)
+  billItems         BillItem[]
+  prescriptionItems PrescriptionItem[]
+}
+
+model Bill {
+  id            String        @id @default(uuid())
+  visitId       String        @unique
+  totalAmount   Decimal       @db.Decimal(10, 2)
+  paymentStatus PaymentStatus @default(UNPAID)
+  createdAt     DateTime      @default(now())
+  visit         Visit         @relation(fields: [visitId], references: [id])
+  items         BillItem[]
+}
+
+model BillItem {
+  id         String   @id @default(uuid())
+  billId     String
+  medicineId String
+  quantity   Int
+  price      Decimal  @db.Decimal(10, 2)
+  bill       Bill     @relation(fields: [billId], references: [id])
+  medicine   Medicine @relation(fields: [medicineId], references: [id])
+}
+
+model DoctorAttendance {
+  id         String    @id @default(uuid())
+  doctorId   String
+  checkIn    DateTime
+  checkOut   DateTime?
+  totalHours Float?
+  doctor     Doctor    @relation(fields: [doctorId], references: [id])
+}
+
+model PHCEvent {
+  id                String   @id @default(uuid())
+  title             String
+  description       String?
+  eventDate         DateTime
+  publishedAt       DateTime @default(now())
+  publishedByUserId String?
+  publishedBy       User?    @relation(fields: [publishedByUserId], references: [id])
+}
+
+model Notification {
+  id               String           @id @default(uuid())
+  userId           String
+  doctorId         String?
+  appointmentId    String?
+  title            String
+  message          String
+  notificationType NotificationType
+  createdAt        DateTime         @default(now())
+  readAt           DateTime?
+  appointment      Appointment?     @relation(fields: [appointmentId], references: [id])
+  doctor           Doctor?          @relation(fields: [doctorId], references: [id])
+  user             User             @relation(fields: [userId], references: [id])
+}
 
 enum UserRole {
   PATIENT
@@ -61,257 +282,4 @@ enum DocumentType {
 enum NotificationType {
   SPECIALIST_UNAVAILABLE
   PHYSICIAN_UNAVAILABLE
-}
-
-// ─── Core Identity ────────────────────────────────────────────────────────────
-
-model User {
-  id        String   @id @default(uuid())
-  ldapId    String?  @unique
-  role      UserRole
-  createdAt DateTime @default(now())
-  isActive  Boolean  @default(true)
-
-  patient        Patient?
-  doctor         Doctor?
-  receptionStaff ReceptionStaff?
-  pharmacyStaff  PharmacyStaff?
-  labStaff       LabStaff?
-  phcEvents      PHCEvent[]
-  notifications  Notification[]
-}
-
-// ─── Role Profiles ────────────────────────────────────────────────────────────
-
-model Patient {
-  id         String    @id @default(uuid())
-  userId     String    @unique
-  name       String?
-  dob        DateTime? @db.Date
-  email      String?
-  bloodGroup String?
-  phone      String?
-  address    String?
-  qrCode     String?   @unique
-
-  user              User               @relation(fields: [userId], references: [id])
-  visits            Visit[]
-  appointments      Appointment[]
-  externalDocuments ExternalDocument[]
-}
-
-model Doctor {
-  id             String     @id @default(uuid())
-  userId         String     @unique
-  name           String?
-  doctorType     DoctorType
-  specialization String?
-  isAvailable    Boolean    @default(false)
-
-  user          User               @relation(fields: [userId], references: [id])
-  visits        Visit[]
-  appointments  Appointment[]
-  prescriptions Prescription[]
-  labRequests   LabRequest[]
-  attendance    DoctorAttendance[]
-  notifications Notification[]
-}
-
-model ReceptionStaff {
-  id     String @id @default(uuid())
-  userId String @unique
-
-  user User @relation(fields: [userId], references: [id])
-}
-
-model PharmacyStaff {
-  id     String @id @default(uuid())
-  userId String @unique
-
-  user User @relation(fields: [userId], references: [id])
-}
-
-model LabStaff {
-  id     String @id @default(uuid())
-  userId String @unique
-
-  user       User        @relation(fields: [userId], references: [id])
-  labReports LabReport[]
-}
-
-// ─── Clinical Workflow ────────────────────────────────────────────────────────
-
-model Visit {
-  id                String      @id @default(uuid())
-  patientId         String
-  doctorId          String?
-  visitStatus       VisitStatus @default(WAITING)
-  visitType         VisitType
-  consultationNotes String?
-  createdAt         DateTime    @default(now())
-  closedAt          DateTime?
-
-  patient           Patient            @relation(fields: [patientId], references: [id])
-  doctor            Doctor?            @relation(fields: [doctorId], references: [id])
-  vitals            VisitVitals?
-  prescription      Prescription?
-  labRequests       LabRequest[]
-  bill              Bill?
-  externalDocuments ExternalDocument[]
-}
-
-model VisitVitals {
-  id            String  @id @default(uuid())
-  visitId       String  @unique
-  weight        Float?
-  temperature   Float?
-  bloodPressure String?
-
-  visit Visit @relation(fields: [visitId], references: [id])
-}
-
-model Appointment {
-  id              String            @id @default(uuid())
-  patientId       String
-  doctorId        String
-  appointmentTime DateTime
-  slotDuration    Int
-  isEmergency     Boolean           @default(false)
-  status          AppointmentStatus @default(BOOKED)
-
-  patient Patient @relation(fields: [patientId], references: [id])
-  doctor  Doctor  @relation(fields: [doctorId], references: [id])
-  notifications Notification[]
-}
-
-model Prescription {
-  id          String   @id @default(uuid())
-  visitId     String   @unique
-  doctorId    String
-  notes       String?
-  isDispensed Boolean  @default(false)
-  createdAt   DateTime @default(now())
-
-  visit  Visit              @relation(fields: [visitId], references: [id])
-  doctor Doctor             @relation(fields: [doctorId], references: [id])
-  items  PrescriptionItem[]
-}
-
-model PrescriptionItem {
-  id             String  @id @default(uuid())
-  prescriptionId String
-  medicineId     String
-  dosage         String?
-  duration       String?
-
-  prescription Prescription @relation(fields: [prescriptionId], references: [id])
-  medicine     Medicine     @relation(fields: [medicineId], references: [id])
-}
-
-model LabRequest {
-  id       String           @id @default(uuid())
-  visitId  String
-  doctorId String
-  testName String
-  status   LabRequestStatus @default(REQUESTED)
-
-  visit  Visit      @relation(fields: [visitId], references: [id])
-  doctor Doctor     @relation(fields: [doctorId], references: [id])
-  report LabReport?
-}
-
-model LabReport {
-  id                   String   @id @default(uuid())
-  labRequestId         String   @unique
-  uploadedByLabStaffId String?
-  reportUrl            String
-  uploadedAt           DateTime @default(now())
-
-  labRequest      LabRequest @relation(fields: [labRequestId], references: [id])
-  uploadedByStaff LabStaff?  @relation(fields: [uploadedByLabStaffId], references: [id])
-}
-
-model ExternalDocument {
-  id           String       @id @default(uuid())
-  patientId    String
-  visitId      String?
-  documentType DocumentType
-  fileUrl      String
-  uploadedAt   DateTime     @default(now())
-
-  patient Patient @relation(fields: [patientId], references: [id])
-  visit   Visit?  @relation(fields: [visitId], references: [id])
-}
-
-// ─── Pharmacy & Billing ───────────────────────────────────────────────────────
-
-model Medicine {
-  id            String  @id @default(uuid())
-  name          String
-  stockQuantity Int
-  unitPrice     Decimal @db.Decimal(10, 2)
-
-  prescriptionItems PrescriptionItem[]
-  billItems         BillItem[]
-}
-
-model Bill {
-  id            String        @id @default(uuid())
-  visitId       String        @unique
-  totalAmount   Decimal       @db.Decimal(10, 2)
-  paymentStatus PaymentStatus @default(UNPAID)
-  createdAt     DateTime      @default(now())
-
-  visit Visit      @relation(fields: [visitId], references: [id])
-  items BillItem[]
-}
-
-model BillItem {
-  id         String  @id @default(uuid())
-  billId     String
-  medicineId String
-  quantity   Int
-  price      Decimal @db.Decimal(10, 2)
-
-  bill     Bill     @relation(fields: [billId], references: [id])
-  medicine Medicine @relation(fields: [medicineId], references: [id])
-}
-
-// ─── Attendance & Admin ───────────────────────────────────────────────────────
-
-model DoctorAttendance {
-  id         String    @id @default(uuid())
-  doctorId   String
-  checkIn    DateTime
-  checkOut   DateTime?
-  totalHours Float?
-
-  doctor Doctor @relation(fields: [doctorId], references: [id])
-}
-
-model PHCEvent {
-  id                String   @id @default(uuid())
-  title             String
-  description       String?
-  eventDate         DateTime
-  publishedAt       DateTime @default(now())
-  publishedByUserId String?
-
-  publishedBy User? @relation(fields: [publishedByUserId], references: [id])
-}
-
-model Notification {
-  id               String           @id @default(uuid())
-  userId           String
-  doctorId         String?
-  appointmentId    String?
-  title            String
-  message          String
-  notificationType NotificationType
-  createdAt        DateTime         @default(now())
-  readAt           DateTime?
-
-  user        User         @relation(fields: [userId], references: [id])
-  doctor      Doctor?      @relation(fields: [doctorId], references: [id])
-  appointment Appointment? @relation(fields: [appointmentId], references: [id])
 }
