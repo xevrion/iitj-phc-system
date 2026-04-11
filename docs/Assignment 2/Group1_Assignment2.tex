@@ -460,10 +460,14 @@ Some debilitating factors became clear only after implementation work started:
 The project should not overclaim against the global state of the art; no formal benchmark against commercial hospital platforms has been conducted. However, relative to generic appointment tools and heavyweight hospital systems, the design does exhibit practical novelty in its target context:
 \begin{itemize}
     \item \textbf{Institution-specific identity integration:} the design is anchored around IIT Jodhpur credentials rather than creating a separate credential universe.
-    \item \textbf{Unified outpatient traceability:} check-in, consultation, prescription, lab, billing, and documents are handled in one visit-centric model.
+    \item \textbf{QR-assisted reception integrated with clinical flow:} the repository implements QR-based patient resolution and a dedicated check-in path that can create a visit and initial vitals in one reception-side action instead of treating identity lookup and visit creation as separate disconnected steps.
+    \item \textbf{Visit-centric outpatient traceability:} check-in, consultation, prescription, lab, billing, and documents are handled through one visit-linked model. In practice, this means the visit identifier is not just a display token; it is the relational anchor through which the main PHC artifacts are retrieved, updated, and audited.
+    \item \textbf{Doctor work-queue visibility instead of only appointment listing:} the implementation supports a doctor-facing waiting queue, attendance/availability state, and doctor-specific schedule retrieval. That is more operationally useful in a PHC setting than a plain appointment calendar because walk-ins and claimed consultations are treated as first-class workflow objects.
     \item \textbf{Lightweight deployability:} a modular monolith is better matched to a campus PHC than an enterprise hospital stack or a fragmented set of standalone tools.
-    \item \textbf{Administrative observability:} attendance, reports, and event management are treated as first-class system concerns rather than afterthoughts.
+    \item \textbf{Administrative observability and staff-state signaling:} attendance, reports, PHC events, and doctor-unavailability notifications are treated as first-class system concerns rather than afterthoughts.
 \end{itemize}
+
+At the same time, the current codebase does \emph{not} yet justify every possible implementation-level novelty claim. For example, while the schema uses primary keys and multiple unique constraints (such as \texttt{ldapId}, \texttt{qrCode}, and one-to-one \texttt{visitId} links), it does not currently define an explicit advanced indexing strategy in Prisma schema terms such as additional secondary indexes or clustered-index tuning. That is therefore not claimed here as a completed novelty point.
 
 \begin{figure}[!t]
 \centering
