@@ -68,7 +68,7 @@ This trajectory matters because the repository does not merely mirror the wordin
 \subsection{Finalized Tech Stack and Architectural Direction}
 The current technical direction is a layered modular monolith. This was an intentional decision. A microservices architecture would have added deployment and coordination overhead that is difficult to justify for a single-campus PHC.
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \caption{Finalized Technology Stack}
 \begin{tabular}{|p{2.1cm}|p{5.2cm}|}
@@ -100,7 +100,7 @@ The architectural pattern followed consistently in the backend is:
 
 This discipline is valuable in an academic project because it makes responsibility boundaries explicit. The controllers remain thin, the services hold validation and business rules, and Prisma is the persistence boundary. Such separation reduces the chance that future frontend work or later Sprint 5 integrations will require invasive rewrites. The current modular decomposition is consistent with the system view shown in Fig.~\ref{fig:architecture}.
 
-\begin{figure}[H]
+\begin{figure}[!t]
 \centering
 \includegraphics[width=\columnwidth]{figures/phc-system-architecture.png}
 \caption{Overall PHC system architecture retained from the SRS/Assignment 1 design baseline and still aligned with the current backend implementation.}
@@ -116,7 +116,7 @@ The finalized access model uses JWT for session continuity and role-based author
 \subsubsection{Visit-Centric Traceability Model}
 The central methodology choice is to treat the visit as the anchor of all clinical artifacts. A visit progresses through states such as \texttt{WAITING}, \texttt{IN\_CONSULTATION}, \texttt{COMPLETED}, and \texttt{CANCELLED}. Once this state machine exists, prescriptions, lab requests, bills, and vitals no longer float as isolated records. The relational consequences of that choice are visible in Fig.~\ref{fig:visitid}.
 
-\begin{figure}[H]
+\begin{figure}[!t]
 \centering
 \includegraphics[width=\columnwidth]{figures/visitid-relational-model.png}
 \caption{Visit-centric relational design linking clinical, laboratory, and billing entities.}
@@ -138,7 +138,7 @@ The SRS defines Agile development with short sprints, Trello-based work manageme
 \subsection{Sprint Plan, Scrum Team, and Alpha Progression}
 The project is being executed by a three-member Scrum-style team with shared implementation responsibility and Alpha ownership used as an accountability model. From SRS 2.0, the Alpha mapping is as follows.
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \caption{Essence Alpha Ownership}
 \begin{tabular}{|p{2cm}|p{4cm}|}
@@ -157,7 +157,7 @@ Requirements, Way of Working & Nayan Patidar \\
 
 The original SRS proposed five implementation sprints, but the repository's current planning view extends this into seven execution slices, with frontend and stabilization separated. This is a useful example of theory being corrected by implementation reality.
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \caption{Observed Sprint Status on April 11, 2026}
 \begin{tabular}{|p{0.9cm}|p{2.3cm}|p{3.0cm}|p{1.2cm}|}
@@ -207,7 +207,7 @@ The final UML baseline used for this report is the same set that emerged from SR
 
 The component view is especially important. It justified the modular monolith choice and still describes the repository accurately: authentication, records, visits, laboratory, billing, and admin capabilities are separated by module, but deployed as one backend service. That architecture reduced operational overhead while preserving strong internal boundaries, as summarized in Fig.~\ref{fig:components}.
 
-\begin{figure}[H]
+\begin{figure}[!t]
 \centering
 \includegraphics[width=\columnwidth]{figures/component-architecture.png}
 \caption{Component-level decomposition supporting the chosen modular monolith architecture.}
@@ -231,7 +231,7 @@ This asymmetry between backend maturity and frontend immaturity is itself an imp
 \subsection{Implemented Module Coverage}
 The delivered backend can also be understood as a set of working operational modules rather than only a count of routes. Table \ref{tab:modules} summarizes the state of the major modules visible in the repository.
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \caption{Current Module Coverage}
 \begin{tabular}{|p{2.05cm}|p{4.55cm}|p{1.15cm}|}
@@ -267,9 +267,9 @@ Frontend dashboards & Login / landing flow, patient dashboard, doctor dashboard,
 \end{table}
 
 \subsection{Execution-Time Evidence from Current Artifacts}
-The testing artifacts contain actual timing evidence rather than only projected estimates. The SRS states that standard user operations should return within a few seconds under normal load. The measured results satisfy that expectation with substantial margin.
+The testing artifacts contain actual timing evidence rather than only projected estimates. These timing analyses were derived from the backend validation artifacts after Assignment 1, especially \texttt{test\_cases.csv} and the measured route-level smoke workflow. The SRS states that standard user operations should return within a few seconds under normal load. The measured results satisfy that expectation with substantial margin.
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \caption{Representative Measured Performance Results}
 \begin{tabular}{|p{2.1cm}|p{2.7cm}|p{1.3cm}|p{1.3cm}|}
@@ -298,10 +298,28 @@ TC-R-003 & QR check-in repeatability (15 runs, avg) & 3000 ms & 889 ms \\
 
 Across the 48 rows currently recorded in \texttt{test\_cases.csv}, the observed overall mean response time is approximately 488.65 ms, with the slowest recorded value at 1291 ms. Even the heavier operations such as billing and prescription retrieval remain well within the SRS's ``few seconds'' expectation.
 
-\subsection{Sprint Plan Behavior Through Burnup and Burndown}
-Implementation progress is clearer when the sprint plan is plotted rather than described only in prose. The burnup and burndown charts in Fig.~\ref{fig:burnpair} summarize the project trajectory across the dated sprints listed in Table~\ref{tab:sprints}. The burnup view shows that the initial release scope was slightly broader and then stabilized after early refinement, while the burndown view shows that closure accelerated during Sprint 4 and Sprint 5 once the backend architecture and module boundaries had settled.
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figures/response_module.png}
+\caption{Average measured backend response time by module from the current validation dataset.}
+\label{fig:responsemodule}
+\end{figure}
 
-\begin{figure}[H]
+Fig.~\ref{fig:responsemodule} makes the module-level timing story more interpretable than raw tables alone. Authentication and patient-profile paths are the lightest operations, while prescription, laboratory, billing, and check-in flows are slower because they traverse more relations, validations, and transactional logic. Even so, the chart shows that the system remains comfortably sub-second to low-second for the main backend modules actually exercised after Assignment 1.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figures/threshold_observed.png}
+\caption{Threshold-versus-observed timing comparison for representative backend operations.}
+\label{fig:thresholdobserved}
+\end{figure}
+
+Fig.~\ref{fig:thresholdobserved} is the clearest theory-versus-implementation comparison in the current repository. The original expectation was only qualitative: key PHC operations should finish within a few seconds. The observed timings show a large headroom margin even for the heavier flows. This helped the team retain the current Node.js, Express, Prisma, and PostgreSQL stack instead of prematurely redesigning for performance reasons.
+
+\subsection{Sprint Plan Behavior Through Burnup and Burndown}
+Implementation progress is clearer when the sprint plan is plotted rather than described only in prose. The burnup and burndown charts in Fig.~\ref{fig:burnpair} are supporting project-control evidence rather than the primary technical results plots. They summarize the project trajectory across the dated sprints listed in Table~\ref{tab:sprints}. The burnup view shows that the initial release scope was slightly broader and then stabilized after early refinement, while the burndown view shows that closure accelerated during Sprint 4 and Sprint 5 once the backend architecture and module boundaries had settled.
+
+\begin{figure}[!t]
 \centering
 \includegraphics[width=0.48\columnwidth]{figures/burnup.png}\hfill
 \includegraphics[width=0.48\columnwidth]{figures/burndown.png}
@@ -334,7 +352,7 @@ The current state also exposes limits and negative findings that improved the te
 \subsection{Artifact Consistency as a Project Result}
 An unexpected but important result is that the project now contains enough engineering surface area for artifact consistency itself to matter. The available documents and scripts do not all describe the same testing state.
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \caption{Observed Documentation and Testing Drift}
 \begin{tabular}{|p{2.55cm}|p{3.45cm}|p{1.45cm}|}
@@ -356,7 +374,7 @@ This observation is valuable because it reveals a practical engineering challeng
 \subsection{Requirement-to-Implementation Traceability}
 The project now has enough implemented surface area for a compact traceability view to be meaningful. Table \ref{tab:traceability} summarizes how a few high-value requirements now map to concrete delivered behavior.
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \caption{Compact Traceability Matrix}
 \begin{tabular}{|p{0.95cm}|p{3.1cm}|p{2.1cm}|p{1.0cm}|}
@@ -388,7 +406,7 @@ REQ-49/52 & Admin user and reporting capability & Admin routes and report servic
 \subsection{Module-Level Timing Interpretation}
 The CSV evidence also makes it possible to compare average response behavior by module. This is useful because it distinguishes lightweight identity and profile operations from the heavier composite workflows that traverse more relations and business rules.
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \caption{Selected Module-Wise Average Response Times from \texttt{test\_cases.csv}}
 \begin{tabular}{|p{2.2cm}|p{1.4cm}|p{2.7cm}|}
@@ -428,7 +446,7 @@ The SRS described performance qualitatively. The actual backend now shows sub-1.
 The earlier report argued that a relational model was preferable for PHC traceability. The implemented Prisma schema strengthens that conclusion. Prescriptions, lab reports, bills, vitals, doctor attendance, and documents now coexist in a model where referential integrity is inspectable and testable rather than only architecturally claimed.
 
 \subsubsection{OCR as a Considered but Deferred Idea}
-Another design question that surfaced during review was whether OCR-backed summarization should be used for scanned prescriptions or reports. The team considered this direction, especially for imported external documents, but did not include it in the implemented scope. The reason was pragmatic: the project priority was to create structured native records for prescriptions, lab requests, bills, and visit notes first. OCR would add model accuracy questions, privacy concerns, and validation burden at a stage where reliable digitization of the core workflow was still more important than summarization of legacy scans. In the current architecture, OCR remains a plausible future extension for external-document ingestion rather than a missing core module.
+Another design question that surfaced during review was whether OCR-backed summarization should be used for scanned prescriptions or reports. This was not part of the team's original implementation plan after Assignment 1; it emerged later as a useful recommendation from the professor. The team therefore did not design or implement an OCR pipeline in the current version. The reason for leaving it out was pragmatic: the immediate priority was to create structured native records for prescriptions, lab requests, bills, and visit notes first. OCR would add extra accuracy-validation, privacy, and model-selection burden at a stage where reliable digitization of the core PHC workflow was still more important than summarization of legacy scans. In the current architecture, OCR remains a possible future extension for imported external documents rather than a missing module that the team had already committed to build.
 
 \subsection{Operational Factors Identified Late}
 Some debilitating factors became clear only after implementation work started:
@@ -447,7 +465,7 @@ The project should not overclaim against the global state of the art; no formal 
     \item \textbf{Administrative observability:} attendance, reports, and event management are treated as first-class system concerns rather than afterthoughts.
 \end{itemize}
 
-\begin{figure}[H]
+\begin{figure}[!t]
 \centering
 \includegraphics[width=\columnwidth]{figures/end-to-end-visit-lifecycle.png}
 \caption{End-to-end patient-flow model retained as a valid summary of the working backend's intended operational path.}

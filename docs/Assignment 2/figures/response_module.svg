@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720">
+<rect width="100%" height="100%" fill="white"/>
+<text x="600.0" y="42" text-anchor="middle" font-family="Arial" font-size="28">Average Response Time by Module</text>
+<text x="28" y="340.0" text-anchor="middle" font-family="Arial" font-size="20" transform="rotate(-90 28 340.0)">Average response time (ms)</text>
+<line x1="110" y1="80" x2="110" y2="600" stroke="black" stroke-width="2"/>
+<line x1="110" y1="600" x2="1160" y2="600" stroke="black" stroke-width="2"/>
+<line x1="110" y1="600.0" x2="1160" y2="600.0" stroke="#cccccc" stroke-width="1"/>
+<text x="98" y="606.0" text-anchor="end" font-family="Arial" font-size="16">0</text>
+<line x1="110" y1="496.0" x2="1160" y2="496.0" stroke="#cccccc" stroke-width="1"/>
+<text x="98" y="502.0" text-anchor="end" font-family="Arial" font-size="16">164</text>
+<line x1="110" y1="392.0" x2="1160" y2="392.0" stroke="#cccccc" stroke-width="1"/>
+<text x="98" y="398.0" text-anchor="end" font-family="Arial" font-size="16">329</text>
+<line x1="110" y1="288.0" x2="1160" y2="288.0" stroke="#cccccc" stroke-width="1"/>
+<text x="98" y="294.0" text-anchor="end" font-family="Arial" font-size="16">494</text>
+<line x1="110" y1="184.0" x2="1160" y2="184.0" stroke="#cccccc" stroke-width="1"/>
+<text x="98" y="190.0" text-anchor="end" font-family="Arial" font-size="16">658</text>
+<line x1="110" y1="80.0" x2="1160" y2="80.0" stroke="#cccccc" stroke-width="1"/>
+<text x="98" y="86.0" text-anchor="end" font-family="Arial" font-size="16">823</text>
+<rect x="133.86363636363637" y="229.46320681736216" width="35.79545454545455" height="370.53679318263784" fill="#2563EB" stroke="black" stroke-width="1"/>
+<text x="151.76136363636365" y="221.46320681736216" text-anchor="middle" font-family="Arial" font-size="15">586.75</text>
+<text x="157.72727272727272" y="646" text-anchor="middle" font-family="Arial" font-size="16" transform="rotate(20 157.72727272727272 646)">Appointment</text>
+<rect x="229.3181818181818" y="492.01228524204333" width="35.79545454545455" height="107.98771475795667" fill="#2563EB" stroke="black" stroke-width="1"/>
+<text x="247.2159090909091" y="484.01228524204333" text-anchor="middle" font-family="Arial" font-size="15">171</text>
+<text x="253.18181818181816" y="646" text-anchor="middle" font-family="Arial" font-size="16" transform="rotate(20 253.18181818181816 646)">Auth</text>
+<rect x="324.77272727272725" y="181.75916019270693" width="35.79545454545455" height="418.24083980729307" fill="#2563EB" stroke="black" stroke-width="1"/>
+<text x="342.6704545454545" y="173.75916019270693" text-anchor="middle" font-family="Arial" font-size="15">662.29</text>
+<text x="348.6363636363636" y="646" text-anchor="middle" font-family="Arial" font-size="16" transform="rotate(20 348.6363636363636 646)">Billing</text>
+<rect x="420.22727272727275" y="170.10153905567836" width="35.79545454545455" height="429.89846094432164" fill="#2563EB" stroke="black" stroke-width="1"/>
+<text x="438.125" y="162.10153905567836" text-anchor="middle" font-family="Arial" font-size="15">680.75</text>
+<text x="444.0909090909091" y="646" text-anchor="middle" font-family="Arial" font-size="16" transform="rotate(20 444.0909090909091 646)">Checkin</text>
+<rect x="515.6818181818181" y="192.67791801823364" width="35.79545454545455" height="407.32208198176636" fill="#2563EB" stroke="black" stroke-width="1"/>
+<text x="533.5795454545454" y="184.67791801823364" text-anchor="middle" font-family="Arial" font-size="15">645</text>
+<text x="539.5454545454545" y="646" text-anchor="middle" font-family="Arial" font-size="16" transform="rotate(20 539.5454545454545 646)">Doctor</text>
+<rect x="611.1363636363636" y="270.03753823957686" width="35.79545454545455" height="329.96246176042314" fill="#2563EB" stroke="black" stroke-width="1"/>
+<text x="629.0340909090909" y="262.03753823957686" text-anchor="middle" font-family="Arial" font-size="15">522.5</text>
+<text x="635.0" y="646" text-anchor="middle" font-family="Arial" font-size="16" transform="rotate(20 635.0 646)">Document</text>
+<rect x="706.5909090909091" y="132.68474315270214" width="35.79545454545455" height="467.31525684729786" fill="#2563EB" stroke="black" stroke-width="1"/>
+<text x="724.4886363636364" y="124.68474315270214" text-anchor="middle" font-family="Arial" font-size="15">740</text>
+<text x="730.4545454545455" y="646" text-anchor="middle" font-family="Arial" font-size="16" transform="rotate(20 730.4545454545455 646)">Lab</text>
+<rect x="802.0454545454545" y="467.59190553625274" width="35.79545454545455" height="132.40809446374723" fill="#2563EB" stroke="black" stroke-width="1"/>
+<text x="819.9431818181818" y="459.59190553625274" text-anchor="middle" font-family="Arial" font-size="15">209.67</text>
+<text x="825.9090909090909" y="646" text-anchor="middle" font-family="Arial" font-size="16" transform="rotate(20 825.9090909090909 646)">Medicine</text>
+<rect x="897.5" y="433.78733026728537" width="35.79545454545455" height="166.2126697327146" fill="#2563EB" stroke="black" stroke-width="1"/>
+<text x="915.3977272727273" y="425.78733026728537" text-anchor="middle" font-family="Arial" font-size="15">263.2</text>
+<text x="921.3636363636364" y="646" text-anchor="middle" font-family="Arial" font-size="16" transform="rotate(20 921.3636363636364 646)">Patient</text>
+<rect x="992.9545454545455" y="127.27272727272737" width="35.79545454545455" height="472.72727272727263" fill="#2563EB" stroke="black" stroke-width="1"/>
+<text x="1010.8522727272727" y="119.27272727272737" text-anchor="middle" font-family="Arial" font-size="15">748.57</text>
+<text x="1016.8181818181819" y="646" text-anchor="middle" font-family="Arial" font-size="16" transform="rotate(20 1016.8181818181819 646)">Prescription</text>
+<rect x="1088.4090909090908" y="403.980194965674" width="35.79545454545455" height="196.019805034326" fill="#2563EB" stroke="black" stroke-width="1"/>
+<text x="1106.306818181818" y="395.980194965674" text-anchor="middle" font-family="Arial" font-size="15">310.4</text>
+<text x="1112.2727272727273" y="646" text-anchor="middle" font-family="Arial" font-size="16" transform="rotate(20 1112.2727272727273 646)">Visit</text>
+<rect x="940" y="56" width="18" height="18" fill="#2563EB" stroke="black" stroke-width="1"/>
+<text x="968" y="70" font-family="Arial" font-size="16">Average time</text>
+</svg>
