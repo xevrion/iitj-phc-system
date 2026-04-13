@@ -129,6 +129,9 @@ const DoctorOverview = () => {
           <p className="text-gray-500">Track queue, appointments, and your current duty status.</p>
         </div>
         <div className="flex gap-3 flex-wrap">
+          <Button variant="outline" onClick={fetchOverview} isLoading={loading || saving}>
+            Refresh Data
+          </Button>
           <Button
             variant={user?.doctor?.isAvailable ? "secondary" : "primary"}
             onClick={() => handleAvailability(!user?.doctor?.isAvailable)}
