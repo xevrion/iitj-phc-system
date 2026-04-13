@@ -4,6 +4,7 @@ import useAuthStore from "./store/useAuthStore";
 import LoginPage from "./features/auth/pages/LoginPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PatientDashboard from "./features/patient/pages/PatientDashboard";
+import DoctorDashboard from "./features/doctor/pages/DoctorDashboard";
 import "./App.css";
 
 function RootRedirect() {
@@ -42,6 +43,16 @@ function App() {
               <PatientDashboard />
             </ProtectedRoute>
           } 
+        />
+
+        {/* Doctor Routes */}
+        <Route
+          path="/doctor/*"
+          element={
+            <ProtectedRoute allowedRoles={["DOCTOR"]}>
+              <DoctorDashboard />
+            </ProtectedRoute>
+          }
         />
 
         {/* Root Redirection */}
