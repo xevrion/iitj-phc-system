@@ -8,6 +8,7 @@ const DoctorQueue = () => {
   const [loading, setLoading] = useState(true);
   const [claimingId, setClaimingId] = useState(null);
   const [error, setError] = useState("");
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   const fetchQueue = async () => {
     setLoading(true);
@@ -15,6 +16,7 @@ const DoctorQueue = () => {
     try {
       const response = await getDoctorQueue();
       setQueue(response.success ? response.data : []);
+      setLastUpdated(new Date());
     } catch {
       setError("Unable to load waiting queue right now.");
     } finally {
@@ -54,6 +56,9 @@ const DoctorQueue = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Doctor Queue</h1>
           <p className="text-gray-500">Patients waiting for consultation: {queue.length}</p>
+          {lastUpdated && (
+            <p className="text-xs text-gray-400 mt-1">Updated {lastUpdated.toLocaleTimeString("en-IN")}</p>
+          )}
         </div>
         <Button variant="outline" onClick={fetchQueue}>Refresh</Button>
       </div>
