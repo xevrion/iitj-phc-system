@@ -25,6 +25,7 @@ const DoctorOverview = () => {
   const [queue, setQueue] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [error, setError] = useState("");
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   const fetchOverview = async () => {
     setLoading(true);
@@ -37,6 +38,7 @@ const DoctorOverview = () => {
 
       setQueue(queueRes.success ? queueRes.data : []);
       setAppointments(appointmentsRes.success ? appointmentsRes.data : []);
+      setLastUpdated(new Date());
     } catch {
       setError("Unable to load doctor dashboard data right now.");
     } finally {
@@ -127,6 +129,9 @@ const DoctorOverview = () => {
             Welcome, Dr. {user?.doctor?.name || user?.ldapId || "Doctor"}
           </h1>
           <p className="text-gray-500">Track queue, appointments, and your current duty status.</p>
+          {lastUpdated && (
+            <p className="text-xs text-gray-400 mt-1">Synced at {lastUpdated.toLocaleTimeString("en-IN")}</p>
+          )}
         </div>
         <div className="flex gap-3 flex-wrap">
           <Button variant="outline" onClick={fetchOverview} isLoading={loading || saving}>
