@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
+import { cn } from "../../../utils/cn";
 import { getMyVisits } from "../services/patient.service";
 import useAuthStore from "../../../store/useAuthStore";
 
