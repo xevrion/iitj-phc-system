@@ -53,7 +53,7 @@ const DoctorQueue = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Doctor Queue</h1>
-          <p className="text-gray-500">Patients waiting for consultation.</p>
+          <p className="text-gray-500">Patients waiting for consultation: {queue.length}</p>
         </div>
         <Button variant="outline" onClick={fetchQueue}>Refresh</Button>
       </div>
