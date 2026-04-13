@@ -28,9 +28,13 @@ const DoctorAppointments = () => {
 
   const { upcoming, past } = useMemo(() => {
     const now = Date.now();
+    const sorted = [...appointments].sort(
+      (a, b) => new Date(a.appointmentTime).getTime() - new Date(b.appointmentTime).getTime()
+    );
+
     return {
-      upcoming: appointments.filter((item) => new Date(item.appointmentTime).getTime() >= now),
-      past: appointments.filter((item) => new Date(item.appointmentTime).getTime() < now),
+      upcoming: sorted.filter((item) => new Date(item.appointmentTime).getTime() >= now),
+      past: sorted.filter((item) => new Date(item.appointmentTime).getTime() < now),
     };
   }, [appointments]);
 
