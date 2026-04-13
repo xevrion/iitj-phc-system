@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Loader2, CalendarDays, UserRound, Phone, Siren } from "lucide-react";
 import { cn } from "../../../utils/cn";
+import Button from "../../../components/ui/Button";
 import { getDoctorAppointments } from "../services/doctor.service";
 
 const DoctorAppointments = () => {
@@ -8,20 +9,20 @@ const DoctorAppointments = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const response = await getDoctorAppointments();
-        setAppointments(response.success ? response.data : []);
-      } catch {
-        setError("Unable to load appointments right now.");
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchAppointments = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await getDoctorAppointments();
+      setAppointments(response.success ? response.data : []);
+    } catch {
+      setError("Unable to load appointments right now.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchAppointments();
   }, []);
 
@@ -93,9 +94,14 @@ const DoctorAppointments = () => {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">My Appointments</h1>
-        <p className="text-gray-500">View upcoming and historical appointment slots.</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">My Appointments</h1>
+          <p className="text-gray-500">View upcoming and historical appointment slots.</p>
+        </div>
+        <Button variant="outline" onClick={fetchAppointments}>
+          Refresh
+        </Button>
       </div>
 
       {error && (
