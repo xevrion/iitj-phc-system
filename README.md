@@ -177,10 +177,10 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 ---
 
 ## Sprint 6 — Frontend & UX Integration
-**Dates:** Apr 2 – Apr 15, 2026 | **Weeks:** 13–14 | **Status: Not Started**
+**Dates:** Apr 2 – Apr 15, 2026 | **Weeks:** 13–14 | **Status: In Progress**
 
 ### Role-Based Dashboards
-- [ ] Patient dashboard — medical records, prescriptions, lab reports, appointment booking
+- [x] Patient dashboard — medical records, prescriptions, lab reports, appointment booking, billing, profile with QR (REQ-10, 12, 30, 45, 57, 63, 65)
 - [ ] Doctor dashboard — visit queue, consultation form, prescription writer, lab request
 - [ ] Reception dashboard — QR scanner, visit creation form, vitals entry
 - [ ] Pharmacy dashboard — prescription queue, dispense action, inventory view
@@ -188,10 +188,11 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 - [ ] Admin dashboard — user management, attendance, events, reports
 
 ### Auth & Routing
-- [ ] Login screen with ldapId/password (LDAP flow)
-- [ ] JWT storage and axios interceptor for Bearer token
-- [ ] Role-based route guards (redirect unauthorized users)
-- [ ] Logout and session expiry handling
+- [x] Login screen with ldapId/password (LDAP flow)
+- [x] JWT storage and axios interceptor for Bearer token
+- [x] Role-based route guards (redirect unauthorized users)
+- [x] Logout and session expiry handling
+- [x] Global Notification Center (REQ-34, 41)
 
 ---
 

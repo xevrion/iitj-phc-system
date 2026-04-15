@@ -39,3 +39,32 @@ export const getMyAppointments = async () => {
   const response = await api.get("/appointments/my");
   return response.data;
 };
+
+export const getNotifications = async () => {
+  const response = await api.get("/notifications/mine");
+  return response.data;
+};
+
+export const markNotificationRead = async (id) => {
+  const response = await api.put(`/notifications/${id}/read`);
+  return response.data;
+};
+
+export const getBillByVisit = async (visitId) => {
+  const response = await api.get(`/visits/${visitId}/bill`);
+  return response.data;
+};
+
+export const getMyDocuments = async (patientId) => {
+  const response = await api.get(`/patients/${patientId}/documents`);
+  return response.data;
+};
+
+export const uploadDocument = async (patientId, formData) => {
+  const response = await api.post(`/patients/${patientId}/documents`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response.data;
+};
