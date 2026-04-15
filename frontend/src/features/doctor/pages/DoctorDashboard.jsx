@@ -5,6 +5,8 @@ import DashboardLayout from "../../../components/layout/DashboardLayout";
 import DoctorOverview from "./DoctorOverview";
 import DoctorQueue from "./DoctorQueue";
 import DoctorAppointments from "./DoctorAppointments";
+import Consultation from "./Consultation";
+import DoctorProfile from "./DoctorProfile";
 
 const doctorNavItems = [
   { label: "Overview", path: "/doctor", icon: LayoutDashboard },
@@ -20,14 +22,8 @@ const DoctorDashboard = () => {
         <Route index element={<DoctorOverview />} />
         <Route path="queue" element={<DoctorQueue />} />
         <Route path="appointments" element={<DoctorAppointments />} />
-        <Route
-          path="profile"
-          element={
-            <div className="p-8 bg-white rounded-xl border border-gray-100 shadow-sm">
-              Doctor Profile Placeholder
-            </div>
-          }
-        />
+        <Route path="consultation/:visitId" element={<Consultation />} />
+        <Route path="profile" element={<DoctorProfile />} />
         <Route path="*" element={<Navigate to="/doctor" replace />} />
       </Routes>
     </DashboardLayout>

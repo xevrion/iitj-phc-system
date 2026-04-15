@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import { Loader2, Thermometer, HeartPulse, ClipboardCheck } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import { getDoctorQueue, claimVisit } from "../services/doctor.service";
 
 const DoctorQueue = () => {
+  const navigate = useNavigate();
   const [queue, setQueue] = useState([]);
   const [loading, setLoading] = useState(true);
   const [claimingId, setClaimingId] = useState(null);
@@ -33,7 +35,7 @@ const DoctorQueue = () => {
     setError("");
     try {
       await claimVisit(visitId);
-      await fetchQueue();
+      navigate(`/doctor/consultation/${visitId}`);
     } catch {
       setError("Could not claim this visit. It may already be in consultation.");
     } finally {
