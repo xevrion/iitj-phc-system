@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FolderOpen, Upload, File, Trash2, Download, Plus, Loader2, CheckCircle2, AlertCircle, FileText } from "lucide-react";
+import { FolderOpen, Upload, File, Trash2, Download, Plus, Loader2, CheckCircle2, AlertCircle, FileText, X } from "lucide-react";
 import { cn } from "../../../utils/cn";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
