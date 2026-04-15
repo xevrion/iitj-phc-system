@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router";
 import { 
   User, 
   Activity, 
-  ClipboardText, 
+  ClipboardList, 
   Pill, 
   FlaskConical, 
   Save, 
@@ -226,7 +226,7 @@ const Consultation = () => {
           {/* Tabs */}
           <div className="bg-white p-1 rounded-xl border border-gray-100 shadow-sm flex gap-1">
             {[
-              { id: "notes", label: "Clinical Notes", icon: ClipboardText },
+              { id: "notes", label: "Clinical Notes", icon: ClipboardList },
               { id: "prescription", label: "Prescription", icon: Pill },
               { id: "lab", label: "Lab Requests", icon: FlaskConical }
             ].map(tab => (

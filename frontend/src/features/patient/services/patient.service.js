@@ -30,6 +30,11 @@ export const getDoctors = async () => {
   return response.data;
 };
 
+export const getAllDoctors = async () => {
+  const response = await api.get("/admin/users?role=DOCTOR");
+  return response.data;
+};
+
 export const bookAppointment = async (data) => {
   const response = await api.post("/appointments", data);
   return response.data;

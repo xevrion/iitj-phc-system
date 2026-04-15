@@ -5,6 +5,7 @@ import LoginPage from "./features/auth/pages/LoginPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PatientDashboard from "./features/patient/pages/PatientDashboard";
 import DoctorDashboard from "./features/doctor/pages/DoctorDashboard";
+import ToastContainer from "./components/ui/ToastContainer";
 import "./App.css";
 
 function RootRedirect() {
@@ -32,6 +33,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <ToastContainer />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         

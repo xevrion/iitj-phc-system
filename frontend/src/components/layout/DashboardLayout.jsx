@@ -98,11 +98,11 @@ const DashboardLayout = ({ children, role, navItems }) => {
                   {role.replace("_", " ")}
                 </div>
                 <div className="text-sm font-bold text-gray-900">
-                  {user?.patient?.name?.split(" ")[0] || user?.doctor?.name?.split(" ")[0] || user?.ldapId || "User"}
+                  {user?.patient?.name?.split(" ")[0] || user?.doctor?.name?.split(" ").pop() || user?.ldapId || "User"}
                 </div>
               </div>
               <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold border-2 border-white shadow-sm">
-                {(user?.patient?.name || user?.doctor?.name || user?.ldapId || "U").charAt(0).toUpperCase()}
+                {(user?.patient?.name || user?.doctor?.name?.replace("Dr. ", "") || user?.ldapId || "U").charAt(0).toUpperCase()}
               </div>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, User, Clipboard, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Calendar, User, Clipboard, AlertCircle, CheckCircle2, RotateCw } from "lucide-react";
+import { cn } from "../../../utils/cn";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import { getDoctors, bookAppointment } from "../services/patient.service";
@@ -15,18 +16,25 @@ const BookAppointment = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const fetchDoctors = async () => {
-      try {
-        const response = await getDoctors();
-        if (response.success) {
-          setDoctors(response.data);
-        }
-      } catch (err) {
-        console.error("Failed to load doctors", err);
+  const fetchDoctors = async (isBackground = false) => {
+    if (!isBackground) setIsLoading(true);
+    try {
+      const response = await getDoctors();
+      if (response.success) {
+        setDoctors(response.data);
       }
-    };
+    } catch (err) {
+      console.error("Failed to load doctors", err);
+    } finally {
+      if (!isBackground) setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchDoctors();
+    // Auto-poll the available list every 10s so new doctors appear without manual refresh
+    const interval = setInterval(() => fetchDoctors(true), 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleSubmit = async (e) => {
@@ -78,7 +86,17 @@ const BookAppointment = () => {
       <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm space-y-6">
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-gray-700">Select Specialist Doctor</label>
+            <div className="flex justify-between items-center">
+              <label className="text-sm font-medium text-gray-700">Select Specialist Doctor</label>
+              <button 
+                type="button" 
+                onClick={fetchDoctors}
+                className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1 font-bold"
+              >
+                <RotateCw size={12} className={cn(isLoading && "animate-spin")} />
+                Refresh List
+              </button>
+            </div>
             <div className="relative">
               <select 
                 className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none appearance-none pl-10"
@@ -88,8 +106,8 @@ const BookAppointment = () => {
               >
                 <option value="">Choose a doctor...</option>
                 {doctors.map(doc => (
-                  <option key={doc.id} value={doc.id} disabled={!doc.isAvailable}>
-                    {doc.user?.fullName} ({doc.doctorType}) {!doc.isAvailable ? " - Unavailable" : ""}
+                  <option key={doc.id} value={doc.id}>
+                    {doc.name} ({doc.doctorType})
                   </option>
                 ))}
               </select>

@@ -2,33 +2,44 @@ import React, { useState, useEffect, useRef } from "react";
 import { Bell, Check, Clock, AlertCircle, X, Loader2 } from "lucide-react";
 import { cn } from "../../utils/cn";
 import { getNotifications, markNotificationRead } from "../../features/patient/services/patient.service";
+import useToastStore from "../../store/useToastStore";
 
 const NotificationCenter = () => {
+  const { addToast } = useToastStore();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef(null);
 
-  const fetchNotifications = async () => {
-    setLoading(true);
+  const fetchNotifications = async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     try {
       const response = await getNotifications();
       if (response.success) {
+        // If background fetch, check for NEW notifications to show toast
+        if (isBackground) {
+          const newNotifs = response.data.filter(
+            n => !n.readAt && !notifications.find(existing => existing.id === n.id)
+          );
+          newNotifs.forEach(n => {
+            addToast(n.title, n.message, n.notificationType.includes("UNAVAILABLE") ? "error" : "info");
+          });
+        }
         setNotifications(response.data);
       }
     } catch (err) {
       console.error("Failed to fetch notifications", err);
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchNotifications();
-    // Refresh every minute
-    const interval = setInterval(fetchNotifications, 60000);
+    // Poll every 10 seconds for "real-time" feel
+    const interval = setInterval(() => fetchNotifications(true), 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [notifications]); // Re-run when notifications change to keep closure fresh
 
   useEffect(() => {
     const handleClickOutside = (event) => {
