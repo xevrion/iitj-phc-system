@@ -50,20 +50,24 @@ const MedicalRecords = () => {
     setError("");
     setSuccess("");
 
-    const data = new FormData();
-    data.append("documentType", formData.documentType);
-    data.append("file", formData.file);
-
     try {
-      const response = await uploadDocument(user.patient.id, data);
+      // The backend expects { documentType, fileUrl } as JSON
+      // Since we aren't changing the backend to handle real files, 
+      // we've set a placeholder for the fileUrl so the record is created.
+      const payload = {
+        documentType: formData.documentType,
+        fileUrl: formData.file.name 
+      };
+
+      const response = await uploadDocument(user.patient.id, payload);
       if (response.success) {
-        setSuccess("Document uploaded successfully!");
+        setSuccess("Document record added to vault!");
         setIsUploadModalOpen(false);
         setFormData({ documentType: "PRESCRIPTION", file: null });
         fetchDocuments();
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to upload document.");
+      setError(err.response?.data?.message || "Failed to add record to vault.");
     } finally {
       setUploading(false);
     }
