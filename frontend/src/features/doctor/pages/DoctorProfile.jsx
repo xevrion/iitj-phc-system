@@ -26,9 +26,8 @@ const DoctorProfile = () => {
 
   useEffect(() => {
     const fetchAttendance = async () => {
-      if (!user?.doctor?.id) return;
       try {
-        const response = await getDoctorAttendance(user.doctor.id);
+        const response = await getDoctorAttendance();
         if (response.success) {
           setAttendance(response.data);
         }

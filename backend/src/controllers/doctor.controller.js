@@ -7,6 +7,7 @@ import {
   checkInDoctor,
   checkOutDoctor,
   getAttendanceRecords,
+  getMyAttendanceRecords,
   markPhysicianUnavailable,
 } from "../services/doctor.service.js";
 
@@ -42,6 +43,13 @@ export const attendance = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, records, "Attendance records fetched"));
+});
+
+export const myAttendance = asyncHandler(async (req, res) => {
+  const records = await getMyAttendanceRecords(req.user.id);
+  return res
+    .status(200)
+    .json(new ApiResponse(200, records, "Your attendance records fetched"));
 });
 
 export const markUnavailable = asyncHandler(async (req, res) => {

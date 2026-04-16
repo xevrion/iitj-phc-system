@@ -234,6 +234,15 @@ export const getAttendanceRecords = async (doctorId) => {
   });
 };
 
+export const getMyAttendanceRecords = async (userId) => {
+  const doctor = await getDoctorOrThrow({ userId });
+
+  return prisma.doctorAttendance.findMany({
+    where: { doctorId: doctor.id },
+    orderBy: { checkIn: "desc" },
+  });
+};
+
 export const markPhysicianUnavailable = async (
   actorUserId,
   doctorId,

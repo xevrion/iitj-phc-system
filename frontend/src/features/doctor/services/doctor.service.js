@@ -60,8 +60,8 @@ export const getMedicines = async () => {
   return response.data;
 };
 
-export const getDoctorAttendance = async (doctorId) => {
-  const response = await api.get(`/doctors/attendance/records?doctorId=${doctorId}`);
+export const getDoctorAttendance = async () => {
+  const response = await api.get("/doctors/me/attendance");
   return response.data;
 };
 

@@ -5,6 +5,7 @@ import {
   updateAvailability,
   checkIn,
   checkOut,
+  myAttendance,
   attendance,
   markUnavailable,
 } from "../controllers/doctor.controller.js";
@@ -30,6 +31,7 @@ router.post("/me/checkout", authorizeRoles("DOCTOR"), checkOut);
 
 // Doctor views own appointments
 router.get("/me/appointments", authorizeRoles("DOCTOR"), myAppointmentsDoctor);
+router.get("/me/attendance", authorizeRoles("DOCTOR"), myAttendance);
 
 // REQ-50: admin views attendance records
 router.get("/attendance/records", authorizeRoles("ADMIN"), attendance);

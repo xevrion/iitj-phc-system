@@ -172,7 +172,7 @@ const DoctorOverview = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Next Appointment</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Next Scheduled Appointment</h2>
           {nextAppointment ? (
             <div className="space-y-2">
               <p className="text-sm text-gray-600 flex items-center gap-2">
@@ -188,7 +188,14 @@ const DoctorOverview = () => {
               </p>
             </div>
           ) : (
-            <p className="text-gray-500 text-sm">No upcoming appointments scheduled.</p>
+            <div className="space-y-2">
+              <p className="text-gray-500 text-sm">No upcoming appointments scheduled.</p>
+              {queue.length > 0 && (
+                <p className="text-xs text-gray-400">
+                  Queue patients come from active PHC visits. They are separate from booked appointment slots.
+                </p>
+              )}
+            </div>
           )}
         </div>
 
@@ -205,6 +212,9 @@ const DoctorOverview = () => {
             </p>
             <p>
               Total Appointments (all statuses): {appointments.length}
+            </p>
+            <p className="text-xs text-gray-500 pt-2">
+              Queue and appointments are tracked separately: queue = active visits, appointments = booked future slots.
             </p>
           </div>
         </div>
