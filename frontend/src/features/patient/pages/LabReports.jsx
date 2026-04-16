@@ -1,8 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { FlaskConical, Download, Calendar, Activity, Clock, Loader2, AlertCircle } from "lucide-react";
+import {
+  FlaskConical,
+  Download,
+  Calendar,
+  Activity,
+  Clock,
+  Loader2,
+  AlertCircle,
+  FileText,
+} from "lucide-react";
 import { cn } from "../../../utils/cn";
 import Button from "../../../components/ui/Button";
 import { getMyLabReports } from "../services/patient.service";
+
+const STATUS_STYLES = {
+  COMPLETED: "text-emerald-600",
+  REQUESTED: "text-amber-600",
+};
 
 const LabReports = () => {
   const [reports, setReports] = useState([]);
@@ -38,18 +52,27 @@ const LabReports = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Lab Reports</h1>
-        <p className="text-gray-500">View and download your medical test results.</p>
+        <p className="text-gray-500">Track requested tests and open completed reports from the lab.</p>
       </div>
+
+      {error && (
+        <div className="flex gap-3 items-center p-4 bg-red-50 text-red-700 rounded-xl border border-red-100">
+          <AlertCircle size={18} />
+          <p className="text-sm font-medium">{error}</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {reports.map((report) => (
           <div key={report.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col sm:flex-row">
             <div className={cn(
               "p-6 flex flex-col items-center justify-center gap-2 sm:w-40 shrink-0 border-b sm:border-b-0 sm:border-r border-gray-100 bg-gray-50/50 text-center",
-              report.status === "COMPLETED" ? "text-emerald-600" : "text-amber-600"
+              STATUS_STYLES[report.status] || "text-slate-600"
             )}>
               <FlaskConical size={32} />
-              <div className="text-xs font-bold uppercase tracking-wider">{report.status}</div>
+              <div className="text-xs font-bold uppercase tracking-wider">
+                {report.status === "REQUESTED" ? "IN PROCESS" : report.status}
+              </div>
             </div>
 
             <div className="p-6 flex-1 flex flex-col justify-between">
@@ -61,32 +84,64 @@ const LabReports = () => {
                 
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <div>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Date Requested</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Requested On</p>
                     <p className="text-sm text-gray-700 flex items-center gap-1.5 font-medium">
                       <Calendar size={14} className="text-gray-400" />
-                      {new Date(report.createdAt).toLocaleDateString()}
+                      {report.visit?.createdAt
+                        ? new Date(report.visit.createdAt).toLocaleDateString("en-IN", {
+                            dateStyle: "medium",
+                          })
+                        : "Not available"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Prescribed By</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Requested By</p>
                     <p className="text-sm text-gray-700 flex items-center gap-1.5 font-medium truncate">
                       <Activity size={14} className="text-gray-400" />
-                      {report.visit?.doctor?.user?.fullName || "General"}
+                      {report.visit?.doctor?.name || "General OPD"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Visit ID</p>
+                    <p className="text-sm text-gray-700 font-medium">
+                      {report.visit?.id ? `#${report.visit.id.slice(-6)}` : "Not linked"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Report Uploaded</p>
+                    <p className="text-sm text-gray-700 flex items-center gap-1.5 font-medium">
+                      <FileText size={14} className="text-gray-400" />
+                      {report.report?.uploadedAt
+                        ? new Date(report.report.uploadedAt).toLocaleDateString("en-IN", {
+                            dateStyle: "medium",
+                          })
+                        : "Awaiting upload"}
                     </p>
                   </div>
                 </div>
               </div>
 
               <div className="mt-6">
-                {report.status === "COMPLETED" && report.reportUrl ? (
-                  <Button className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800" onClick={() => window.open(report.reportUrl, "_blank")}>
+                {report.status === "COMPLETED" && report.report?.reportUrl ? (
+                  <Button
+                    className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800"
+                    onClick={() => window.open(report.report.reportUrl, "_blank", "noopener,noreferrer")}
+                  >
                     <Download size={16} />
-                    Download PDF Report
+                    View Report
                   </Button>
-                ) : (
-                  <div className="w-full flex items-center justify-center gap-2 p-3 bg-amber-50 text-amber-700 rounded-lg text-sm font-bold border border-amber-100 italic">
+                ) : report.status === "REQUESTED" ? (
+                  <div className="w-full flex items-center justify-center gap-2 p-3 bg-amber-50 text-amber-700 rounded-lg text-sm font-bold border border-amber-100">
                     <Clock size={16} />
-                    {report.status === "PENDING" ? "Report Under Process" : "Report Available in Portal"}
+                    Report is still being prepared
+                  </div>
+                ) : (
+                  <div className="w-full flex items-center justify-center gap-2 p-3 bg-slate-50 text-slate-700 rounded-lg text-sm font-bold border border-slate-200">
+                    <AlertCircle size={16} />
+                    Report marked complete, but file link is missing
                   </div>
                 )}
               </div>

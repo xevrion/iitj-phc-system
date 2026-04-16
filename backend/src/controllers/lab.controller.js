@@ -37,6 +37,6 @@ export const getById = asyncHandler(async (req, res) => {
 });
 
 export const uploadReport = asyncHandler(async (req, res) => {
-  const report = await uploadLabReport(req.params.id, req.user.id, req.body);
+  const report = await uploadLabReport(req.params.id, req.user.id, req.file);
   return res.status(201).json(new ApiResponse(201, report, "Report uploaded"));
 });

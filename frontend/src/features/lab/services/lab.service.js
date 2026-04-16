@@ -10,7 +10,14 @@ export const getLabRequestById = async (id) => {
   return response.data;
 };
 
-export const uploadLabReport = async (id, reportUrl) => {
-  const response = await api.post(`/lab-requests/${id}/report`, { reportUrl });
+export const uploadLabReport = async (id, file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await api.post(`/lab-requests/${id}/report`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
   return response.data;
 };

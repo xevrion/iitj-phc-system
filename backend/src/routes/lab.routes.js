@@ -1,4 +1,5 @@
 import { Router } from "express";
+import multer from "multer";
 import {
   create,
   getById,
@@ -23,8 +24,35 @@ visitLabRouter.get(
 const labRouter = Router();
 labRouter.use(verifyJWT);
 
+const uploadMiddleware = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+  fileFilter: (_req, file, callback) => {
+    const allowedMimeTypes = [
+      "application/pdf",
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+    ];
+
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      callback(new Error("Only PDF, PNG, and JPG files are allowed"));
+      return;
+    }
+
+    callback(null, true);
+  },
+});
+
 labRouter.get("/pending", authorizeRoles("LAB_STAFF", "ADMIN"), pending);
 labRouter.get("/:id", authorizeRoles("DOCTOR", "PATIENT", "LAB_STAFF", "ADMIN"), getById);
-labRouter.post("/:id/report", authorizeRoles("LAB_STAFF"), uploadReport);
+labRouter.post(
+  "/:id/report",
+  authorizeRoles("LAB_STAFF"),
+  uploadMiddleware.single("file"),
+  uploadReport
+);
 
 export { visitLabRouter, labRouter };

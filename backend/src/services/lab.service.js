@@ -1,5 +1,6 @@
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
+import { deleteFromCloudinary, uploadBufferToCloudinary } from "../utils/cloudinary.js";
 
 // REQ-26: doctor requests a lab test during consultation
 export const createLabRequest = async (visitId, doctorUserId, { testName }) => {
@@ -144,9 +145,7 @@ export const getPendingLabRequests = async () => {
 };
 
 // REQ-54, REQ-55: lab staff uploads report; audit trail via uploadedByLabStaffId
-export const uploadLabReport = async (labRequestId, labStaffUserId, { reportUrl }) => {
-  if (!reportUrl?.trim()) throw new ApiError(400, "Report URL is required");
-
+export const uploadLabReport = async (labRequestId, labStaffUserId, file = null) => {
   const labStaff = await prisma.labStaff.findUnique({
     where: { userId: labStaffUserId },
   });
@@ -159,19 +158,45 @@ export const uploadLabReport = async (labRequestId, labStaffUserId, { reportUrl 
   if (request.status === "COMPLETED")
     throw new ApiError(400, "Report has already been uploaded for this request");
 
-  const [, report] = await prisma.$transaction([
-    prisma.labRequest.update({
-      where: { id: labRequestId },
-      data: { status: "COMPLETED" },
-    }),
-    prisma.labReport.create({
-      data: {
-        labRequestId,
-        uploadedByLabStaffId: labStaff.id,
-        reportUrl: reportUrl.trim(),
-      },
-    }),
-  ]);
+  if (!file) {
+    throw new ApiError(400, "A report file is required");
+  }
 
-  return report;
+  let uploadResult;
+
+  try {
+    uploadResult = await uploadBufferToCloudinary(file.buffer, {
+      folder: process.env.CLOUDINARY_FOLDER || "iitj-phc-system/medical-documents",
+      public_id: `lab-report-${labRequestId}-${Date.now()}-${file.originalname.replace(
+        /[^a-zA-Z0-9._-]/g,
+        "_"
+      )}`,
+      resource_type: "auto",
+    });
+
+    const [, report] = await prisma.$transaction([
+      prisma.labRequest.update({
+        where: { id: labRequestId },
+        data: { status: "COMPLETED" },
+      }),
+      prisma.labReport.create({
+        data: {
+          labRequestId,
+          uploadedByLabStaffId: labStaff.id,
+          reportUrl: uploadResult.secure_url,
+        },
+      }),
+    ]);
+
+    return report;
+  } catch (error) {
+    if (uploadResult?.public_id) {
+      await deleteFromCloudinary(
+        uploadResult.public_id,
+        uploadResult.resource_type || "image"
+      ).catch(() => null);
+    }
+
+    throw error;
+  }
 };

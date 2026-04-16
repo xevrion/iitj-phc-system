@@ -10,7 +10,7 @@ const LabOverview = () => {
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(null);
   const [reportModal, setReportModal] = useState(null);
-  const [reportUrl, setReportUrl] = useState("");
+  const [reportFile, setReportFile] = useState(null);
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -29,13 +29,13 @@ const LabOverview = () => {
 
   const handleUpload = async (e) => {
     e.preventDefault();
-    if (!reportUrl.trim()) return;
+    if (!reportFile) return;
     setUploading(reportModal.id);
     try {
-      await uploadLabReport(reportModal.id, reportUrl.trim());
+      await uploadLabReport(reportModal.id, reportFile);
       setRequests(prev => prev.filter(r => r.id !== reportModal.id));
       setReportModal(null);
-      setReportUrl("");
+      setReportFile(null);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to upload report.");
     } finally {
@@ -107,7 +107,7 @@ const LabOverview = () => {
               </div>
               <Button
                 size="sm"
-                onClick={() => { setReportModal(req); setReportUrl(""); }}
+                onClick={() => { setReportModal(req); setReportFile(null); }}
                 className="flex items-center gap-2"
               >
                 <Upload size={14} /> Upload Report
@@ -142,16 +142,23 @@ const LabOverview = () => {
             </div>
             <form onSubmit={handleUpload} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Report URL / File Path</label>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Report File</label>
                 <input
-                  className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none"
-                  placeholder="https://files.iitj.ac.in/reports/..."
-                  value={reportUrl}
-                  onChange={e => setReportUrl(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100 focus:ring-2 focus:ring-blue-600 outline-none"
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  onChange={(e) => setReportFile(e.target.files?.[0] || null)}
                   required
                   autoFocus
                 />
-                <p className="text-xs text-gray-400">Enter the URL where the scanned report is hosted.</p>
+                <p className="text-xs text-gray-400">
+                  Upload a PDF or scanned image up to 5 MB. The file will be stored in Cloudinary.
+                </p>
+                {reportFile && (
+                  <p className="text-xs text-gray-500">
+                    Selected: <span className="font-medium">{reportFile.name}</span>
+                  </p>
+                )}
               </div>
               <div className="flex gap-3">
                 <Button type="button" variant="outline" className="flex-1" onClick={() => setReportModal(null)}>

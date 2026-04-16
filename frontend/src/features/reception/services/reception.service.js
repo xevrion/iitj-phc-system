@@ -15,6 +15,11 @@ export const createVisit = async (data) => {
   return response.data;
 };
 
+export const getLiveQueue = async () => {
+  const response = await api.get("/visits/live-queue");
+  return response.data;
+};
+
 export const updateVitals = async (visitId, vitals) => {
   const response = await api.post(`/visits/${visitId}/vitals`, vitals);
   return response.data;

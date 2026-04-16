@@ -141,6 +141,99 @@ export const getDoctorQueue = async (doctorUserId) => {
   });
 };
 
+export const getReceptionLiveQueue = async () => {
+  const now = new Date();
+  const startOfDay = new Date(now);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(now);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  const [activeVisits, todayVisits] = await prisma.$transaction([
+    prisma.visit.findMany({
+      where: {
+        visitStatus: {
+          in: ["WAITING", "IN_CONSULTATION"],
+        },
+        createdAt: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+      },
+      include: {
+        patient: {
+          select: {
+            id: true,
+            name: true,
+            bloodGroup: true,
+          },
+        },
+        doctor: {
+          select: {
+            id: true,
+            name: true,
+            doctorType: true,
+            specialization: true,
+          },
+        },
+        vitals: true,
+      },
+      orderBy: [{ createdAt: "asc" }],
+    }),
+    prisma.visit.count({
+      where: {
+        createdAt: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+      },
+    }),
+  ]);
+
+  const waitingCounters = new Map();
+  const enrichedVisits = activeVisits.map((visit) => {
+    const queueKey = visit.doctorId || "unassigned";
+    const currentCount = waitingCounters.get(queueKey) || 0;
+
+    if (visit.visitStatus === "WAITING") {
+      waitingCounters.set(queueKey, currentCount + 1);
+    }
+
+    const waitMinutes = Math.max(
+      0,
+      Math.round((now.getTime() - new Date(visit.createdAt).getTime()) / 60000)
+    );
+
+    return {
+      ...visit,
+      waitMinutes,
+      queuePosition:
+        visit.visitStatus === "WAITING" ? currentCount + 1 : null,
+    };
+  });
+
+  const waitingVisits = enrichedVisits.filter((visit) => visit.visitStatus === "WAITING");
+  const consultationVisits = enrichedVisits.filter(
+    (visit) => visit.visitStatus === "IN_CONSULTATION"
+  );
+  const averageWaitMinutes = waitingVisits.length
+    ? Math.round(
+        waitingVisits.reduce((sum, visit) => sum + visit.waitMinutes, 0) /
+          waitingVisits.length
+      )
+    : 0;
+
+  return {
+    summary: {
+      todayVisits,
+      waitingCount: waitingVisits.length,
+      inConsultationCount: consultationVisits.length,
+      averageWaitMinutes,
+    },
+    waitingVisits,
+    consultationVisits,
+  };
+};
+
 export const getMyCurrentVisit = async (patientUserId) => {
   const patient = await prisma.patient.findUnique({
     where: { userId: patientUserId },
