@@ -20,6 +20,11 @@ export const getMyLabReports = async ({ limit } = {}) => {
   return response.data;
 };
 
+export const getMyCurrentVisit = async () => {
+  const response = await api.get("/visits/my-current");
+  return response.data;
+};
+
 export const getPrescriptionByVisit = async (visitId) => {
   const response = await api.get(`/visits/${visitId}/prescription`);
   return response.data;

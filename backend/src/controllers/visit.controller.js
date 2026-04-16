@@ -9,6 +9,7 @@ import {
   completeVisit,
   cancelVisit,
   getDoctorQueue,
+  getMyCurrentVisit,
 } from "../services/visit.service.js";
 
 export const create = asyncHandler(async (req, res) => {
@@ -56,4 +57,11 @@ export const cancel = asyncHandler(async (req, res) => {
 export const myQueue = asyncHandler(async (req, res) => {
   const queue = await getDoctorQueue(req.user.id);
   return res.status(200).json(new ApiResponse(200, queue, "Queue fetched"));
+});
+
+export const myCurrent = asyncHandler(async (req, res) => {
+  const visit = await getMyCurrentVisit(req.user.id);
+  return res
+    .status(200)
+    .json(new ApiResponse(200, visit, visit ? "Current visit fetched" : "No active visit"));
 });

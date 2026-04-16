@@ -140,3 +140,70 @@ export const getDoctorQueue = async (doctorUserId) => {
     orderBy: { createdAt: "asc" },
   });
 };
+
+export const getMyCurrentVisit = async (patientUserId) => {
+  const patient = await prisma.patient.findUnique({
+    where: { userId: patientUserId },
+    select: { id: true },
+  });
+  if (!patient) throw new ApiError(404, "Patient profile not found");
+
+  const visit = await prisma.visit.findFirst({
+    where: {
+      patientId: patient.id,
+      visitStatus: {
+        in: ["WAITING", "IN_CONSULTATION"],
+      },
+    },
+    include: {
+      doctor: {
+        select: {
+          id: true,
+          name: true,
+          doctorType: true,
+          specialization: true,
+        },
+      },
+      vitals: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (!visit) {
+    return null;
+  }
+
+  if (visit.visitStatus !== "WAITING" || !visit.doctorId) {
+    return {
+      ...visit,
+      queuePosition: null,
+      waitingAhead: null,
+      totalWaitingForDoctor: null,
+    };
+  }
+
+  const [waitingAhead, totalWaitingForDoctor] = await prisma.$transaction([
+    prisma.visit.count({
+      where: {
+        doctorId: visit.doctorId,
+        visitStatus: "WAITING",
+        createdAt: {
+          lt: visit.createdAt,
+        },
+      },
+    }),
+    prisma.visit.count({
+      where: {
+        doctorId: visit.doctorId,
+        visitStatus: "WAITING",
+      },
+    }),
+  ]);
+
+  return {
+    ...visit,
+    queuePosition: waitingAhead + 1,
+    waitingAhead,
+    totalWaitingForDoctor,
+  };
+};

@@ -8,6 +8,7 @@ import {
   complete,
   cancel,
   myQueue,
+  myCurrent,
 } from "../controllers/visit.controller.js";
 import { verifyJWT, authorizeRoles } from "../middlewares/auth.middleware.js";
 
@@ -20,6 +21,9 @@ router.post("/", authorizeRoles("RECEPTION_STAFF", "ADMIN"), create);
 
 // REQ-21: doctor's waiting queue
 router.get("/my-queue", authorizeRoles("DOCTOR"), myQueue);
+
+// Patient sees current active visit and queue status
+router.get("/my-current", authorizeRoles("PATIENT"), myCurrent);
 
 // View full visit record
 router.get(

@@ -14,7 +14,12 @@ import { cn } from "../../../utils/cn";
 import OverviewCard from "../components/OverviewCard";
 import Button from "../../../components/ui/Button";
 import useAuthStore from "../../../store/useAuthStore";
-import { getMyVisits, getMyAppointments, getMyLabReports } from "../services/patient.service";
+import {
+  getMyVisits,
+  getMyAppointments,
+  getMyLabReports,
+  getMyCurrentVisit,
+} from "../services/patient.service";
 
 const PatientOverview = () => {
   const { user } = useAuthStore();
@@ -23,6 +28,7 @@ const PatientOverview = () => {
     visits: [],
     appointments: [],
     labReports: [],
+    currentVisit: null,
     loading: true
   });
 
@@ -30,16 +36,18 @@ const PatientOverview = () => {
     if (!user?.patient?.id) return;
     setData(prev => ({ ...prev, loading: true }));
     try {
-      const [vRes, aRes, lRes] = await Promise.all([
+      const [vRes, aRes, lRes, cRes] = await Promise.all([
         getMyVisits(user.patient.id, { limit: 5 }),
         getMyAppointments(),
-        getMyLabReports({ limit: 5 })
+        getMyLabReports({ limit: 5 }),
+        getMyCurrentVisit(),
       ]);
 
       setData({
         visits: vRes.success ? vRes.data : [],
         appointments: aRes.success ? aRes.data : [],
         labReports: lRes.success ? lRes.data : [],
+        currentVisit: cRes.success ? cRes.data : null,
         loading: false
       });
     } catch (err) {
@@ -68,8 +76,28 @@ const PatientOverview = () => {
   );
   const pendingLabs = data.labReports.filter(l => l.status === "PENDING").length;
   const latestVisit = data.visits[0];
+  const currentVisit = data.currentVisit;
+  const queueStatusLabel =
+    currentVisit?.visitStatus === "WAITING"
+      ? "Waiting In Queue"
+      : currentVisit?.visitStatus === "IN_CONSULTATION"
+        ? "In Consultation"
+        : "No Active Visit";
 
   const stats = [
+    {
+      title: "Current PHC Status",
+      value: queueStatusLabel,
+      subtext: currentVisit
+        ? currentVisit.visitStatus === "WAITING"
+          ? currentVisit.queuePosition
+            ? `${currentVisit.waitingAhead} ahead of you with ${currentVisit.doctor?.name || "the assigned doctor"}`
+            : `Waiting to be assigned to a doctor`
+          : `With ${currentVisit.doctor?.name || "your doctor"} right now`
+        : "No active queue entry",
+      icon: ClipboardList,
+      colorClass: "bg-violet-500",
+    },
     {
       title: "Next Appointment",
       value: upcomingAppt
@@ -101,7 +129,7 @@ const PatientOverview = () => {
 
   // Combine all for recent activity
   const activities = [
-    ...data.visits.slice(0, 2).map(v => ({ id: v.id, type: "Visit", title: "Medical Consultation", date: new Date(v.createdAt).toLocaleDateString(), status: v.status })),
+    ...data.visits.slice(0, 2).map(v => ({ id: v.id, type: "Visit", title: "Medical Consultation", date: new Date(v.createdAt).toLocaleDateString(), status: v.visitStatus })),
     ...data.appointments.slice(0, 1).map(a => ({ id: a.id, type: "Appt", title: "Specialist Appointment", date: new Date(a.appointmentTime).toLocaleDateString(), status: a.status })),
     ...data.labReports.slice(0, 1).map(l => ({ id: l.id, type: "Lab", title: l.testName, date: new Date(l.createdAt).toLocaleDateString(), status: l.status }))
   ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
@@ -132,6 +160,55 @@ const PatientOverview = () => {
           <OverviewCard key={i} {...stat} />
         ))}
       </div>
+
+      {currentVisit && (
+        <div className="rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 to-cyan-50 p-6 shadow-sm">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide text-blue-700">
+                Current Visit Status
+              </p>
+              <h2 className="mt-1 text-xl font-bold text-gray-900">
+                {currentVisit.visitStatus === "WAITING"
+                  ? "You are in the doctor queue"
+                  : "Your consultation is in progress"}
+              </h2>
+              <p className="mt-2 text-sm text-gray-600">
+                {currentVisit.doctor?.name
+                  ? `Doctor: ${currentVisit.doctor.name}`
+                  : "Doctor assignment is still pending."}
+              </p>
+            </div>
+            <div className="rounded-xl bg-white px-5 py-4 shadow-sm ring-1 ring-blue-100">
+              {currentVisit.visitStatus === "WAITING" ? (
+                <>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Queue Position
+                  </p>
+                  <p className="mt-1 text-3xl font-bold text-blue-700">
+                    {currentVisit.queuePosition || "-"}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {currentVisit.queuePosition
+                      ? `${currentVisit.waitingAhead} patient${currentVisit.waitingAhead === 1 ? "" : "s"} ahead`
+                      : "Waiting for queue assignment"}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Status
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-emerald-700">With Doctor</p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Your turn has started.
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Recent Activity Feed */}
