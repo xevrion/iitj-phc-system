@@ -6,6 +6,9 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PatientDashboard from "./features/patient/pages/PatientDashboard";
 import DoctorDashboard from "./features/doctor/pages/DoctorDashboard";
 import ReceptionDashboard from "./features/reception/pages/ReceptionDashboard";
+import LabDashboard from "./features/lab/pages/LabDashboard";
+import PharmacyDashboard from "./features/pharmacy/pages/PharmacyDashboard";
+import AdminDashboard from "./features/admin/pages/AdminDashboard";
 import ToastContainer from "./components/ui/ToastContainer";
 import "./App.css";
 
@@ -64,6 +67,36 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["RECEPTION_STAFF"]}>
               <ReceptionDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Lab Routes */}
+        <Route
+          path="/lab-staff/*"
+          element={
+            <ProtectedRoute allowedRoles={["LAB_STAFF"]}>
+              <LabDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Pharmacy Routes */}
+        <Route
+          path="/pharmacy-staff/*"
+          element={
+            <ProtectedRoute allowedRoles={["PHARMACY_STAFF"]}>
+              <PharmacyDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Admin Routes */}
+        <Route
+          path="/admin/*"
+          element={
+            <ProtectedRoute allowedRoles={["ADMIN"]}>
+              <AdminDashboard />
             </ProtectedRoute>
           }
         />
