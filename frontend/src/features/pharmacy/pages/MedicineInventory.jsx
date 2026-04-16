@@ -104,7 +104,7 @@ const MedicineInventory = () => {
                     </div>
                   </td>
                   <td className="px-5 py-3 text-sm text-gray-600">{med.dosage || "—"}</td>
-                  <td className="px-5 py-3 text-sm font-medium text-gray-900">₹{med.pricePerUnit?.toFixed(2)}</td>
+                  <td className="px-5 py-3 text-sm font-medium text-gray-900">₹{Number(med.unitPrice || 0).toFixed(2)}</td>
                   <td className="px-5 py-3">
                     {editing === med.id ? (
                       <input

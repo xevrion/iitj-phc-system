@@ -66,7 +66,26 @@ export const getPendingPrescriptions = async () => {
         select: {
           id: true,
           visitType: true,
+          createdAt: true,
           patient: { select: { id: true, name: true } },
+          bill: {
+            select: {
+              id: true,
+              totalAmount: true,
+              paymentStatus: true,
+              createdAt: true,
+              items: {
+                include: {
+                  medicine: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
       },
       doctor: { select: { name: true } },
@@ -79,9 +98,22 @@ export const getPendingPrescriptions = async () => {
 export const dispensePrescription = async (prescriptionId) => {
   const prescription = await prisma.prescription.findUnique({
     where: { id: prescriptionId },
+    include: {
+      visit: {
+        include: {
+          bill: true,
+        },
+      },
+    },
   });
   if (!prescription) throw new ApiError(404, "Prescription not found");
   if (prescription.isDispensed) throw new ApiError(400, "Already dispensed");
+  if (!prescription.visit?.bill) {
+    throw new ApiError(400, "Generate the bill before dispensing medicines");
+  }
+  if (prescription.visit.bill.paymentStatus !== "PAID") {
+    throw new ApiError(400, "Collect payment before dispensing medicines");
+  }
 
   return prisma.prescription.update({
     where: { id: prescriptionId },

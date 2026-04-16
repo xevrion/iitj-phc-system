@@ -10,6 +10,11 @@ export const dispensePrescription = async (id) => {
   return response.data;
 };
 
+export const generateBillForVisit = async (visitId, items) => {
+  const response = await api.post(`/visits/${visitId}/bill`, { items });
+  return response.data;
+};
+
 export const getUnpaidBills = async () => {
   const response = await api.get("/bills/unpaid");
   return response.data;
