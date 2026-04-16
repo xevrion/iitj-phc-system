@@ -60,6 +60,11 @@ export const getBillByVisit = async (visitId) => {
   return response.data;
 };
 
+export const getMyBills = async () => {
+  const response = await api.get("/bills/mine");
+  return response.data;
+};
+
 export const getMyDocuments = async (patientId) => {
   const response = await api.get(`/patients/${patientId}/documents`);
   return response.data;
@@ -67,5 +72,10 @@ export const getMyDocuments = async (patientId) => {
 
 export const uploadDocument = async (patientId, data) => {
   const response = await api.post(`/patients/${patientId}/documents`, data);
+  return response.data;
+};
+
+export const deleteDocument = async (patientId, docId) => {
+  const response = await api.delete(`/patients/${patientId}/documents/${docId}`);
   return response.data;
 };
