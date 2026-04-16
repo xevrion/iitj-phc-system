@@ -123,9 +123,35 @@ const Prescriptions = () => {
                   ))}
                 </div>
               </div>
+
+              {expandedId === pres.id && (
+                <div className="space-y-4 pt-2 border-t border-gray-100">
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Prescription Notes</p>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      {pres.notes || "No additional notes were recorded for this prescription."}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Prescription Status</p>
+                      <p className="text-sm font-medium text-gray-800">
+                        {pres.isDispensed ? "Dispensed" : "Pending Dispense"}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Visit Reference</p>
+                      <p className="text-sm font-medium text-gray-800">
+                        #{pres.visitId?.slice(-8)?.toUpperCase() || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {pres.items?.length > 0 && (
+            {(pres.items?.length > 0 || pres.notes) && (
               <div className="p-4 border-t border-gray-50 bg-gray-50/30">
                 <Button
                   variant="outline"
@@ -133,7 +159,7 @@ const Prescriptions = () => {
                   onClick={() => setExpandedId(expandedId === pres.id ? null : pres.id)}
                 >
                   {expandedId === pres.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                  {expandedId === pres.id ? "Show Less" : "View Full Details"}
+                  {expandedId === pres.id ? "Show Less" : "View Details"}
                 </Button>
               </div>
             )}

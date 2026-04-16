@@ -45,6 +45,11 @@ export const getMyAppointments = async () => {
   return response.data;
 };
 
+export const cancelMyAppointment = async (id) => {
+  const response = await api.put(`/appointments/${id}/cancel`);
+  return response.data;
+};
+
 export const getNotifications = async ({ since } = {}) => {
   const response = await api.get("/notifications/mine", { params: since ? { since } : {} });
   return response.data;
