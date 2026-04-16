@@ -1,34 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { Receipt, CreditCard, Calendar, Clock, Loader2, CheckCircle2, AlertCircle, Download, ExternalLink } from "lucide-react";
+import { Receipt, CreditCard, Calendar, Clock, Loader2, CheckCircle2, Download, ExternalLink } from "lucide-react";
 import { cn } from "../../../utils/cn";
 import Button from "../../../components/ui/Button";
-import { getMyVisits, getBillByVisit } from "../services/patient.service";
-import useAuthStore from "../../../store/useAuthStore";
+import { getMyBills } from "../services/patient.service";
 
 const Billing = () => {
-  const { user } = useAuthStore();
   const [bills, setBills] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchAllBills = async () => {
-      if (!user?.patient?.id) return;
       try {
-        const visitRes = await getMyVisits(user.patient.id);
-        if (visitRes.success) {
-          const billPromises = visitRes.data
-            .filter(v => v.visitStatus === "COMPLETED")
-            .map(async (v) => {
-              try {
-                const res = await getBillByVisit(v.id);
-                return res.success ? { ...res.data, visit: v } : null;
-              } catch { return null; }
-            });
-          
-          const results = await Promise.all(billPromises);
-          setBills(results.filter(b => b !== null));
-        }
+        const res = await getMyBills();
+        if (res.success) setBills(res.data);
       } catch (err) {
         setError("Failed to load billing history.");
       } finally {
@@ -36,7 +21,7 @@ const Billing = () => {
       }
     };
     fetchAllBills();
-  }, [user]);
+  }, []);
 
   if (loading) {
     return (
@@ -90,7 +75,7 @@ const Billing = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm font-bold text-gray-900">₹{bill.totalAmount}</p>
+                      <p className="text-sm font-bold text-gray-900">₹{Number(bill.totalAmount).toFixed(2)}</p>
                     </td>
                     <td className="px-6 py-4">
                       <span className={cn(
