@@ -5,6 +5,7 @@ import LoginPage from "./features/auth/pages/LoginPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PatientDashboard from "./features/patient/pages/PatientDashboard";
 import DoctorDashboard from "./features/doctor/pages/DoctorDashboard";
+import ReceptionDashboard from "./features/reception/pages/ReceptionDashboard";
 import ToastContainer from "./components/ui/ToastContainer";
 import "./App.css";
 
@@ -53,6 +54,16 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["DOCTOR"]}>
               <DoctorDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Reception Routes */}
+        <Route
+          path="/reception-staff/*"
+          element={
+            <ProtectedRoute allowedRoles={["RECEPTION_STAFF"]}>
+              <ReceptionDashboard />
             </ProtectedRoute>
           }
         />
