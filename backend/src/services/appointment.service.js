@@ -1,6 +1,20 @@
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 
+const parseAppointmentDate = (appointmentTime) => {
+  const parsedDate = new Date(appointmentTime);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    throw new ApiError(400, "appointmentTime must be a valid date-time");
+  }
+
+  if (parsedDate.getTime() <= Date.now()) {
+    throw new ApiError(400, "Appointment time must be in the future");
+  }
+
+  return parsedDate;
+};
+
 export const listAppointments = async ({ doctorId } = {}) => {
   if (doctorId) {
     const doctor = await prisma.doctor.findUnique({ where: { id: doctorId } });
@@ -52,6 +66,8 @@ export const bookAppointment = async (
   if (!doctorId || !appointmentTime || !slotDuration)
     throw new ApiError(400, "doctorId, appointmentTime, and slotDuration are required");
 
+  const parsedAppointmentTime = parseAppointmentDate(appointmentTime);
+
   const doctor = await prisma.doctor.findUnique({ where: { id: doctorId } });
   if (!doctor) throw new ApiError(404, "Doctor not found");
 
@@ -68,7 +84,7 @@ export const bookAppointment = async (
     data: {
       patientId: patient.id,
       doctorId,
-      appointmentTime: new Date(appointmentTime),
+      appointmentTime: parsedAppointmentTime,
       slotDuration: Number(slotDuration),
       isEmergency,
     },
@@ -86,6 +102,8 @@ export const bookAppointmentAsStaff = async (
   if (!doctorId || !appointmentTime || !slotDuration || !patientId)
     throw new ApiError(400, "doctorId, patientId, appointmentTime, and slotDuration are required");
 
+  const parsedAppointmentTime = parseAppointmentDate(appointmentTime);
+
   const doctor = await prisma.doctor.findUnique({ where: { id: doctorId } });
   if (!doctor) throw new ApiError(404, "Doctor not found");
 
@@ -99,7 +117,7 @@ export const bookAppointmentAsStaff = async (
     data: {
       patientId,
       doctorId,
-      appointmentTime: new Date(appointmentTime),
+      appointmentTime: parsedAppointmentTime,
       slotDuration: Number(slotDuration),
       isEmergency,
     },

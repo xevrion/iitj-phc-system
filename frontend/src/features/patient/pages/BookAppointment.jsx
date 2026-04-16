@@ -26,6 +26,7 @@ const BookAppointment = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState("");
+  const minDate = new Date().toLocaleDateString("en-CA");
 
   const fetchDoctors = async (isBackground = false) => {
     if (!isBackground) setIsLoading(true);
@@ -55,6 +56,11 @@ const BookAppointment = () => {
 
     try {
       const appointmentTime = new Date(`${formData.date}T${formData.time}:00`).toISOString();
+      if (new Date(appointmentTime).getTime() <= Date.now()) {
+        setError("Appointment time must be in the future.");
+        setIsLoading(false);
+        return;
+      }
       const response = await bookAppointment({
         doctorId: formData.doctorId,
         appointmentTime,
@@ -141,6 +147,7 @@ const BookAppointment = () => {
               label="Preferred Date"
               value={formData.date}
               onChange={(e) => setFormData({...formData, date: e.target.value})}
+              min={minDate}
               required
             />
             <div className="space-y-1.5">

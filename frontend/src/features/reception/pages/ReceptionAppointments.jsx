@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, User, Clock, XCircle, AlertCircle, Loader2, Stethoscope } from "lucide-react";
+import { XCircle, AlertCircle, Loader2 } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import { cn } from "../../../utils/cn";
 import { getAvailableDoctors, cancelAppointment, bookAppointmentStaff, getAllAppointments } from "../services/reception.service";
@@ -20,49 +20,26 @@ const TIME_SLOTS = [
   { label: "04:00 PM", value: "16:00" },
 ];
 
-const getAppointmentGroup = (appointment, now) => {
-  const appointmentTime = new Date(appointment.appointmentTime).getTime();
-
-  if (appointment.status === "BOOKED" && appointmentTime >= now) {
-    return 0;
-  }
-
-  if (appointment.status !== "CANCELLED" && appointmentTime >= now) {
-    return 1;
-  }
-
-  if (appointment.status !== "CANCELLED") {
-    return 2;
-  }
-
-  return 3;
-};
-
-const sortAppointmentsForReception = (appointments) => {
-  const now = Date.now();
-
-  return [...appointments].sort((left, right) => {
-    const leftGroup = getAppointmentGroup(left, now);
-    const rightGroup = getAppointmentGroup(right, now);
-
-    if (leftGroup !== rightGroup) {
-      return leftGroup - rightGroup;
-    }
-
+const sortUpcomingAppointments = (appointments) =>
+  [...appointments].sort((left, right) => {
     const leftTime = new Date(left.appointmentTime).getTime();
     const rightTime = new Date(right.appointmentTime).getTime();
 
-    if (leftGroup <= 1) {
-      if (leftTime !== rightTime) {
-        return leftTime - rightTime;
-      }
-
-      if (left.isEmergency !== right.isEmergency) {
-        return left.isEmergency ? -1 : 1;
-      }
-
-      return (left.patient?.name || "").localeCompare(right.patient?.name || "");
+    if (leftTime !== rightTime) {
+      return leftTime - rightTime;
     }
+
+    if (left.isEmergency !== right.isEmergency) {
+      return left.isEmergency ? -1 : 1;
+    }
+
+    return (left.patient?.name || "").localeCompare(right.patient?.name || "");
+  });
+
+const sortHistoricalAppointments = (appointments) =>
+  [...appointments].sort((left, right) => {
+    const leftTime = new Date(left.appointmentTime).getTime();
+    const rightTime = new Date(right.appointmentTime).getTime();
 
     if (leftTime !== rightTime) {
       return rightTime - leftTime;
@@ -70,7 +47,6 @@ const sortAppointmentsForReception = (appointments) => {
 
     return (left.patient?.name || "").localeCompare(right.patient?.name || "");
   });
-};
 
 const formatDoctorName = (name) => {
   if (!name) {
@@ -115,7 +91,23 @@ const ReceptionAppointments = () => {
 
   useEffect(() => { fetchData(); }, []);
 
-  const orderedAppointments = sortAppointmentsForReception(appointments);
+  const now = Date.now();
+  const upcomingAppointments = sortUpcomingAppointments(
+    appointments.filter((appointment) => {
+      const appointmentTime = new Date(appointment.appointmentTime).getTime();
+      return appointment.status !== "CANCELLED" && appointmentTime >= now;
+    })
+  );
+  const pastAppointments = sortHistoricalAppointments(
+    appointments.filter((appointment) => {
+      const appointmentTime = new Date(appointment.appointmentTime).getTime();
+      return appointment.status !== "CANCELLED" && appointmentTime < now;
+    })
+  );
+  const cancelledAppointments = sortHistoricalAppointments(
+    appointments.filter((appointment) => appointment.status === "CANCELLED")
+  );
+  const minDate = new Date().toLocaleDateString("en-CA");
 
   const handleCancel = async (id) => {
     if (!confirm("Cancel this appointment?")) return;
@@ -133,6 +125,11 @@ const ReceptionAppointments = () => {
     setError("");
     try {
       const appointmentTime = new Date(`${form.date}T${form.time}:00`).toISOString();
+      if (new Date(appointmentTime).getTime() <= Date.now()) {
+        setError("Appointment time must be in the future.");
+        setSaving(false);
+        return;
+      }
       const res = await bookAppointmentStaff({
         patientId: form.patientId,
         doctorId: form.doctorId,
@@ -215,6 +212,7 @@ const ReceptionAppointments = () => {
                 className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none"
                 value={form.date}
                 onChange={e => setForm({ ...form, date: e.target.value })}
+                min={minDate}
                 required
               />
             </div>
@@ -258,60 +256,85 @@ const ReceptionAppointments = () => {
         </form>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-gray-100">
-          <h2 className="font-bold text-gray-900">All Appointments <span className="text-gray-400 font-normal text-sm">({appointments.length})</span></h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 border-b border-gray-100">
-              <tr>
-                <th className="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Patient</th>
-                <th className="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Doctor</th>
-                <th className="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Time</th>
-                <th className="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Duration</th>
-                <th className="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {orderedAppointments.map(a => (
-                <tr key={a.id} className="hover:bg-gray-50">
-                  <td className="px-5 py-3 text-sm font-medium text-gray-900">{a.patient?.name || "—"}</td>
-                  <td className="px-5 py-3 text-sm text-gray-600">{formatDoctorName(a.doctor?.name)}</td>
-                  <td className="px-5 py-3 text-sm text-gray-600">
-                    {new Date(a.appointmentTime).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
-                    {a.isEmergency && <span className="ml-2 text-xs bg-red-100 text-red-600 font-bold px-1.5 py-0.5 rounded">EMERGENCY</span>}
-                  </td>
-                  <td className="px-5 py-3 text-sm text-gray-600">{a.slotDuration} min</td>
-                  <td className="px-5 py-3">
-                    <span className={cn("px-2 py-0.5 rounded-full text-xs font-bold", STATUS_COLORS[a.status] || "bg-gray-100 text-gray-600")}>
-                      {a.status}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-right">
-                    {a.status === "BOOKED" && (
-                      <button
-                        onClick={() => handleCancel(a.id)}
-                        className="text-xs text-red-500 hover:text-red-700 font-bold flex items-center gap-1 ml-auto"
-                      >
-                        <XCircle size={14} /> Cancel
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {orderedAppointments.length === 0 && (
-                <tr>
-                  <td colSpan="6" className="px-5 py-10 text-center text-gray-400 text-sm">No appointments found.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+      <div className="space-y-6">
+        <section className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-gray-100">
+            <h2 className="font-bold text-gray-900">Upcoming Appointments <span className="text-gray-400 font-normal text-sm">({upcomingAppointments.length})</span></h2>
+          </div>
+          <AppointmentTable appointments={upcomingAppointments} onCancel={handleCancel} formatDoctorName={formatDoctorName} />
+        </section>
+
+        <section className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-gray-100">
+            <h2 className="font-bold text-gray-900">Past Appointments <span className="text-gray-400 font-normal text-sm">({pastAppointments.length})</span></h2>
+          </div>
+          <AppointmentTable appointments={pastAppointments} onCancel={handleCancel} formatDoctorName={formatDoctorName} emptyMessage="No past appointments." />
+        </section>
+
+        <section className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-gray-100">
+            <h2 className="font-bold text-gray-900">Cancelled Appointments <span className="text-gray-400 font-normal text-sm">({cancelledAppointments.length})</span></h2>
+          </div>
+          <AppointmentTable appointments={cancelledAppointments} onCancel={handleCancel} formatDoctorName={formatDoctorName} emptyMessage="No cancelled appointments." />
+        </section>
       </div>
     </div>
   );
 };
+
+const AppointmentTable = ({
+  appointments,
+  onCancel,
+  formatDoctorName,
+  emptyMessage = "No appointments found.",
+}) => (
+  <div className="overflow-x-auto">
+    <table className="w-full text-left">
+      <thead className="bg-gray-50 border-b border-gray-100">
+        <tr>
+          <th className="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Patient</th>
+          <th className="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Doctor</th>
+          <th className="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Time</th>
+          <th className="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Duration</th>
+          <th className="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+          <th className="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Action</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-50">
+        {appointments.map((appointment) => (
+          <tr key={appointment.id} className="hover:bg-gray-50">
+            <td className="px-5 py-3 text-sm font-medium text-gray-900">{appointment.patient?.name || "—"}</td>
+            <td className="px-5 py-3 text-sm text-gray-600">{formatDoctorName(appointment.doctor?.name)}</td>
+            <td className="px-5 py-3 text-sm text-gray-600">
+              {new Date(appointment.appointmentTime).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+              {appointment.isEmergency && <span className="ml-2 text-xs bg-red-100 text-red-600 font-bold px-1.5 py-0.5 rounded">EMERGENCY</span>}
+            </td>
+            <td className="px-5 py-3 text-sm text-gray-600">{appointment.slotDuration} min</td>
+            <td className="px-5 py-3">
+              <span className={cn("px-2 py-0.5 rounded-full text-xs font-bold", STATUS_COLORS[appointment.status] || "bg-gray-100 text-gray-600")}>
+                {appointment.status}
+              </span>
+            </td>
+            <td className="px-5 py-3 text-right">
+              {appointment.status === "BOOKED" && (
+                <button
+                  onClick={() => onCancel(appointment.id)}
+                  className="text-xs text-red-500 hover:text-red-700 font-bold flex items-center gap-1 ml-auto"
+                >
+                  <XCircle size={14} /> Cancel
+                </button>
+              )}
+            </td>
+          </tr>
+        ))}
+        {appointments.length === 0 && (
+          <tr>
+            <td colSpan="6" className="px-5 py-10 text-center text-gray-400 text-sm">{emptyMessage}</td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+);
 
 export default ReceptionAppointments;
