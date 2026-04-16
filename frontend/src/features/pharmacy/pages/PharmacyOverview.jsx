@@ -79,7 +79,7 @@ const PharmacyOverview = () => {
         {[
           { label: "Pending Prescriptions", value: prescriptions.length, color: "text-blue-600" },
           { label: "Unpaid Bills", value: bills.length, color: "text-amber-600" },
-          { label: "Total Outstanding", value: `₹${bills.reduce((s, b) => s + (b.totalAmount || 0), 0).toFixed(2)}`, color: "text-rose-600" },
+          { label: "Total Outstanding", value: `₹${bills.reduce((s, b) => s + (Number(b.totalAmount) || 0), 0).toFixed(2)}`, color: "text-rose-600" },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">{s.label}</p>
@@ -197,7 +197,7 @@ const PharmacyOverview = () => {
                         ? new Date(b.visit.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
                         : "—"}
                     </td>
-                    <td className="px-5 py-3 text-sm font-bold text-gray-900">₹{b.totalAmount?.toFixed(2)}</td>
+                    <td className="px-5 py-3 text-sm font-bold text-gray-900">₹{Number(b.totalAmount || 0).toFixed(2)}</td>
                     <td className="px-5 py-3 text-right">
                       <Button
                         size="sm"

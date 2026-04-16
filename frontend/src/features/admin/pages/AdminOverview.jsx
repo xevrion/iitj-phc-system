@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Users, Activity, Calendar, TrendingUp, Loader2, AlertCircle } from "lucide-react";
+import { Activity, TrendingUp, Loader2, AlertCircle } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import { cn } from "../../../utils/cn";
 import { listUsers, getUsageReport, getAttendanceReport } from "../services/admin.service";
@@ -22,7 +22,7 @@ const AdminOverview = () => {
       ]);
       if (usersRes.success) setUsers(usersRes.data);
       if (usageRes.success) setUsage(usageRes.data);
-      if (attRes.success) setAttendance(attRes.data);
+      if (attRes.success) setAttendance(attRes.data?.byDoctor ?? []);
     } catch {
       setError("Failed to load admin overview.");
     } finally {
@@ -63,13 +63,12 @@ const AdminOverview = () => {
         </div>
       )}
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Total Users", value: users.length, color: "text-blue-600", bg: "bg-blue-50" },
-          { label: "Doctors", value: roleCounts["DOCTOR"] || 0, color: "text-emerald-600", bg: "bg-emerald-50" },
-          { label: "Patients", value: roleCounts["PATIENT"] || 0, color: "text-amber-600", bg: "bg-amber-50" },
-          { label: "Total Visits", value: usage?.totalVisits ?? "—", color: "text-purple-600", bg: "bg-purple-50" },
+          { label: "Total Users", value: users.length, color: "text-blue-600" },
+          { label: "Doctors", value: roleCounts["DOCTOR"] || 0, color: "text-emerald-600" },
+          { label: "Patients", value: roleCounts["PATIENT"] || 0, color: "text-amber-600" },
+          { label: "Total Visits", value: usage?.totals?.visits ?? "—", color: "text-purple-600" },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">{s.label}</p>
@@ -79,44 +78,49 @@ const AdminOverview = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Usage Report */}
         {usage && (
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
             <h2 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
               <TrendingUp size={18} className="text-blue-600" /> Usage Summary
             </h2>
-            <div className="space-y-3">
-              {Object.entries(usage).map(([key, val]) => (
+            <div className="space-y-1">
+              {Object.entries(usage.totals ?? {}).map(([key, val]) => (
                 <div key={key} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
                   <span className="text-sm text-gray-600 capitalize">{key.replace(/([A-Z])/g, " $1").trim()}</span>
                   <span className="text-sm font-bold text-gray-900">{val}</span>
                 </div>
               ))}
             </div>
+            {usage.last30Days && (
+              <div className="mt-4">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Last 30 Days</p>
+                <div className="space-y-1">
+                  {Object.entries(usage.last30Days).map(([key, val]) => (
+                    <div key={key} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
+                      <span className="text-sm text-gray-600 capitalize">{key.replace(/([A-Z])/g, " $1").trim()}</span>
+                      <span className="text-sm font-bold text-blue-600">{val}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Attendance Summary */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
           <h2 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Activity size={18} className="text-emerald-600" /> Recent Doctor Attendance
+            <Activity size={18} className="text-emerald-600" /> Doctor Attendance Summary
           </h2>
           <div className="space-y-2 max-h-64 overflow-y-auto">
-            {attendance.slice(0, 10).map(a => (
-              <div key={a.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+            {attendance.map(a => (
+              <div key={a.doctorId} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">Dr. {a.doctor?.name}</p>
-                  <p className="text-xs text-gray-400">
-                    {new Date(a.checkIn).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-                    {" · "}{new Date(a.checkIn).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
-                    {a.checkOut && ` → ${new Date(a.checkOut).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}`}
-                  </p>
+                  <p className="text-sm font-semibold text-gray-900">Dr. {a.doctorName ?? "Unknown"}</p>
+                  <p className="text-xs text-gray-400">{a.attendanceRecords} session{a.attendanceRecords !== 1 ? "s" : ""}</p>
                 </div>
-                {a.totalHours != null && (
-                  <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                    {a.totalHours}h
-                  </span>
-                )}
+                <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                  {Number(a.totalHours ?? 0).toFixed(1)}h total
+                </span>
               </div>
             ))}
             {attendance.length === 0 && (
