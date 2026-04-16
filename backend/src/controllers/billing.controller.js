@@ -5,6 +5,7 @@ import {
   getBillByVisit,
   markBillPaid,
   getUnpaidBills,
+  getMyBills,
 } from "../services/billing.service.js";
 
 export const create = asyncHandler(async (req, res) => {
@@ -25,4 +26,9 @@ export const pay = asyncHandler(async (req, res) => {
 export const unpaid = asyncHandler(async (req, res) => {
   const bills = await getUnpaidBills();
   return res.status(200).json(new ApiResponse(200, bills, "Unpaid bills fetched"));
+});
+
+export const mine = asyncHandler(async (req, res) => {
+  const bills = await getMyBills(req.user.id);
+  return res.status(200).json(new ApiResponse(200, bills, "My bills fetched"));
 });

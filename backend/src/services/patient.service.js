@@ -75,7 +75,7 @@ export const updatePatientProfile = async (userId, data) => {
 };
 
 // REQ-10: store and retrieve patient visit history
-export const getPatientVisitHistory = async (patientId, requester) => {
+export const getPatientVisitHistory = async (patientId, requester, limit) => {
   await assertPatientOwnsRecord(patientId, requester);
 
   const patient = await prisma.patient.findUnique({ where: { id: patientId } });
@@ -91,10 +91,11 @@ export const getPatientVisitHistory = async (patientId, requester) => {
       prescription: { select: { id: true, isDispensed: true, createdAt: true } },
     },
     orderBy: { createdAt: "desc" },
+    ...(limit && { take: limit }),
   });
 };
 
-export const getMyLabReports = async (userId) => {
+export const getMyLabReports = async (userId, limit) => {
   const patient = await getPatientProfileForUser(userId);
 
   return prisma.labRequest.findMany({
@@ -125,5 +126,6 @@ export const getMyLabReports = async (userId) => {
       report: true,
     },
     orderBy: { id: "asc" },
+    ...(limit && { take: limit }),
   });
 };

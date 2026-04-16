@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { create, getByVisit, pay, unpaid } from "../controllers/billing.controller.js";
+import { create, getByVisit, pay, unpaid, mine } from "../controllers/billing.controller.js";
 import { verifyJWT, authorizeRoles } from "../middlewares/auth.middleware.js";
 
 // Nested under /api/v1/visits/:visitId/bill
@@ -21,6 +21,7 @@ visitBillingRouter.get(
 const billRouter = Router();
 billRouter.use(verifyJWT);
 
+billRouter.get("/mine", authorizeRoles("PATIENT"), mine);
 billRouter.get("/unpaid", authorizeRoles("PHARMACY_STAFF", "ADMIN"), unpaid);
 billRouter.put("/:billId/pay", authorizeRoles("PHARMACY_STAFF", "ADMIN"), pay);
 

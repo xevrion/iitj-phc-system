@@ -2,7 +2,6 @@ import jwt from "jsonwebtoken";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { config } from "../config/index.js";
-import prisma from "../db/index.js";
 
 export const verifyJWT = asyncHandler(async (req, res, next) => {
   const token =
@@ -20,16 +19,11 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
     throw new ApiError(401, "Invalid or expired token");
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: decoded.userId },
-    select: { id: true, ldapId: true, role: true, isActive: true },
-  });
-
-  if (!user || !user.isActive) {
-    throw new ApiError(401, "User not found or deactivated");
+  if (!decoded.isActive) {
+    throw new ApiError(401, "Account is deactivated");
   }
 
-  req.user = user;
+  req.user = { id: decoded.userId, ldapId: decoded.ldapId, role: decoded.role, isActive: decoded.isActive };
   next();
 });
 

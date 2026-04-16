@@ -13,7 +13,6 @@ import useAuthStore from "../../../store/useAuthStore";
 import {
   getDoctorQueue,
   getDoctorAppointments,
-  updateMyAvailability,
   checkInDoctor,
   checkOutDoctor,
 } from "../services/doctor.service";
@@ -71,19 +70,6 @@ const DoctorOverview = () => {
     );
   }, [appointments]);
 
-  const handleAvailability = async (nextValue) => {
-    setSaving(true);
-    setError("");
-    try {
-      await updateMyAvailability(nextValue);
-      await checkAuth();
-    } catch {
-      setError("Could not update availability. Please retry.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleCheckIn = async () => {
     setSaving(true);
     setError("");
@@ -137,19 +123,15 @@ const DoctorOverview = () => {
           <Button variant="outline" onClick={fetchOverview} isLoading={loading || saving}>
             Refresh Data
           </Button>
-          <Button
-            variant={user?.doctor?.isAvailable ? "secondary" : "primary"}
-            onClick={() => handleAvailability(!user?.doctor?.isAvailable)}
-            isLoading={saving}
-          >
-            {user?.doctor?.isAvailable ? "Set Unavailable" : "Set Available"}
-          </Button>
-          <Button variant="outline" onClick={handleCheckIn} isLoading={saving}>
-            Check In
-          </Button>
-          <Button variant="outline" onClick={handleCheckOut} isLoading={saving}>
-            Check Out
-          </Button>
+          {user?.doctor?.isAvailable ? (
+            <Button variant="secondary" onClick={handleCheckOut} isLoading={saving}>
+              Check Out
+            </Button>
+          ) : (
+            <Button variant="primary" onClick={handleCheckIn} isLoading={saving}>
+              Check In
+            </Button>
+          )}
         </div>
       </div>
 

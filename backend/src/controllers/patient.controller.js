@@ -32,14 +32,16 @@ export const getPatientByQR = asyncHandler(async (req, res) => {
 });
 
 export const getVisitHistory = asyncHandler(async (req, res) => {
-  const visits = await getPatientVisitHistory(req.params.id, req.user);
+  const limit = req.query.limit ? parseInt(req.query.limit, 10) : undefined;
+  const visits = await getPatientVisitHistory(req.params.id, req.user, limit);
   return res
     .status(200)
     .json(new ApiResponse(200, visits, "Visit history fetched"));
 });
 
 export const getMyLabReportsList = asyncHandler(async (req, res) => {
-  const reports = await getMyLabReports(req.user.id);
+  const limit = req.query.limit ? parseInt(req.query.limit, 10) : undefined;
+  const reports = await getMyLabReports(req.user.id, limit);
   return res
     .status(200)
     .json(new ApiResponse(200, reports, "Lab reports fetched"));

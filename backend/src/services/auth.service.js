@@ -6,7 +6,7 @@ import { ApiError } from "../utils/ApiError.js";
 
 const generateToken = (user) => {
   return jwt.sign(
-    { userId: user.id, ldapId: user.ldapId, role: user.role },
+    { userId: user.id, ldapId: user.ldapId, role: user.role, isActive: user.isActive },
     config.jwt.secret,
     { expiresIn: config.jwt.expiry }
   );
