@@ -11,7 +11,7 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 
 # Sprint Progress
 
-> **Sprint Plan Period:** Jan 15, 2026 – Apr 30, 2026 | **Current Date:** Mar 25, 2026 (Sprint 5)
+> **Sprint Plan Period:** Jan 15, 2026 – Apr 30, 2026 | **Current Date:** Apr 17, 2026 (Sprint 7)
 >
 > Tracks all deliverables sprint by sprint. Tick = implemented and committed.
 
@@ -177,15 +177,15 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 ---
 
 ## Sprint 6 — Frontend & UX Integration
-**Dates:** Apr 2 – Apr 15, 2026 | **Weeks:** 13–14 | **Status: In Progress**
+**Dates:** Apr 2 – Apr 15, 2026 | **Weeks:** 13–14 | **Status: Complete**
 
 ### Role-Based Dashboards
 - [x] Patient dashboard — medical records, prescriptions, lab reports, appointment booking, billing, profile with QR (REQ-10, 12, 30, 45, 57, 63, 65)
-- [ ] Doctor dashboard — visit queue, consultation form, prescription writer, lab request
-- [ ] Reception dashboard — QR scanner, visit creation form, vitals entry
-- [ ] Pharmacy dashboard — prescription queue, dispense action, inventory view
-- [ ] Lab dashboard — pending test orders, report upload
-- [ ] Admin dashboard — user management, attendance, events, reports
+- [x] Doctor dashboard — visit queue, consultation form, prescription writer, lab request
+- [x] Reception dashboard — QR scanner, visit creation form, vitals entry
+- [x] Pharmacy dashboard — prescription queue, billing and dispense workflow, inventory view
+- [x] Lab dashboard — pending test orders, report upload
+- [x] Admin dashboard — user management, attendance, events, reports
 
 ### Auth & Routing
 - [x] Login screen with ldapId/password (LDAP flow)
@@ -197,7 +197,7 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 ---
 
 ## Sprint 7 — Testing & Stabilization
-**Dates:** Apr 16 – Apr 20, 2026 | **Weeks:** 15–16 | **Status: Not Started**
+**Dates:** Apr 16 – Apr 20, 2026 | **Weeks:** 15–16 | **Status: In Progress**
 
 - [ ] Unit tests for all service functions (happy path + error cases)
 - [ ] Integration tests for all API routes
@@ -252,9 +252,11 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 | PUT | `/api/v1/medicines/:id/stock` | PHARMACY_STAFF, ADMIN | REQ-66 |
 | POST | `/api/v1/visits/:visitId/bill` | PHARMACY_STAFF, ADMIN | REQ-64,66 |
 | GET | `/api/v1/visits/:visitId/bill` | PHARMACY_STAFF, DOCTOR, PATIENT, ADMIN | REQ-65 |
+| GET | `/api/v1/bills/mine` | PATIENT | REQ-65 |
 | GET | `/api/v1/bills/unpaid` | PHARMACY_STAFF, ADMIN | — |
 | PUT | `/api/v1/bills/:billId/pay` | PHARMACY_STAFF, ADMIN | — |
 | GET | `/api/v1/doctors/:id/appointments` | All auth | REQ-30 |
+| GET | `/api/v1/appointments` | RECEPTION_STAFF, ADMIN | REQ-30,31 |
 | POST | `/api/v1/appointments` | PATIENT, RECEPTION_STAFF | REQ-30,31 |
 | GET | `/api/v1/appointments/my` | PATIENT | — |
 | GET | `/api/v1/doctors/me/appointments` | DOCTOR | — |
@@ -262,6 +264,7 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 | POST | `/api/v1/checkin` | RECEPTION_STAFF | REQ-14–18 |
 | POST | `/api/v1/patients/:id/documents` | DOCTOR, RECEPTION_STAFF, PATIENT, ADMIN | REQ-59,60 |
 | GET | `/api/v1/patients/:id/documents` | DOCTOR, RECEPTION_STAFF, PATIENT, ADMIN | REQ-63 |
+| DELETE | `/api/v1/patients/:id/documents/:docId` | DOCTOR, RECEPTION_STAFF, PATIENT, ADMIN | REQ-63 |
 | POST | `/api/v1/admin/users` | ADMIN | REQ-49 |
 | GET | `/api/v1/admin/users` | ADMIN | REQ-49 |
 | PUT | `/api/v1/admin/users/:id` | ADMIN | REQ-49 |
