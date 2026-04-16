@@ -157,14 +157,17 @@ model LabReport {
 }
 
 model ExternalDocument {
-  id           String       @id @default(uuid())
-  patientId    String
-  visitId      String?
-  documentType DocumentType
-  fileUrl      String
-  uploadedAt   DateTime     @default(now())
-  patient      Patient      @relation(fields: [patientId], references: [id])
-  visit        Visit?       @relation(fields: [visitId], references: [id])
+  id                    String       @id @default(uuid())
+  patientId             String
+  visitId               String?
+  documentType          DocumentType
+  fileUrl               String
+  cloudinaryPublicId    String?
+  cloudinaryResourceType String?
+  originalFilename      String?
+  uploadedAt            DateTime     @default(now())
+  patient               Patient      @relation(fields: [patientId], references: [id])
+  visit                 Visit?       @relation(fields: [visitId], references: [id])
 }
 
 model Medicine {

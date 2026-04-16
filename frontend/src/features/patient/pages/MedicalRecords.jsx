@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { FolderOpen, Upload, File, Trash2, Download, Plus, Loader2, CheckCircle2, AlertCircle, FileText, X } from "lucide-react";
 import { cn } from "../../../utils/cn";
 import Button from "../../../components/ui/Button";
-import Input from "../../../components/ui/Input";
 import { getMyDocuments, uploadDocument, deleteDocument } from "../services/patient.service";
 import useAuthStore from "../../../store/useAuthStore";
 
@@ -39,6 +38,7 @@ const MedicalRecords = () => {
   }, [user]);
 
   const handleFileChange = (e) => {
+    setError("");
     setFormData({ ...formData, file: e.target.files[0] });
   };
 
@@ -62,23 +62,19 @@ const MedicalRecords = () => {
     setSuccess("");
 
     try {
-      // The backend expects { documentType, fileUrl } as JSON
-      // Since we aren't changing the backend to handle real files, 
-      // we've set a placeholder for the fileUrl so the record is created.
-      const payload = {
-        documentType: formData.documentType,
-        fileUrl: formData.file.name 
-      };
+      const payload = new FormData();
+      payload.append("documentType", formData.documentType);
+      payload.append("file", formData.file);
 
       const response = await uploadDocument(user.patient.id, payload);
       if (response.success) {
-        setSuccess("Document record added to vault!");
+        setSuccess("Document uploaded to your vault.");
         setIsUploadModalOpen(false);
         setFormData({ documentType: "PRESCRIPTION", file: null });
         fetchDocuments();
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to add record to vault.");
+      setError(err.response?.data?.message || "Failed to upload document.");
     } finally {
       setUploading(false);
     }
@@ -129,8 +125,8 @@ const MedicalRecords = () => {
             </div>
             
             <div className="flex-1 space-y-1 mb-6">
-              <h3 className="font-bold text-gray-900 truncate" title={doc.fileUrl.split('/').pop()}>
-                {doc.fileUrl.split('/').pop() || "Medical Document"}
+              <h3 className="font-bold text-gray-900 truncate" title={doc.originalFilename || doc.fileUrl.split('/').pop()}>
+                {doc.originalFilename || doc.fileUrl.split('/').pop() || "Medical Document"}
               </h3>
               <p className="text-xs text-gray-500">Uploaded on {new Date(doc.uploadedAt).toLocaleDateString()}</p>
             </div>

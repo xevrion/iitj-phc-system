@@ -3,7 +3,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { uploadDocument, listDocuments, deleteDocument } from "../services/document.service.js";
 
 export const upload = asyncHandler(async (req, res) => {
-  const doc = await uploadDocument(req.params.id, req.user, req.body);
+  const doc = await uploadDocument(req.params.id, req.user, req.body, req.file);
   return res.status(201).json(new ApiResponse(201, doc, "Document uploaded"));
 });
 
