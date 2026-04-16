@@ -77,13 +77,13 @@ const BookAppointment = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
-      <div>
+    <div className="w-full max-w-2xl mx-auto space-y-8 px-0 sm:px-0">
+    <div>
         <h1 className="text-2xl font-bold text-gray-900">Book an Appointment</h1>
         <p className="text-gray-500">Select a specialist and choose a preferred time slot.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm space-y-6">
+      <form onSubmit={handleSubmit} className="bg-white p-5 sm:p-8 rounded-xl border border-gray-100 shadow-sm space-y-6">
         <div className="space-y-4">
           <div className="space-y-1.5">
             <div className="flex justify-between items-center">
@@ -145,7 +145,7 @@ const BookAppointment = () => {
             <label className="text-sm font-medium text-gray-700">Reason for Appointment</label>
             <div className="relative">
               <textarea 
-                className="w-full min-h-[100px] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none pl-10 pt-2"
+                className="w-full min-h-25 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none pl-10 pt-2"
                 placeholder="Briefly describe your symptoms or concern..."
                 value={formData.reason}
                 onChange={(e) => setFormData({...formData, reason: e.target.value})}

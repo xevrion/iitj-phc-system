@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { 
   LayoutDashboard, 
@@ -18,10 +18,24 @@ import Button from "../ui/Button";
 import NotificationCenter from "../ui/NotificationCenter";
 
 const DashboardLayout = ({ children, role, navItems }) => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 1024);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setIsSidebarOpen(true);
+      } else {
+        setIsSidebarOpen(false);
+      }
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -31,11 +45,19 @@ const DashboardLayout = ({ children, role, navItems }) => {
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex min-h-screen bg-gray-50 overflow-hidden">
+      {isSidebarOpen && (
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          onClick={toggleSidebar}
+          className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+        />
+      )}
       {/* Sidebar for Desktop */}
       <aside className={cn(
-        "bg-white border-r border-gray-200 transition-all duration-300 ease-in-out flex flex-col z-40",
-        isSidebarOpen ? "w-64" : "w-20"
+        "fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-gray-200 bg-white transition-transform duration-300 ease-in-out lg:static lg:z-40 lg:translate-x-0 lg:flex lg:flex-col",
+        isSidebarOpen ? "translate-x-0 lg:w-64" : "-translate-x-full lg:w-20"
       )}>
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
           <div className={cn("font-bold text-blue-600 truncate", !isSidebarOpen && "hidden")}>
@@ -84,15 +106,25 @@ const DashboardLayout = ({ children, role, navItems }) => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 z-30">
-          <div className="text-gray-700 font-semibold uppercase text-sm tracking-wider">
-            {role.replace("_", " ")} Dashboard
+        <header className="bg-white border-b border-gray-200 min-h-16 flex items-center justify-between px-4 sm:px-6 py-3 z-30 gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors"
+              aria-label="Toggle sidebar"
+            >
+              {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+            <div className="text-gray-700 font-semibold uppercase text-xs sm:text-sm tracking-wider truncate">
+              {role.replace("_", " ")} Dashboard
+            </div>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 sm:gap-6 min-w-0">
             <NotificationCenter />
-            <div className="flex items-center gap-4 border-l border-gray-100 pl-6">
+            <div className="flex items-center gap-3 sm:gap-4 border-l border-gray-100 pl-3 sm:pl-6 min-w-0">
               <div className="text-right hidden sm:block">
                 <div className="text-xs font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">
                   {role.replace("_", " ")}
@@ -109,7 +141,7 @@ const DashboardLayout = ({ children, role, navItems }) => {
         </header>
 
         {/* Dynamic Page Content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           {children}
         </main>
       </div>

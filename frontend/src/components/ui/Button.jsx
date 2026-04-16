@@ -2,7 +2,7 @@ import React from "react";
 import { cn } from "../../utils/cn";
 
 const Button = React.forwardRef(({ className, variant = "primary", size = "md", isLoading, children, ...props }, ref) => {
-  const baseStyles = "inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none";
+  const baseStyles = "inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none cursor-pointer";
   
   const variants = {
     primary: "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800",
@@ -13,8 +13,8 @@ const Button = React.forwardRef(({ className, variant = "primary", size = "md", 
 
   const sizes = {
     sm: "h-9 px-3 text-sm",
-    md: "h-10 py-2 px-4",
-    lg: "h-11 px-8 text-lg",
+    md: "min-h-10 py-2 px-4",
+    lg: "min-h-11 px-8 text-lg",
   };
 
   return (

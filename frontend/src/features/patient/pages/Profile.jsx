@@ -79,8 +79,8 @@ const Profile = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <div className="flex justify-between items-end">
+    <div className="w-full max-w-4xl mx-auto space-y-8 px-0 sm:px-0">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">My Medical Profile</h1>
           <p className="text-gray-500">Manage your personal and medical information.</p>
@@ -99,7 +99,7 @@ const Profile = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         {/* Left Column: Basic Info & QR Code */}
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm text-center">
@@ -194,7 +194,7 @@ const Profile = () => {
                   <MapPin size={14} className="text-gray-400" /> Permanent Address
                 </label>
                 <textarea 
-                  className="w-full min-h-[80px] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none disabled:bg-gray-50 disabled:text-gray-500"
+                  className="w-full min-h-20 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none disabled:bg-gray-50 disabled:text-gray-500"
                   value={formData.address}
                   onChange={(e) => setFormData({...formData, address: e.target.value})}
                   disabled={!isEditing}

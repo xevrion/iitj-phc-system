@@ -105,7 +105,7 @@ const PatientOverview = () => {
           </h1>
           <p className="text-gray-500">Your health overview and recent activities at IITJ PHC.</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <Button variant="outline" className="flex gap-2" onClick={fetchDashboardData}>
             <Clock size={18} />
             Sync Records
