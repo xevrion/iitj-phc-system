@@ -1,6 +1,35 @@
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 
+export const listAppointments = async ({ doctorId } = {}) => {
+  if (doctorId) {
+    const doctor = await prisma.doctor.findUnique({ where: { id: doctorId } });
+    if (!doctor) throw new ApiError(404, "Doctor not found");
+  }
+
+  return prisma.appointment.findMany({
+    where: doctorId ? { doctorId } : undefined,
+    include: {
+      doctor: {
+        select: {
+          id: true,
+          name: true,
+          specialization: true,
+          doctorType: true,
+        },
+      },
+      patient: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+        },
+      },
+    },
+    orderBy: { appointmentTime: "asc" },
+  });
+};
+
 // List appointments for a specific doctor (any authenticated user)
 export const getDoctorAppointments = async (doctorId) => {
   const doctor = await prisma.doctor.findUnique({ where: { id: doctorId } });

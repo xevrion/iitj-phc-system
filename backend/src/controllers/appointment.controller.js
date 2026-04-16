@@ -1,6 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import {
+  listAppointments,
   getDoctorAppointments,
   bookAppointment,
   bookAppointmentAsStaff,
@@ -8,6 +9,11 @@ import {
   getMyAppointmentsAsDoctor,
   cancelAppointment,
 } from "../services/appointment.service.js";
+
+export const list = asyncHandler(async (req, res) => {
+  const appointments = await listAppointments({ doctorId: req.query.doctorId });
+  return res.status(200).json(new ApiResponse(200, appointments, "Appointments fetched"));
+});
 
 export const listForDoctor = asyncHandler(async (req, res) => {
   const appointments = await getDoctorAppointments(req.params.id);

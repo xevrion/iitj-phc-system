@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  list,
   listForDoctor,
   book,
   myAppointmentsPatient,
@@ -12,6 +13,7 @@ const router = Router();
 router.use(verifyJWT);
 
 // /api/v1/appointments
+router.get("/", authorizeRoles("RECEPTION_STAFF", "ADMIN"), list);
 router.post("/", authorizeRoles("PATIENT", "RECEPTION_STAFF"), book);
 router.get("/my", authorizeRoles("PATIENT"), myAppointmentsPatient);
 router.put("/:id/cancel", authorizeRoles("PATIENT", "RECEPTION_STAFF", "ADMIN"), cancel);

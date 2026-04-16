@@ -20,6 +20,66 @@ const TIME_SLOTS = [
   { label: "04:00 PM", value: "16:00" },
 ];
 
+const getAppointmentGroup = (appointment, now) => {
+  const appointmentTime = new Date(appointment.appointmentTime).getTime();
+
+  if (appointment.status === "BOOKED" && appointmentTime >= now) {
+    return 0;
+  }
+
+  if (appointment.status !== "CANCELLED" && appointmentTime >= now) {
+    return 1;
+  }
+
+  if (appointment.status !== "CANCELLED") {
+    return 2;
+  }
+
+  return 3;
+};
+
+const sortAppointmentsForReception = (appointments) => {
+  const now = Date.now();
+
+  return [...appointments].sort((left, right) => {
+    const leftGroup = getAppointmentGroup(left, now);
+    const rightGroup = getAppointmentGroup(right, now);
+
+    if (leftGroup !== rightGroup) {
+      return leftGroup - rightGroup;
+    }
+
+    const leftTime = new Date(left.appointmentTime).getTime();
+    const rightTime = new Date(right.appointmentTime).getTime();
+
+    if (leftGroup <= 1) {
+      if (leftTime !== rightTime) {
+        return leftTime - rightTime;
+      }
+
+      if (left.isEmergency !== right.isEmergency) {
+        return left.isEmergency ? -1 : 1;
+      }
+
+      return (left.patient?.name || "").localeCompare(right.patient?.name || "");
+    }
+
+    if (leftTime !== rightTime) {
+      return rightTime - leftTime;
+    }
+
+    return (left.patient?.name || "").localeCompare(right.patient?.name || "");
+  });
+};
+
+const formatDoctorName = (name) => {
+  if (!name) {
+    return "—";
+  }
+
+  return name.startsWith("Dr. ") ? name : `Dr. ${name}`;
+};
+
 const ReceptionAppointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [doctors, setDoctors] = useState([]);
@@ -54,6 +114,8 @@ const ReceptionAppointments = () => {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  const orderedAppointments = sortAppointmentsForReception(appointments);
 
   const handleCancel = async (id) => {
     if (!confirm("Cancel this appointment?")) return;
@@ -213,10 +275,10 @@ const ReceptionAppointments = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {appointments.map(a => (
+              {orderedAppointments.map(a => (
                 <tr key={a.id} className="hover:bg-gray-50">
                   <td className="px-5 py-3 text-sm font-medium text-gray-900">{a.patient?.name || "—"}</td>
-                  <td className="px-5 py-3 text-sm text-gray-600">Dr. {a.doctor?.name || "—"}</td>
+                  <td className="px-5 py-3 text-sm text-gray-600">{formatDoctorName(a.doctor?.name)}</td>
                   <td className="px-5 py-3 text-sm text-gray-600">
                     {new Date(a.appointmentTime).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
                     {a.isEmergency && <span className="ml-2 text-xs bg-red-100 text-red-600 font-bold px-1.5 py-0.5 rounded">EMERGENCY</span>}
@@ -239,7 +301,7 @@ const ReceptionAppointments = () => {
                   </td>
                 </tr>
               ))}
-              {appointments.length === 0 && (
+              {orderedAppointments.length === 0 && (
                 <tr>
                   <td colSpan="6" className="px-5 py-10 text-center text-gray-400 text-sm">No appointments found.</td>
                 </tr>

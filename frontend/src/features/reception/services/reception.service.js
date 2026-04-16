@@ -31,13 +31,14 @@ export const getPatientVisits = async (patientId) => {
 };
 
 export const bookAppointmentStaff = async (data) => {
-  const response = await api.post("/appointments/staff", data);
+  const response = await api.post("/appointments", data);
   return response.data;
 };
 
 export const getAllAppointments = async (doctorId) => {
-  const url = doctorId ? `/doctors/${doctorId}/appointments` : "/doctors/me/appointments";
-  const response = await api.get(url);
+  const response = await api.get("/appointments", {
+    params: doctorId ? { doctorId } : undefined,
+  });
   return response.data;
 };
 
