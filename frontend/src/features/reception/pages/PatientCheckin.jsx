@@ -104,13 +104,19 @@ const PatientCheckin = () => {
     setLoading(true);
     setError("");
     try {
-      const res = await getPatientById(manualId.trim());
+      // Try QR code first, then fall back to patient UUID
+      let res;
+      try {
+        res = await identifyPatientByQR(manualId.trim());
+      } catch {
+        res = await getPatientById(manualId.trim());
+      }
       if (res.success) {
         setPatient(res.data);
         setStep(2);
       }
     } catch (err) {
-      setError(err.response?.data?.message || "No patient found with this ID.");
+      setError(err.response?.data?.message || "No patient found with this QR code or ID.");
     } finally {
       setLoading(false);
     }
@@ -205,11 +211,11 @@ const PatientCheckin = () => {
             </div>
             <div>
               <h3 className="text-lg font-bold text-gray-900">Manual Search</h3>
-              <p className="text-sm text-gray-500 mt-1">Search by Patient ID if the patient doesn't have a QR code.</p>
+              <p className="text-sm text-gray-500 mt-1">Enter the patient's QR code (e.g. QR001) or full patient ID.</p>
             </div>
             <form onSubmit={handleManualSearch} className="space-y-3">
               <Input
-                placeholder="Enter Patient ID..."
+                placeholder="QR code or patient ID..."
                 value={manualId}
                 onChange={(e) => setManualId(e.target.value)}
               />
