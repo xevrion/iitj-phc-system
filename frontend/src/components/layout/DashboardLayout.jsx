@@ -15,6 +15,7 @@ import {
 import { cn } from "../../utils/cn";
 import useAuthStore from "../../store/useAuthStore";
 import Button from "../ui/Button";
+import NotificationCenter from "../ui/NotificationCenter";
 
 const DashboardLayout = ({ children, role, navItems }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -89,13 +90,20 @@ const DashboardLayout = ({ children, role, navItems }) => {
           <div className="text-gray-700 font-semibold uppercase text-sm tracking-wider">
             {role.replace("_", " ")} Dashboard
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right hidden sm:block">
-              <div className="text-sm font-medium text-gray-900">{user?.fullName || "User Name"}</div>
-              <div className="text-xs text-gray-500 font-mono tracking-tight">{user?.ldapId || "ID"}</div>
-            </div>
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
-              {user?.fullName?.charAt(0) || "U"}
+          <div className="flex items-center gap-6">
+            <NotificationCenter />
+            <div className="flex items-center gap-4 border-l border-gray-100 pl-6">
+              <div className="text-right hidden sm:block">
+                <div className="text-xs font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">
+                  {role.replace("_", " ")}
+                </div>
+                <div className="text-sm font-bold text-gray-900">
+                  {user?.patient?.name?.split(" ")[0] || user?.doctor?.name?.split(" ").pop() || user?.ldapId || "User"}
+                </div>
+              </div>
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold border-2 border-white shadow-sm">
+                {(user?.patient?.name || user?.doctor?.name?.replace("Dr. ", "") || user?.ldapId || "U").charAt(0).toUpperCase()}
+              </div>
             </div>
           </div>
         </header>

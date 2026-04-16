@@ -34,3 +34,38 @@ export const completeVisit = async (visitId) => {
   const response = await api.put(`/visits/${visitId}/complete`);
   return response.data;
 };
+
+export const getVisitById = async (visitId) => {
+  const response = await api.get(`/visits/${visitId}`);
+  return response.data;
+};
+
+export const saveConsultationNotes = async (visitId, notes) => {
+  const response = await api.put(`/visits/${visitId}/consultation`, { consultationNotes: notes });
+  return response.data;
+};
+
+export const createPrescription = async (visitId, data) => {
+  const response = await api.post(`/visits/${visitId}/prescription`, data);
+  return response.data;
+};
+
+export const createLabRequest = async (visitId, testName) => {
+  const response = await api.post(`/visits/${visitId}/lab-requests`, { testName });
+  return response.data;
+};
+
+export const getMedicines = async () => {
+  const response = await api.get("/medicines");
+  return response.data;
+};
+
+export const getDoctorAttendance = async (doctorId) => {
+  const response = await api.get(`/doctors/attendance/records?doctorId=${doctorId}`);
+  return response.data;
+};
+
+export const getDoctorById = async (id) => {
+  const response = await api.get(`/doctors/${id}`);
+  return response.data;
+};

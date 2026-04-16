@@ -26,27 +26,29 @@ const PatientOverview = () => {
     loading: true
   });
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      if (!user?.patient?.id) return;
-      try {
-        const [vRes, aRes, lRes] = await Promise.all([
-          getMyVisits(user.patient.id),
-          getMyAppointments(),
-          getMyLabReports()
-        ]);
+  const fetchDashboardData = async () => {
+    if (!user?.patient?.id) return;
+    setData(prev => ({ ...prev, loading: true }));
+    try {
+      const [vRes, aRes, lRes] = await Promise.all([
+        getMyVisits(user.patient.id),
+        getMyAppointments(),
+        getMyLabReports()
+      ]);
 
-        setData({
-          visits: vRes.success ? vRes.data : [],
-          appointments: aRes.success ? aRes.data : [],
-          labReports: lRes.success ? lRes.data : [],
-          loading: false
-        });
-      } catch (err) {
-        console.error("Dashboard fetch error:", err);
-        setData(prev => ({ ...prev, loading: false }));
-      }
-    };
+      setData({
+        visits: vRes.success ? vRes.data : [],
+        appointments: aRes.success ? aRes.data : [],
+        labReports: lRes.success ? lRes.data : [],
+        loading: false
+      });
+    } catch (err) {
+      console.error("Dashboard fetch error:", err);
+      setData(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  useEffect(() => {
     fetchDashboardData();
   }, [user]);
 
@@ -98,15 +100,17 @@ const PatientOverview = () => {
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Welcome back, Patient!</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Welcome back, {user?.patient?.name || user?.fullName || "Patient"}!
+          </h1>
           <p className="text-gray-500">Your health overview and recent activities at IITJ PHC.</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" className="flex gap-2">
-            <ClipboardList size={18} />
-            View Records
+          <Button variant="outline" className="flex gap-2" onClick={fetchDashboardData}>
+            <Clock size={18} />
+            Sync Records
           </Button>
-          <Button className="flex gap-2">
+          <Button className="flex gap-2" onClick={() => navigate("/patient/appointments/book")}>
             <PlusCircle size={18} />
             Book Appointment
           </Button>

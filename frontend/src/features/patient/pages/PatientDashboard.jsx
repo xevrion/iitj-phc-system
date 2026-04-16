@@ -6,7 +6,9 @@ import {
   FileText, 
   FlaskConical, 
   User, 
-  Clock
+  Clock,
+  Receipt,
+  FolderOpen
 } from "lucide-react";
 import DashboardLayout from "../../../components/layout/DashboardLayout";
 import PatientOverview from "./PatientOverview";
@@ -14,6 +16,9 @@ import VisitHistory from "./VisitHistory";
 import Prescriptions from "./Prescriptions";
 import LabReports from "./LabReports";
 import BookAppointment from "./BookAppointment";
+import Profile from "./Profile";
+import Billing from "./Billing";
+import MedicalRecords from "./MedicalRecords";
 
 const patientNavItems = [
   { label: "Overview", path: "/patient", icon: LayoutDashboard },
@@ -21,6 +26,8 @@ const patientNavItems = [
   { label: "Visit History", path: "/patient/visits", icon: Clock },
   { label: "Prescriptions", path: "/patient/prescriptions", icon: FileText },
   { label: "Lab Reports", path: "/patient/lab-reports", icon: FlaskConical },
+  { label: "Medical Vault", path: "/patient/vault", icon: FolderOpen },
+  { label: "Billing", path: "/patient/billing", icon: Receipt },
   { label: "Profile", path: "/patient/profile", icon: User },
 ];
 
@@ -33,7 +40,9 @@ const PatientDashboard = () => {
         <Route path="prescriptions" element={<Prescriptions />} />
         <Route path="lab-reports" element={<LabReports />} />
         <Route path="appointments/book" element={<BookAppointment />} />
-        <Route path="profile" element={<div className="p-8 bg-white rounded-xl border border-gray-100 shadow-sm">Patient Profile Placeholder</div>} />
+        <Route path="vault" element={<MedicalRecords />} />
+        <Route path="billing" element={<Billing />} />
+        <Route path="profile" element={<Profile />} />
         <Route path="*" element={<Navigate to="/patient" replace />} />
       </Routes>
     </DashboardLayout>
