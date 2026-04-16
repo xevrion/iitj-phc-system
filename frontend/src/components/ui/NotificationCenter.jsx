@@ -10,22 +10,31 @@ const NotificationCenter = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef(null);
+  const notificationsRef = useRef([]);
+  const lastFetchedAt = useRef(null);
 
   const fetchNotifications = async (isBackground = false) => {
     if (!isBackground) setLoading(true);
     try {
-      const response = await getNotifications();
+      const since = isBackground ? lastFetchedAt.current : null;
+      const response = await getNotifications({ since });
+      lastFetchedAt.current = new Date().toISOString();
       if (response.success) {
-        // If background fetch, check for NEW notifications to show toast
-        if (isBackground) {
-          const newNotifs = response.data.filter(
-            n => !n.readAt && !notifications.find(existing => existing.id === n.id)
-          );
-          newNotifs.forEach(n => {
+        if (isBackground && response.data.length > 0) {
+          response.data.filter(n => !n.readAt).forEach(n => {
             addToast(n.title, n.message, n.notificationType.includes("UNAVAILABLE") ? "error" : "info");
           });
+          // merge new notifications into existing list
+          setNotifications(prev => {
+            const ids = new Set(prev.map(n => n.id));
+            const merged = [...response.data.filter(n => !ids.has(n.id)), ...prev];
+            notificationsRef.current = merged;
+            return merged;
+          });
+        } else if (!isBackground) {
+          notificationsRef.current = response.data;
+          setNotifications(response.data);
         }
-        setNotifications(response.data);
       }
     } catch (err) {
       console.error("Failed to fetch notifications", err);
@@ -36,10 +45,9 @@ const NotificationCenter = () => {
 
   useEffect(() => {
     fetchNotifications();
-    // Poll every 10 seconds for "real-time" feel
-    const interval = setInterval(() => fetchNotifications(true), 10000);
+    const interval = setInterval(() => fetchNotifications(true), 30000);
     return () => clearInterval(interval);
-  }, [notifications]); // Re-run when notifications change to keep closure fresh
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const handleClickOutside = (event) => {

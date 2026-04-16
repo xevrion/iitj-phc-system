@@ -10,13 +10,13 @@ export const updateMyProfile = async (data) => {
   return response.data;
 };
 
-export const getMyVisits = async (id) => {
-  const response = await api.get(`/patients/${id}/visits`);
+export const getMyVisits = async (id, { limit } = {}) => {
+  const response = await api.get(`/patients/${id}/visits`, { params: limit ? { limit } : {} });
   return response.data;
 };
 
-export const getMyLabReports = async () => {
-  const response = await api.get("/patients/me/lab-reports");
+export const getMyLabReports = async ({ limit } = {}) => {
+  const response = await api.get("/patients/me/lab-reports", { params: limit ? { limit } : {} });
   return response.data;
 };
 
@@ -45,8 +45,8 @@ export const getMyAppointments = async () => {
   return response.data;
 };
 
-export const getNotifications = async () => {
-  const response = await api.get("/notifications/mine");
+export const getNotifications = async ({ since } = {}) => {
+  const response = await api.get("/notifications/mine", { params: since ? { since } : {} });
   return response.data;
 };
 

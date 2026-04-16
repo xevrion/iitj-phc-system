@@ -1,15 +1,26 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, User, Clipboard, AlertCircle, CheckCircle2, RotateCw } from "lucide-react";
+import { Calendar, User, AlertCircle, CheckCircle2, RotateCw } from "lucide-react";
 import { cn } from "../../../utils/cn";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import { getDoctors, bookAppointment } from "../services/patient.service";
 
+const TIME_SLOTS = [
+  { label: "09:00 AM", value: "09:00" },
+  { label: "10:00 AM", value: "10:00" },
+  { label: "11:00 AM", value: "11:00" },
+  { label: "12:00 PM", value: "12:00" },
+  { label: "02:00 PM", value: "14:00" },
+  { label: "03:00 PM", value: "15:00" },
+  { label: "04:00 PM", value: "16:00" },
+];
+
 const BookAppointment = () => {
   const [formData, setFormData] = useState({
     doctorId: "",
     date: "",
-    reason: "",
+    time: "",
+    slotDuration: "30",
   });
   const [doctors, setDoctors] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -33,7 +44,7 @@ const BookAppointment = () => {
   useEffect(() => {
     fetchDoctors();
     // Auto-poll the available list every 10s so new doctors appear without manual refresh
-    const interval = setInterval(() => fetchDoctors(true), 10000);
+    const interval = setInterval(() => fetchDoctors(true), 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -43,9 +54,11 @@ const BookAppointment = () => {
     setError("");
 
     try {
+      const appointmentTime = new Date(`${formData.date}T${formData.time}:00`).toISOString();
       const response = await bookAppointment({
-        ...formData,
-        appointmentDate: new Date(formData.date).toISOString()
+        doctorId: formData.doctorId,
+        appointmentTime,
+        slotDuration: Number(formData.slotDuration),
       });
       if (response.success) {
         setIsSuccess(true);
@@ -123,36 +136,42 @@ const BookAppointment = () => {
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input 
-              type="date" 
-              label="Preferred Date" 
+            <Input
+              type="date"
+              label="Preferred Date"
               value={formData.date}
               onChange={(e) => setFormData({...formData, date: e.target.value})}
               required
             />
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-gray-700">Time Slot (Optional)</label>
-              <select className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none appearance-none">
-                <option>Select a slot...</option>
-                <option>09:00 AM - 10:00 AM</option>
-                <option>10:00 AM - 11:00 AM</option>
-                <option>11:00 AM - 12:00 PM</option>
+              <label className="text-sm font-medium text-gray-700">Time Slot</label>
+              <select
+                className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none appearance-none"
+                value={formData.time}
+                onChange={(e) => setFormData({...formData, time: e.target.value})}
+                required
+              >
+                <option value="">Select a time...</option>
+                {TIME_SLOTS.map(slot => (
+                  <option key={slot.value} value={slot.value}>{slot.label}</option>
+                ))}
               </select>
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-gray-700">Reason for Appointment</label>
-            <div className="relative">
-              <textarea 
-                className="w-full min-h-[100px] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none pl-10 pt-2"
-                placeholder="Briefly describe your symptoms or concern..."
-                value={formData.reason}
-                onChange={(e) => setFormData({...formData, reason: e.target.value})}
-                required
-              />
-              <Clipboard className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-            </div>
+            <label className="text-sm font-medium text-gray-700">Slot Duration</label>
+            <select
+              className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none appearance-none"
+              value={formData.slotDuration}
+              onChange={(e) => setFormData({...formData, slotDuration: e.target.value})}
+              required
+            >
+              <option value="15">15 minutes</option>
+              <option value="30">30 minutes</option>
+              <option value="45">45 minutes</option>
+              <option value="60">60 minutes</option>
+            </select>
           </div>
 
           <div className="flex items-center gap-2 p-4 bg-amber-50 rounded-lg border border-amber-100 text-amber-800">
