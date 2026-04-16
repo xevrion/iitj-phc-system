@@ -133,7 +133,7 @@ const DoctorOverview = () => {
             <p className="text-xs text-gray-400 mt-1">Synced at {lastUpdated.toLocaleTimeString("en-IN")}</p>
           )}
         </div>
-        <div className="flex gap-3 flex-wrap">
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <Button variant="outline" onClick={fetchOverview} isLoading={loading || saving}>
             Refresh Data
           </Button>
@@ -159,7 +159,7 @@ const DoctorOverview = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
           <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Availability</p>
           <p className="text-lg font-bold text-gray-900 flex items-center gap-2">

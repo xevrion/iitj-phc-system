@@ -96,13 +96,13 @@ const BookAppointment = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
-      <div>
+    <div className="w-full max-w-2xl mx-auto space-y-8 px-0 sm:px-0">
+    <div>
         <h1 className="text-2xl font-bold text-gray-900">Book an Appointment</h1>
         <p className="text-gray-500">Select a specialist and choose a preferred time slot.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm space-y-6">
+      <form onSubmit={handleSubmit} className="bg-white p-5 sm:p-8 rounded-xl border border-gray-100 shadow-sm space-y-6">
         <div className="space-y-4">
           <div className="space-y-1.5">
             <div className="flex justify-between items-center">

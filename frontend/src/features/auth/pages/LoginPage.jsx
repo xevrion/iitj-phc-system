@@ -49,9 +49,9 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-        <div className="p-8 bg-blue-600 text-white text-center">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4 py-8 sm:p-6">
+      <div className="w-full max-w-md bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden mx-auto">
+        <div className="p-6 sm:p-8 bg-blue-600 text-white text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full mb-4">
             <Lock className="w-8 h-8" />
           </div>
@@ -59,7 +59,7 @@ const LoginPage = () => {
           <p className="text-blue-100">Integrated Digital System</p>
         </div>
 
-        <div className="p-8">
+        <div className="p-6 sm:p-8">
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="relative">
               <Input

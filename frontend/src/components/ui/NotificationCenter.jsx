@@ -85,7 +85,7 @@ const NotificationCenter = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl border border-gray-100 shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute right-0 mt-2 w-[calc(100vw-1rem)] max-w-sm sm:w-96 sm:max-w-none bg-white rounded-xl border border-gray-100 shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="p-4 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
             <h3 className="font-bold text-gray-900 flex items-center gap-2">
               <Bell size={18} className="text-blue-600" /> Notifications
@@ -97,7 +97,7 @@ const NotificationCenter = () => {
             )}
           </div>
 
-          <div className="max-h-[400px] overflow-y-auto divide-y divide-gray-50">
+          <div className="max-h-100 overflow-y-auto divide-y divide-gray-50">
             {loading && notifications.length === 0 ? (
               <div className="p-12 flex flex-col items-center justify-center gap-2">
                 <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
