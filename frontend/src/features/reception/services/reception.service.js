@@ -29,3 +29,20 @@ export const getPatientVisits = async (patientId) => {
   const response = await api.get(`/patients/${patientId}/visits`);
   return response.data;
 };
+
+export const bookAppointmentStaff = async (data) => {
+  const response = await api.post("/appointments", data);
+  return response.data;
+};
+
+export const getAllAppointments = async (doctorId) => {
+  const response = await api.get("/appointments", {
+    params: doctorId ? { doctorId } : undefined,
+  });
+  return response.data;
+};
+
+export const cancelAppointment = async (id) => {
+  const response = await api.put(`/appointments/${id}/cancel`);
+  return response.data;
+};

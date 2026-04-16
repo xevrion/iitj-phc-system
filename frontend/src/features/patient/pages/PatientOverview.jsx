@@ -31,9 +31,9 @@ const PatientOverview = () => {
     setData(prev => ({ ...prev, loading: true }));
     try {
       const [vRes, aRes, lRes] = await Promise.all([
-        getMyVisits(user.patient.id),
+        getMyVisits(user.patient.id, { limit: 5 }),
         getMyAppointments(),
-        getMyLabReports()
+        getMyLabReports({ limit: 5 })
       ]);
 
       setData({
@@ -61,15 +61,25 @@ const PatientOverview = () => {
     );
   }
 
-  const upcomingAppt = data.appointments.find(a => new Date(a.appointmentDate) > new Date());
+  const upcomingAppt = data.appointments.find(
+    (appointment) =>
+      appointment.status !== "CANCELLED" &&
+      new Date(appointment.appointmentTime).getTime() > Date.now()
+  );
   const pendingLabs = data.labReports.filter(l => l.status === "PENDING").length;
   const latestVisit = data.visits[0];
 
   const stats = [
     {
       title: "Next Appointment",
-      value: upcomingAppt ? new Date(upcomingAppt.appointmentDate).toLocaleDateString() : "None Scheduled",
-      subtext: upcomingAppt ? `With ${upcomingAppt.doctor?.user?.fullName}` : "Book a slot today",
+      value: upcomingAppt
+        ? new Date(upcomingAppt.appointmentTime).toLocaleDateString("en-IN", {
+            dateStyle: "medium",
+          })
+        : "None Scheduled",
+      subtext: upcomingAppt
+        ? `With ${upcomingAppt.doctor?.name || "your doctor"}`
+        : "Book a slot today",
       icon: Calendar,
       colorClass: "bg-blue-500",
     },
@@ -92,7 +102,7 @@ const PatientOverview = () => {
   // Combine all for recent activity
   const activities = [
     ...data.visits.slice(0, 2).map(v => ({ id: v.id, type: "Visit", title: "Medical Consultation", date: new Date(v.createdAt).toLocaleDateString(), status: v.status })),
-    ...data.appointments.slice(0, 1).map(a => ({ id: a.id, type: "Appt", title: "Specialist Appointment", date: new Date(a.appointmentDate).toLocaleDateString(), status: a.status })),
+    ...data.appointments.slice(0, 1).map(a => ({ id: a.id, type: "Appt", title: "Specialist Appointment", date: new Date(a.appointmentTime).toLocaleDateString(), status: a.status })),
     ...data.labReports.slice(0, 1).map(l => ({ id: l.id, type: "Lab", title: l.testName, date: new Date(l.createdAt).toLocaleDateString(), status: l.status }))
   ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
 
@@ -110,9 +120,9 @@ const PatientOverview = () => {
             <Clock size={18} />
             Sync Records
           </Button>
-          <Button className="flex gap-2" onClick={() => navigate("/patient/appointments/book")}>
+          <Button className="flex gap-2" onClick={() => navigate("/patient/appointments")}>
             <PlusCircle size={18} />
-            Book Appointment
+            My Appointments
           </Button>
         </div>
       </div>

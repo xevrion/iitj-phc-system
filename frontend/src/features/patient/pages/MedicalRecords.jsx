@@ -3,7 +3,7 @@ import { FolderOpen, Upload, File, Trash2, Download, Plus, Loader2, CheckCircle2
 import { cn } from "../../../utils/cn";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
-import { getMyDocuments, uploadDocument } from "../services/patient.service";
+import { getMyDocuments, uploadDocument, deleteDocument } from "../services/patient.service";
 import useAuthStore from "../../../store/useAuthStore";
 
 const MedicalRecords = () => {
@@ -40,6 +40,17 @@ const MedicalRecords = () => {
 
   const handleFileChange = (e) => {
     setFormData({ ...formData, file: e.target.files[0] });
+  };
+
+  const handleDelete = async (docId) => {
+    if (!window.confirm("Delete this document from your vault?")) return;
+    try {
+      await deleteDocument(user.patient.id, docId);
+      setDocuments(prev => prev.filter(d => d.id !== docId));
+      setSuccess("Document removed from vault.");
+    } catch (err) {
+      setError("Failed to delete document.");
+    }
   };
 
   const handleUpload = async (e) => {
@@ -134,7 +145,12 @@ const MedicalRecords = () => {
                 <Download size={14} />
                 View
               </Button>
-              <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-50 h-9 w-9 p-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-red-500 hover:bg-red-50 h-9 w-9 p-0"
+                onClick={() => handleDelete(doc.id)}
+              >
                 <Trash2 size={16} />
               </Button>
             </div>

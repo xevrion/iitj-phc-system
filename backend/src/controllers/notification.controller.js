@@ -6,7 +6,7 @@ import {
 } from "../services/notification.service.js";
 
 export const listMine = asyncHandler(async (req, res) => {
-  const notifications = await getMyNotifications(req.user.id);
+  const notifications = await getMyNotifications(req.user.id, req.query.since);
   return res
     .status(200)
     .json(new ApiResponse(200, notifications, "Notifications fetched"));

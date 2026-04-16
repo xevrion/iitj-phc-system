@@ -16,11 +16,12 @@ import {
 import { cn } from "../../../utils/cn";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
-import { identifyPatientByQR, getAvailableDoctors, createVisit } from "../services/reception.service";
+import { identifyPatientByQR, getPatientById, getAvailableDoctors, createVisit } from "../services/reception.service";
 
 const PatientCheckin = () => {
   const [step, setStep] = useState(1); // 1: Identify, 2: Visit Details & Vitals
   const [qrInput, setQrInput] = useState("");
+  const [manualId, setManualId] = useState("");
   const [patient, setPatient] = useState(null);
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -97,9 +98,34 @@ const PatientCheckin = () => {
     }
   };
 
+  const handleManualSearch = async (e) => {
+    e.preventDefault();
+    if (!manualId.trim()) return;
+    setLoading(true);
+    setError("");
+    try {
+      // Try QR code first, then fall back to patient UUID
+      let res;
+      try {
+        res = await identifyPatientByQR(manualId.trim());
+      } catch {
+        res = await getPatientById(manualId.trim());
+      }
+      if (res.success) {
+        setPatient(res.data);
+        setStep(2);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "No patient found with this QR code or ID.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const resetForm = () => {
     setStep(1);
     setQrInput("");
+    setManualId("");
     setPatient(null);
     setSuccess("");
     setError("");
@@ -179,15 +205,24 @@ const PatientCheckin = () => {
             </form>
           </div>
 
-          <div className="bg-gray-50 p-8 rounded-2xl border border-dashed border-gray-200 flex flex-col items-center justify-center text-center space-y-4">
+          <div className="bg-gray-50 p-8 rounded-2xl border border-dashed border-gray-200 space-y-4">
             <div className="w-12 h-12 bg-white text-gray-400 rounded-xl flex items-center justify-center shadow-sm">
               <Search size={24} />
             </div>
             <div>
               <h3 className="text-lg font-bold text-gray-900">Manual Search</h3>
-              <p className="text-sm text-gray-500 mt-1">If the patient doesn't have a QR code, search by name or ID.</p>
+              <p className="text-sm text-gray-500 mt-1">Enter the patient's QR code (e.g. QR001) or full patient ID.</p>
             </div>
-            <Button variant="outline" disabled className="w-full">Search Patient Database</Button>
+            <form onSubmit={handleManualSearch} className="space-y-3">
+              <Input
+                placeholder="QR code or patient ID..."
+                value={manualId}
+                onChange={(e) => setManualId(e.target.value)}
+              />
+              <Button type="submit" variant="outline" className="w-full gap-2" isLoading={loading}>
+                <Search size={16} /> Search Patient
+              </Button>
+            </form>
           </div>
         </div>
       )}

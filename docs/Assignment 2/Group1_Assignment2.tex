@@ -29,7 +29,7 @@ Solution Trajectory, Implementation Results, and Current Status}
 \maketitle
 
 \begin{abstract}
-This report presents the Assignment 2 status of the PHC Integrated Digital System being developed for the Primary Health Centre at IIT Jodhpur. The project targets a campus-scale healthcare environment where patient registration, visit handling, prescriptions, laboratory requests, pharmacy billing, attendance monitoring, and administrative reporting were historically fragmented across paper records and disconnected manual processes. Building on the earlier SRS and UML work, the current implementation has converged on a modular Node.js and Express backend backed by PostgreSQL through Prisma, with role-based access control, JWT session handling, local LDAP-backed authentication for development, QR-assisted check-in, visit-linked traceability, and an expanding automated testing workflow. The report documents the problem motivation, the evolution of the solution from successive SRS refinements, the sprint and Alpha-driven development process, the finalized architectural choices, and the results observed from the working backend. It also records negative findings and operational constraints, including frontend incompleteness, production-readiness gaps, and documentation synchronization drift. The intent is to present not only what the team planned, but what the repository demonstrably achieves as of April 5, 2026.
+This report presents the Assignment 2 status of the PHC Integrated Digital System being developed for the Primary Health Centre at IIT Jodhpur. The project targets a campus-scale healthcare environment where patient registration, visit handling, prescriptions, laboratory requests, pharmacy billing, attendance monitoring, and administrative reporting were historically fragmented across paper records and disconnected manual processes. Building on the earlier SRS and UML work, the current implementation has converged on a modular Node.js and Express backend backed by PostgreSQL through Prisma, with role-based access control, JWT session handling, local LDAP-backed authentication for development, QR-assisted check-in, visit-linked traceability, and an expanding automated testing workflow. The report documents the problem motivation, the evolution of the solution from successive SRS refinements, the sprint and Alpha-driven development process, the finalized architectural choices, and the results observed from the working backend. It also records negative findings and operational constraints, including frontend branch-integration gaps, production-readiness gaps, and documentation synchronization drift. The intent is to present not only what the team planned, but what the repository demonstrably achieves as of April 11, 2026.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -68,14 +68,14 @@ This trajectory matters because the repository does not merely mirror the wordin
 \subsection{Finalized Tech Stack and Architectural Direction}
 The current technical direction is a layered modular monolith. This was an intentional decision. A microservices architecture would have added deployment and coordination overhead that is difficult to justify for a single-campus PHC.
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \caption{Finalized Technology Stack}
 \begin{tabular}{|p{2.1cm}|p{5.2cm}|}
 \hline
 \textbf{Layer} & \textbf{Technology Choice} \\
 \hline
-Frontend & React + Vite (currently minimal scaffold only) \\
+Frontend & React + Vite; Sprint 6 UI implementation active, with login / landing, patient dashboard, and doctor dashboard already developed on the team frontend branch \\
 \hline
 Backend & Node.js + Express (ESM) \\
 \hline
@@ -98,9 +98,9 @@ The architectural pattern followed consistently in the backend is:
 \texttt{route} \rightarrow \texttt{controller} \rightarrow \texttt{service} \rightarrow \texttt{Prisma}
 \]
 
-This discipline is valuable in an academic project because it makes responsibility boundaries explicit. The controllers remain thin, the services hold validation and business rules, and Prisma is the persistence boundary. Such separation reduces the chance that future frontend work or later Sprint 5 integrations will require invasive rewrites.
+This discipline is valuable in an academic project because it makes responsibility boundaries explicit. The controllers remain thin, the services hold validation and business rules, and Prisma is the persistence boundary. Such separation reduces the chance that future frontend work or later Sprint 5 integrations will require invasive rewrites. The current modular decomposition is consistent with the system view shown in Fig.~\ref{fig:architecture}.
 
-\begin{figure}[H]
+\begin{figure}[!t]
 \centering
 \includegraphics[width=\columnwidth]{figures/phc-system-architecture.png}
 \caption{Overall PHC system architecture retained from the SRS/Assignment 1 design baseline and still aligned with the current backend implementation.}
@@ -114,9 +114,9 @@ The project does not depend on one mathematically novel algorithm; instead, its 
 The finalized access model uses JWT for session continuity and role-based authorization at route level. The repository now includes a Dockerized local LDAP server seeded with PHC test users, and authentication is performed through LDAP bind rather than the earlier fallback-only development stub. This is an important implementation correction after Assignment 1 because it moves authentication behavior closer to the intended institutional model. The remaining gap is not local auth correctness, but production-grade alignment with institute infrastructure, deployment hardening, and operational secret handling.
 
 \subsubsection{Visit-Centric Traceability Model}
-The central methodology choice is to treat the visit as the anchor of all clinical artifacts. A visit progresses through states such as \texttt{WAITING}, \texttt{IN\_CONSULTATION}, \texttt{COMPLETED}, and \texttt{CANCELLED}. Once this state machine exists, prescriptions, lab requests, bills, and vitals no longer float as isolated records.
+The central methodology choice is to treat the visit as the anchor of all clinical artifacts. A visit progresses through states such as \texttt{WAITING}, \texttt{IN\_CONSULTATION}, \texttt{COMPLETED}, and \texttt{CANCELLED}. Once this state machine exists, prescriptions, lab requests, bills, and vitals no longer float as isolated records. The relational consequences of that choice are visible in Fig.~\ref{fig:visitid}.
 
-\begin{figure}[H]
+\begin{figure}[!t]
 \centering
 \includegraphics[width=\columnwidth]{figures/visitid-relational-model.png}
 \caption{Visit-centric relational design linking clinical, laboratory, and billing entities.}
@@ -138,7 +138,7 @@ The SRS defines Agile development with short sprints, Trello-based work manageme
 \subsection{Sprint Plan, Scrum Team, and Alpha Progression}
 The project is being executed by a three-member Scrum-style team with shared implementation responsibility and Alpha ownership used as an accountability model. From SRS 2.0, the Alpha mapping is as follows.
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \caption{Essence Alpha Ownership}
 \begin{tabular}{|p{2cm}|p{4cm}|}
@@ -157,28 +157,28 @@ Requirements, Way of Working & Nayan Patidar \\
 
 The original SRS proposed five implementation sprints, but the repository's current planning view extends this into seven execution slices, with frontend and stabilization separated. This is a useful example of theory being corrected by implementation reality.
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
-\caption{Observed Sprint Status on April 5, 2026}
-\begin{tabular}{|p{1.2cm}|p{4.5cm}|p{1.6cm}|}
+\caption{Observed Sprint Status on April 11, 2026}
+\begin{tabular}{|p{0.9cm}|p{2.3cm}|p{3.0cm}|p{1.2cm}|}
 \hline
-\textbf{Sprint} & \textbf{Focus} & \textbf{Status} \\
+\textbf{Sprint} & \textbf{Dates} & \textbf{Focus} & \textbf{Status} \\
 \hline
-0 & SRS, initial UML, schema framing & Complete \\
+0 & Jan 15--Jan 24, 2026 & SRS, initial UML, schema framing & Complete \\
 \hline
-1 & Auth, infrastructure, patient profile & Complete \\
+1 & Jan 25--Feb 7, 2026 & Auth, infrastructure, patient profile & Complete \\
 \hline
-2 & Visit lifecycle, doctor attendance and availability & Complete \\
+2 & Feb 8--Feb 21, 2026 & Visit lifecycle, doctor attendance and availability & Complete \\
 \hline
-3 & Prescription and laboratory modules & Complete \\
+3 & Feb 22--Mar 7, 2026 & Prescription and laboratory modules & Complete \\
 \hline
-4 & Inventory, billing, appointments, QR check-in, documents & Complete \\
+4 & Mar 8--Mar 18, 2026 & Inventory, billing, appointments, QR check-in, documents & Complete \\
 \hline
-5 & Admin users, events, reports, notifications, LDAP, integration work & Complete \\
+5 & Mar 19--Apr 1, 2026 & Admin users, events, reports, notifications, LDAP, integration work & Complete \\
 \hline
-6 & React dashboards and UX integration & Not started \\
+6 & Apr 2--Apr 15, 2026 & React dashboards and UX integration & In progress \\
 \hline
-7 & Hardening, testing, deployment & Not started \\
+7 & Apr 16--Apr 20, 2026 & Hardening, testing, deployment & Not started \\
 \hline
 \end{tabular}
 \label{tab:sprints}
@@ -196,7 +196,7 @@ Alpha progression is also visible across the project phases:
 Several constraints that were abstract in the SRS now appear concretely in the repository:
 \begin{itemize}
     \item \textbf{Institutional auth remains a deployment concern:} local LDAP-backed development is working, but campus-grade deployment integration and operational secrets management still need validation.
-    \item \textbf{Frontend lag:} the backend has become substantial, but the frontend still contains only a minimal React placeholder screen.
+    \item \textbf{Frontend integration remains the main gap:} Sprint 6 is actively underway and the login / landing page, patient dashboard, and doctor dashboard have already been implemented on the parallel frontend branch. The remaining challenge is to merge and harden that UI work against the more mature backend branch without destabilizing the documented API behavior.
     \item \textbf{Documentation drift:} \texttt{TESTING.md}, \texttt{smoke\_test.sh}, and \texttt{test\_cases.csv} do not all reflect the same current test count, showing that maintenance of secondary artifacts is now a real project risk.
     \item \textbf{Campus-network assumptions:} the SRS assumes a stable institutional network and browser/mobile availability, but no offline mode exists.
     \item \textbf{Incremental scope pressure:} the shift from a five-sprint framing to a seven-sprint README plan reflects the practical need to separate backend completion from frontend delivery and final stabilization.
@@ -205,9 +205,9 @@ Several constraints that were abstract in the SRS now appear concretely in the r
 \subsection{Final UML and Structural Baseline}
 The final UML baseline used for this report is the same set that emerged from SRS 2.0 and was carried into Assignment 1. This remains a valid choice because the current backend implementation still aligns with those diagrams at a structural level. The actors in the use case model match the implemented role system, the class relationships are visible in the Prisma schema, and the main activity and sequence flows are now reflected by real services and routes.
 
-The component view is especially important. It justified the modular monolith choice and still describes the repository accurately: authentication, records, visits, laboratory, billing, and admin capabilities are separated by module, but deployed as one backend service. That architecture reduced operational overhead while preserving strong internal boundaries.
+The component view is especially important. It justified the modular monolith choice and still describes the repository accurately: authentication, records, visits, laboratory, billing, and admin capabilities are separated by module, but deployed as one backend service. That architecture reduced operational overhead while preserving strong internal boundaries, as summarized in Fig.~\ref{fig:components}.
 
-\begin{figure}[H]
+\begin{figure}[!t]
 \centering
 \includegraphics[width=\columnwidth]{figures/component-architecture.png}
 \caption{Component-level decomposition supporting the chosen modular monolith architecture.}
@@ -223,7 +223,7 @@ The most important result after Assignment 1 is that the project is no longer on
     \item an idempotent seed script for role-specific users,
     \item a Bruno API collection organized by module,
     \item an executable smoke test script spanning the implemented backend together with a full end-to-end HTTP flow runner,
-    \item and a minimal frontend scaffold awaiting actual dashboard development.
+    \item and an active Sprint 6 frontend stream in a parallel branch, where the login / landing page, patient dashboard, and doctor dashboard are already implemented and awaiting full integration with the backend branch.
 \end{itemize}
 
 This asymmetry between backend maturity and frontend immaturity is itself an important result. It shows that the team prioritized the risk-heavy layers first: persistence, business rules, and route security.
@@ -231,7 +231,7 @@ This asymmetry between backend maturity and frontend immaturity is itself an imp
 \subsection{Implemented Module Coverage}
 The delivered backend can also be understood as a set of working operational modules rather than only a count of routes. Table \ref{tab:modules} summarizes the state of the major modules visible in the repository.
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \caption{Current Module Coverage}
 \begin{tabular}{|p{2.05cm}|p{4.55cm}|p{1.15cm}|}
@@ -260,16 +260,16 @@ Documents & Upload and list external records & Working \\
 \hline
 Admin / reports / notifications & User management, events, usage and attendance reports, physician-absence notifications & Working \\
 \hline
-Frontend dashboards & Role dashboards and UX integration & Not started \\
+Frontend dashboards & Login / landing flow, patient dashboard, doctor dashboard, and broader UX integration in active Sprint 6 progress & In progress \\
 \hline
 \end{tabular}
 \label{tab:modules}
 \end{table}
 
 \subsection{Execution-Time Evidence from Current Artifacts}
-The testing artifacts contain actual timing evidence rather than only projected estimates. The SRS states that standard user operations should return within a few seconds under normal load. The measured results satisfy that expectation with substantial margin.
+The testing artifacts contain actual timing evidence rather than only projected estimates. These timing analyses were derived from the backend validation artifacts after Assignment 1, especially \texttt{test\_cases.csv} and the measured route-level smoke workflow. The SRS states that standard user operations should return within a few seconds under normal load. The measured results satisfy that expectation with substantial margin.
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \caption{Representative Measured Performance Results}
 \begin{tabular}{|p{2.1cm}|p{2.7cm}|p{1.3cm}|p{1.3cm}|}
@@ -298,6 +298,37 @@ TC-R-003 & QR check-in repeatability (15 runs, avg) & 3000 ms & 889 ms \\
 
 Across the 48 rows currently recorded in \texttt{test\_cases.csv}, the observed overall mean response time is approximately 488.65 ms, with the slowest recorded value at 1291 ms. Even the heavier operations such as billing and prescription retrieval remain well within the SRS's ``few seconds'' expectation.
 
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figures/response_module.png}
+\caption{Average measured backend response time by module from the current validation dataset.}
+\label{fig:responsemodule}
+\end{figure}
+
+Fig.~\ref{fig:responsemodule} makes the module-level timing story more interpretable than raw tables alone. Authentication and patient-profile paths are the lightest operations, while prescription, laboratory, billing, and check-in flows are slower because they traverse more relations, validations, and transactional logic. Even so, the chart shows that the system remains comfortably sub-second to low-second for the main backend modules actually exercised after Assignment 1.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figures/threshold_observed.png}
+\caption{Threshold-versus-observed timing comparison for representative backend operations.}
+\label{fig:thresholdobserved}
+\end{figure}
+
+Fig.~\ref{fig:thresholdobserved} is the clearest theory-versus-implementation comparison in the current repository. The original expectation was only qualitative: key PHC operations should finish within a few seconds. The observed timings show a large headroom margin even for the heavier flows. This helped the team retain the current Node.js, Express, Prisma, and PostgreSQL stack instead of prematurely redesigning for performance reasons.
+
+\subsection{Sprint Plan Behavior Through Burnup and Burndown}
+Implementation progress is clearer when the sprint plan is plotted rather than described only in prose. The burnup and burndown charts in Fig.~\ref{fig:burnpair} are supporting project-control evidence rather than the primary technical results plots. They summarize the project trajectory across the dated sprints listed in Table~\ref{tab:sprints}. The burnup view shows that the initial release scope was slightly broader and then stabilized after early refinement, while the burndown view shows that closure accelerated during Sprint 4 and Sprint 5 once the backend architecture and module boundaries had settled.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=0.48\columnwidth]{figures/burnup.png}\hfill
+\includegraphics[width=0.48\columnwidth]{figures/burndown.png}
+\caption{Project burnup and burndown across the dated sprint plan.}
+\label{fig:burnpair}
+\end{figure}
+
+These plots support two observations relevant to the professor's earlier feedback. First, implementation should be discussed against actual calendar dates rather than only generic week ranges. Second, the project did produce preliminary delivery results before final product completion: the backend scope was burned up meaningfully by Sprint 4, and the remaining planned work by April has shifted into Sprint 6 frontend integration and the later stabilization sprint rather than uncertain backend foundations.
+
 \subsection{Positive Results}
 Several positive findings stand out:
 \begin{itemize}
@@ -313,7 +344,7 @@ Several positive findings stand out:
 The current state also exposes limits and negative findings that improved the team's understanding of the project:
 \begin{itemize}
     \item \textbf{Production-grade identity integration is still incomplete.} Local LDAP-backed development is working, but real institutional rollout, credential lifecycle, and deployment security still need separate validation.
-    \item \textbf{Frontend delivery was underestimated.} The README still lists Sprint 6 dashboards as not started, and the React application remains a placeholder. This forced a clearer separation between backend completion and user-interface completion.
+    \item \textbf{Frontend integration effort was underestimated.} Sprint 6 is active and core screens already exist on the team frontend branch, but integrating them cleanly with the backend, preserving role behavior, and closing polish gaps took more coordination than initially expected. This forced a clearer separation between backend completion and user-interface completion.
     \item \textbf{Project artifacts need synchronization discipline.} The test guide mentions 53 cases, the smoke suite enumerates 56 identifiers, and the CSV ledger records 48 measured rows. This does not invalidate the backend, but it demonstrates a real documentation-maintenance problem.
     \item \textbf{Operational quality now depends on integration, not just coding.} The remaining blockers are less about writing another route and more about closing gaps among LDAP, staging migration, end-to-end validation, and frontend consumption.
 \end{itemize}
@@ -321,7 +352,7 @@ The current state also exposes limits and negative findings that improved the te
 \subsection{Artifact Consistency as a Project Result}
 An unexpected but important result is that the project now contains enough engineering surface area for artifact consistency itself to matter. The available documents and scripts do not all describe the same testing state.
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \caption{Observed Documentation and Testing Drift}
 \begin{tabular}{|p{2.55cm}|p{3.45cm}|p{1.45cm}|}
@@ -343,7 +374,7 @@ This observation is valuable because it reveals a practical engineering challeng
 \subsection{Requirement-to-Implementation Traceability}
 The project now has enough implemented surface area for a compact traceability view to be meaningful. Table \ref{tab:traceability} summarizes how a few high-value requirements now map to concrete delivered behavior.
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \caption{Compact Traceability Matrix}
 \begin{tabular}{|p{0.95cm}|p{3.1cm}|p{2.1cm}|p{1.0cm}|}
@@ -375,7 +406,7 @@ REQ-49/52 & Admin user and reporting capability & Admin routes and report servic
 \subsection{Module-Level Timing Interpretation}
 The CSV evidence also makes it possible to compare average response behavior by module. This is useful because it distinguishes lightweight identity and profile operations from the heavier composite workflows that traverse more relations and business rules.
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \caption{Selected Module-Wise Average Response Times from \texttt{test\_cases.csv}}
 \begin{tabular}{|p{2.2cm}|p{1.4cm}|p{2.7cm}|}
@@ -414,6 +445,9 @@ The SRS described performance qualitatively. The actual backend now shows sub-1.
 \subsubsection{Data-Model Confidence}
 The earlier report argued that a relational model was preferable for PHC traceability. The implemented Prisma schema strengthens that conclusion. Prescriptions, lab reports, bills, vitals, doctor attendance, and documents now coexist in a model where referential integrity is inspectable and testable rather than only architecturally claimed.
 
+\subsubsection{OCR as a Considered but Deferred Idea}
+Another design question that surfaced during review was whether OCR-backed summarization should be used for scanned prescriptions or reports. This was not part of the team's original implementation plan after Assignment 1; it emerged later as a useful recommendation from the professor. The team therefore did not design or implement an OCR pipeline in the current version. The reason for leaving it out was pragmatic: the immediate priority was to create structured native records for prescriptions, lab requests, bills, and visit notes first. OCR would add extra accuracy-validation, privacy, and model-selection burden at a stage where reliable digitization of the core PHC workflow was still more important than summarization of legacy scans. In the current architecture, OCR remains a possible future extension for imported external documents rather than a missing module that the team had already committed to build.
+
 \subsection{Operational Factors Identified Late}
 Some debilitating factors became clear only after implementation work started:
 \begin{itemize}
@@ -426,12 +460,16 @@ Some debilitating factors became clear only after implementation work started:
 The project should not overclaim against the global state of the art; no formal benchmark against commercial hospital platforms has been conducted. However, relative to generic appointment tools and heavyweight hospital systems, the design does exhibit practical novelty in its target context:
 \begin{itemize}
     \item \textbf{Institution-specific identity integration:} the design is anchored around IIT Jodhpur credentials rather than creating a separate credential universe.
-    \item \textbf{Unified outpatient traceability:} check-in, consultation, prescription, lab, billing, and documents are handled in one visit-centric model.
+    \item \textbf{QR-assisted reception integrated with clinical flow:} the repository implements QR-based patient resolution and a dedicated check-in path that can create a visit and initial vitals in one reception-side action instead of treating identity lookup and visit creation as separate disconnected steps.
+    \item \textbf{Visit-centric outpatient traceability:} check-in, consultation, prescription, lab, billing, and documents are handled through one visit-linked model. In practice, this means the visit identifier is not just a display token; it is the relational anchor through which the main PHC artifacts are retrieved, updated, and audited.
+    \item \textbf{Doctor work-queue visibility instead of only appointment listing:} the implementation supports a doctor-facing waiting queue, attendance/availability state, and doctor-specific schedule retrieval. That is more operationally useful in a PHC setting than a plain appointment calendar because walk-ins and claimed consultations are treated as first-class workflow objects.
     \item \textbf{Lightweight deployability:} a modular monolith is better matched to a campus PHC than an enterprise hospital stack or a fragmented set of standalone tools.
-    \item \textbf{Administrative observability:} attendance, reports, and event management are treated as first-class system concerns rather than afterthoughts.
+    \item \textbf{Administrative observability and staff-state signaling:} attendance, reports, PHC events, and doctor-unavailability notifications are treated as first-class system concerns rather than afterthoughts.
 \end{itemize}
 
-\begin{figure}[H]
+At the same time, the current codebase does \emph{not} yet justify every possible implementation-level novelty claim. For example, while the schema uses primary keys and multiple unique constraints (such as \texttt{ldapId}, \texttt{qrCode}, and one-to-one \texttt{visitId} links), it does not currently define an explicit advanced indexing strategy in Prisma schema terms such as additional secondary indexes or clustered-index tuning. That is therefore not claimed here as a completed novelty point.
+
+\begin{figure}[!t]
 \centering
 \includegraphics[width=\columnwidth]{figures/end-to-end-visit-lifecycle.png}
 \caption{End-to-end patient-flow model retained as a valid summary of the working backend's intended operational path.}
@@ -439,7 +477,7 @@ The project should not overclaim against the global state of the art; no formal 
 \end{figure}
 
 \subsection{Current Project Position}
-As of April 5, 2026, the clearest defensible conclusion is that the PHC Integrated Digital System has crossed the line from conceptual architecture to a functionally rich backend platform. Sprint 5 backend integration is effectively closed, and the remaining risks are now concentrated in frontend completion, integration hardening, documentation consistency, and institutional deployment details rather than in basic system design.
+As of April 11, 2026, the clearest defensible conclusion is that the PHC Integrated Digital System has crossed the line from conceptual architecture to a functionally rich backend platform. Sprint 5 backend integration is effectively closed, Sprint 6 frontend work is actively progressing, and the remaining risks are now concentrated in frontend merge completion, integration hardening, documentation consistency, and institutional deployment details rather than in basic system design. The end-to-end path illustrated in Fig.~\ref{fig:lifecycle} is therefore no longer just aspirational architecture; it is a reasonable summary of the backend-first system that now exists, with the visible role-based interface layer approaching closure.
 
 \section{Discussion}
 \subsection{Security and Privacy Implications}
@@ -456,7 +494,7 @@ The most important change since Assignment 1 is epistemic: the project is no lon
 \section{Conclusion}
 The Assignment 2 state of the PHC Integrated Digital System shows meaningful convergence between requirements, architecture, and implementation. The team has preserved the strongest ideas from Assignment 1 and SRS 2.0, especially role-based access, visit-linked traceability, QR-assisted reception flow, and modular separation of concerns, while also correcting earlier assumptions through concrete implementation work.
 
-The results are mixed in the right way. The backend demonstrates substantial functional progress, working LDAP-backed development authentication, and encouraging performance behavior, but the project also reveals absent production-grade frontend dashboards and the maintenance burden of keeping testing and documentation artifacts synchronized. These are not signs of conceptual failure; they are signs that the project has moved into the integration-heavy phase where disciplined engineering matters more than broad ideation.
+The results are mixed in the right way. The backend demonstrates substantial functional progress, working LDAP-backed development authentication, and encouraging performance behavior, while Sprint 6 has moved the frontend into visible implementation with the login / landing flow, patient dashboard, and doctor dashboard already built on the team frontend branch. At the same time, full merge readiness, final polish, and the maintenance burden of keeping testing and documentation artifacts synchronized remain real. These are not signs of conceptual failure; they are signs that the project has moved into the integration-heavy phase where disciplined engineering matters more than broad ideation.
 
 For the PHC context at IIT Jodhpur, the project is already strong as a backend-centered digital foundation. The next decisive milestone is to close the loop among frontend usability, institutional authentication, end-to-end validation, and deployment readiness.
 

@@ -100,18 +100,55 @@ export const markBillPaid = async (billId) => {
   });
 };
 
-export const getUnpaidBills = async () => {
+export const getMyBills = async (userId) => {
+  const patient = await prisma.patient.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+  if (!patient) throw new ApiError(404, "Patient profile not found");
+
   return prisma.bill.findMany({
-    where: { paymentStatus: "UNPAID" },
+    where: { visit: { patientId: patient.id } },
     include: {
+      items: { include: { medicine: { select: { id: true, name: true, unitPrice: true } } } },
       visit: {
         select: {
           id: true,
           visitType: true,
+          createdAt: true,
+          doctor: { select: { name: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+};
+
+export const getUnpaidBills = async () => {
+  return prisma.bill.findMany({
+    where: { paymentStatus: "UNPAID" },
+    include: {
+      items: {
+        include: {
+          medicine: {
+            select: {
+              id: true,
+              name: true,
+              unitPrice: true,
+            },
+          },
+        },
+      },
+      visit: {
+        select: {
+          id: true,
+          visitType: true,
+          createdAt: true,
+          doctor: { select: { name: true } },
           patient: { select: { id: true, name: true } },
         },
       },
     },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: "desc" },
   });
 };

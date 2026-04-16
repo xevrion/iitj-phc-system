@@ -1,9 +1,12 @@
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 
-export const getMyNotifications = async (userId) => {
+export const getMyNotifications = async (userId, since) => {
   return prisma.notification.findMany({
-    where: { userId },
+    where: {
+      userId,
+      ...(since ? { createdAt: { gt: new Date(since) } } : {}),
+    },
     include: {
       doctor: {
         select: {

@@ -16,13 +16,14 @@ import VisitHistory from "./VisitHistory";
 import Prescriptions from "./Prescriptions";
 import LabReports from "./LabReports";
 import BookAppointment from "./BookAppointment";
+import MyAppointments from "./MyAppointments";
 import Profile from "./Profile";
 import Billing from "./Billing";
 import MedicalRecords from "./MedicalRecords";
 
 const patientNavItems = [
   { label: "Overview", path: "/patient", icon: LayoutDashboard },
-  { label: "Book Appointment", path: "/patient/appointments/book", icon: Calendar },
+  { label: "Appointments", path: "/patient/appointments", icon: Calendar },
   { label: "Visit History", path: "/patient/visits", icon: Clock },
   { label: "Prescriptions", path: "/patient/prescriptions", icon: FileText },
   { label: "Lab Reports", path: "/patient/lab-reports", icon: FlaskConical },
@@ -36,6 +37,7 @@ const PatientDashboard = () => {
     <DashboardLayout role="PATIENT" navItems={patientNavItems}>
       <Routes>
         <Route index element={<PatientOverview />} />
+        <Route path="appointments" element={<MyAppointments />} />
         <Route path="visits" element={<VisitHistory />} />
         <Route path="prescriptions" element={<Prescriptions />} />
         <Route path="lab-reports" element={<LabReports />} />

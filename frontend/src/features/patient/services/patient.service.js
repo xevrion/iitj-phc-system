@@ -10,13 +10,13 @@ export const updateMyProfile = async (data) => {
   return response.data;
 };
 
-export const getMyVisits = async (id) => {
-  const response = await api.get(`/patients/${id}/visits`);
+export const getMyVisits = async (id, { limit } = {}) => {
+  const response = await api.get(`/patients/${id}/visits`, { params: limit ? { limit } : {} });
   return response.data;
 };
 
-export const getMyLabReports = async () => {
-  const response = await api.get("/patients/me/lab-reports");
+export const getMyLabReports = async ({ limit } = {}) => {
+  const response = await api.get("/patients/me/lab-reports", { params: limit ? { limit } : {} });
   return response.data;
 };
 
@@ -45,8 +45,13 @@ export const getMyAppointments = async () => {
   return response.data;
 };
 
-export const getNotifications = async () => {
-  const response = await api.get("/notifications/mine");
+export const cancelMyAppointment = async (id) => {
+  const response = await api.put(`/appointments/${id}/cancel`);
+  return response.data;
+};
+
+export const getNotifications = async ({ since } = {}) => {
+  const response = await api.get("/notifications/mine", { params: since ? { since } : {} });
   return response.data;
 };
 
@@ -60,6 +65,11 @@ export const getBillByVisit = async (visitId) => {
   return response.data;
 };
 
+export const getMyBills = async () => {
+  const response = await api.get("/bills/mine");
+  return response.data;
+};
+
 export const getMyDocuments = async (patientId) => {
   const response = await api.get(`/patients/${patientId}/documents`);
   return response.data;
@@ -67,5 +77,10 @@ export const getMyDocuments = async (patientId) => {
 
 export const uploadDocument = async (patientId, data) => {
   const response = await api.post(`/patients/${patientId}/documents`, data);
+  return response.data;
+};
+
+export const deleteDocument = async (patientId, docId) => {
+  const response = await api.delete(`/patients/${patientId}/documents/${docId}`);
   return response.data;
 };

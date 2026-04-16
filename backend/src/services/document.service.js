@@ -56,6 +56,16 @@ export const uploadDocument = async (
   });
 };
 
+export const deleteDocument = async (patientId, documentId, requester) => {
+  await assertDocumentAccess(patientId, requester);
+
+  const doc = await prisma.externalDocument.findUnique({ where: { id: documentId } });
+  if (!doc) throw new ApiError(404, "Document not found");
+  if (doc.patientId !== patientId) throw new ApiError(403, "Access denied");
+
+  await prisma.externalDocument.delete({ where: { id: documentId } });
+};
+
 export const listDocuments = async (patientId, requester) => {
   await assertDocumentAccess(patientId, requester);
 

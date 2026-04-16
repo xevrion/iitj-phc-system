@@ -7,6 +7,7 @@ import DoctorQueue from "./DoctorQueue";
 import DoctorAppointments from "./DoctorAppointments";
 import Consultation from "./Consultation";
 import DoctorProfile from "./DoctorProfile";
+import PatientHistory from "./PatientHistory";
 
 const doctorNavItems = [
   { label: "Overview", path: "/doctor", icon: LayoutDashboard },
@@ -23,6 +24,7 @@ const DoctorDashboard = () => {
         <Route path="queue" element={<DoctorQueue />} />
         <Route path="appointments" element={<DoctorAppointments />} />
         <Route path="consultation/:visitId" element={<Consultation />} />
+        <Route path="patient/:patientId/history" element={<PatientHistory />} />
         <Route path="profile" element={<DoctorProfile />} />
         <Route path="*" element={<Navigate to="/doctor" replace />} />
       </Routes>

@@ -16,6 +16,17 @@ FIG_DIR = LAB_ROOT / "figures"
 
 PALETTE = ["#CFE8FF", "#2563EB", "#F59E0B", "#10B981"]
 
+SPRINT_LABEL_DATES = {
+    "Sprint 0": ("Jan 15-24", "2026"),
+    "Sprint 1": ("Jan 25-Feb 7", "2026"),
+    "Sprint 2": ("Feb 8-21", "2026"),
+    "Sprint 3": ("Feb 22-Mar 7", "2026"),
+    "Sprint 4": ("Mar 8-18", "2026"),
+    "Sprint 5": ("Mar 19-Apr 1", "2026"),
+    "Sprint 6": ("Apr 2-15", "2026"),
+    "Sprint 7": ("Apr 16-20", "2026"),
+}
+
 
 def read_csv(path: Path) -> list[dict]:
     with path.open(encoding="utf-8") as handle:
@@ -31,6 +42,34 @@ def svg_header(width: int, height: int) -> list[str]:
 
 def svg_footer(lines: list[str]) -> str:
     return "\n".join(lines + ["</svg>"])
+
+
+def format_sprint_axis_label(sprint_name: str) -> str:
+    short = sprint_name.replace("Sprint ", "S")
+    date_line, year_line = SPRINT_LABEL_DATES.get(sprint_name, ("", ""))
+    if date_line:
+        return f"{short}\n{date_line}\n{year_line}"
+    return short
+
+
+def add_multiline_centered_text(
+    lines: list[str],
+    x: float,
+    y: float,
+    text: str,
+    font_size: int = 14,
+    line_gap: int = 16,
+) -> None:
+    segments = text.split("\n")
+    if not segments:
+        return
+    lines.append(
+        f'<text x="{x:.2f}" y="{y:.2f}" text-anchor="middle" font-family="Arial" font-size="{font_size}">'
+    )
+    for idx, segment in enumerate(segments):
+        dy = "0" if idx == 0 else str(line_gap)
+        lines.append(f'<tspan x="{x:.2f}" dy="{dy}">{segment}</tspan>')
+    lines.append("</text>")
 
 
 def render_grouped_bar_chart(title: str, categories: list[str], series: list[tuple[str, list[float], str]], output_name: str, y_label: str = "") -> None:
@@ -271,7 +310,7 @@ def render_line_chart(title: str, categories: list[str], series: list[tuple[str,
 
 def render_release_burnup_chart(categories: list[str], scope: list[float], completed: list[float], output_name: str) -> None:
     width, height = 1200, 720
-    left, right, top, bottom = 90, 220, 80, 110
+    left, right, top, bottom = 90, 220, 80, 155
     plot_w = width - left - right
     plot_h = height - top - bottom
     ideal = [scope[-1] * i / (len(categories) - 1) for i in range(len(categories))]
@@ -304,7 +343,7 @@ def render_release_burnup_chart(categories: list[str], scope: list[float], compl
 
     for i, cat in enumerate(categories):
         x = left + i * step_x
-        lines.append(f'<text x="{x:.2f}" y="{top + plot_h + 30}" text-anchor="middle" font-family="Arial" font-size="14">{cat}</text>')
+        add_multiline_centered_text(lines, x, top + plot_h + 28, cat, font_size=14, line_gap=16)
 
     for label, values, color in [("TODO", ideal, "#E03131"), ("Scope", rendered_scope, "#4C84E8"), ("DONE", completed, "#74B816")]:
         pts = [point(i, v) for i, v in enumerate(values)]
@@ -323,7 +362,7 @@ def render_release_burnup_chart(categories: list[str], scope: list[float], compl
 
 def render_release_burndown_chart(categories: list[str], remaining: list[float], output_name: str) -> None:
     width, height = 1200, 720
-    left, right, top, bottom = 90, 220, 80, 110
+    left, right, top, bottom = 90, 220, 80, 155
     plot_w = width - left - right
     plot_h = height - top - bottom
     ideal = [remaining[0] * (1 - i / (len(categories) - 1)) for i in range(len(categories))]
@@ -348,7 +387,7 @@ def render_release_burndown_chart(categories: list[str], remaining: list[float],
 
     for i, cat in enumerate(categories):
         x = left + i * step_x
-        lines.append(f'<text x="{x:.2f}" y="{top + plot_h + 30}" text-anchor="middle" font-family="Arial" font-size="14">{cat}</text>')
+        add_multiline_centered_text(lines, x, top + plot_h + 28, cat, font_size=14, line_gap=16)
 
     for label, values, color in [("TODO", ideal, "#E03131"), ("DONE", remaining, "#74B816")]:
         pts = [point(i, v) for i, v in enumerate(values)]
@@ -520,7 +559,7 @@ def main() -> None:
     render_cfd_like_example("cfd")
 
     burn = read_csv(DATA_DIR / "project_burn_by_sprint.csv")
-    labels = [row["sprint"].replace("Sprint ", "S") for row in burn]
+    labels = [format_sprint_axis_label(row["sprint"]) for row in burn]
     render_release_burndown_chart(
         labels,
         [float(row["remaining"]) for row in burn],
@@ -557,9 +596,28 @@ def main() -> None:
         "Response time (ms)",
     )
 
+    module_times = read_csv(DATA_DIR / "response_time_by_module.csv")
+    render_grouped_bar_chart(
+        "Average Response Time by Module",
+        [row["module"] for row in module_times],
+        [("Average time", [float(row["avg_ms"]) for row in module_times], PALETTE[1])],
+        "response_module",
+        "Average response time (ms)",
+    )
+    render_grouped_bar_chart(
+        "Threshold vs Observed Time",
+        [row["metric"] for row in nfr],
+        [
+            ("Threshold", [float(row["threshold_ms"]) for row in nfr], PALETTE[0]),
+            ("Observed", [float(row["actual_ms"]) for row in nfr], PALETTE[2]),
+        ],
+        "threshold_observed",
+        "Response time (ms)",
+    )
+
     render_risk_matrix("risk_matrix")
 
-    for name in ("throughput", "throughput_week", "velocity", "cfd", "burndown", "burnup", "code_churn", "nfr", "risk_matrix"):
+    for name in ("throughput", "throughput_week", "velocity", "cfd", "burndown", "burnup", "code_churn", "nfr", "response_module", "threshold_observed", "risk_matrix"):
         convert_svg_to_png(name)
 
 

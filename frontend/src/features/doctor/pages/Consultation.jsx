@@ -214,7 +214,11 @@ const Consultation = () => {
             </div>
 
             <div className="pt-6 border-t border-gray-50">
-              <Button variant="ghost" className="w-full text-blue-600 hover:bg-blue-50 text-xs font-bold uppercase tracking-wider">
+              <Button
+                variant="ghost"
+                className="w-full text-blue-600 hover:bg-blue-50 text-xs font-bold uppercase tracking-wider"
+                onClick={() => navigate(`/doctor/patient/${visit?.patient?.id}/history`)}
+              >
                 View Full Medical History
               </Button>
             </div>
