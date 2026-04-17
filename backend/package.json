@@ -8,6 +8,7 @@
     "dev": "nodemon --experimental-strip-types src/server.js",
     "start": "node --experimental-strip-types src/server.js",
     "seed": "npx prisma db seed",
+    "test:unit": "node --test tests/unit/*.test.js",
     "test:e2e": "node --experimental-strip-types scripts/e2e-full-flow.js",
     "test:rbac": "node --experimental-strip-types scripts/rbac-smoke.js",
     "test:load": "node --experimental-strip-types scripts/load-check.js",

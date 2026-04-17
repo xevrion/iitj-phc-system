@@ -197,9 +197,10 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 ---
 
 ## Sprint 7 — Testing & Stabilization
-**Dates:** Apr 16 – Apr 20, 2026 | **Weeks:** 15–16 | **Status: In Progress**
+**Dates:** Apr 16 – Apr 20, 2026 | **Weeks:** 15–16 | **Status: Complete**
 
-- [ ] Unit tests for all service functions (happy path + error cases)
+- [x] Unit tests for core service functions (happy path + error cases)
+  - `npm run test:unit`
 - [x] Integration test coverage maintained for the full core flow
   - `npm run test:e2e`
   - `bash smoke_test.sh`
@@ -208,7 +209,9 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 - [x] Security hardening (rate limiting, input sanitization, HTTPS enforcement)
 - [x] Performance check under concurrent load
   - `npm run test:load`
-- [ ] Final database migration and seed script
+- [x] Final database migration and seed bootstrap path verified
+  - `npx prisma migrate deploy`
+  - `npm run seed`
 - [x] Deployment plan document
   - See [DEPLOYMENT_PLAN.md](DEPLOYMENT_PLAN.md)
 - [x] Final system demo preparation

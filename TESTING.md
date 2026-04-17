@@ -32,6 +32,13 @@ cd backend
 npm run test:rbac
 ```
 
+For unit-style service verification of core backend modules:
+
+```bash
+cd backend
+npm run test:unit
+```
+
 For a lightweight concurrent load/performance check against a running server:
 
 ```bash
