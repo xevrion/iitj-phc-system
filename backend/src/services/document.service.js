@@ -1,6 +1,7 @@
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 import { deleteFromCloudinary, uploadBufferToCloudinary } from "../utils/cloudinary.js";
+import { getPatientProfileForUser } from "./profile-cache.service.js";
 
 const VALID_DOCUMENT_TYPES = ["PRESCRIPTION", "LAB_REPORT", "DISCHARGE"];
 
@@ -48,14 +49,7 @@ const assertDocumentAccess = async (patientId, requester) => {
     return;
   }
 
-  const patient = await prisma.patient.findUnique({
-    where: { userId: requester.id },
-    select: { id: true },
-  });
-
-  if (!patient) {
-    throw new ApiError(404, "Patient profile not found");
-  }
+  const patient = await getPatientProfileForUser(requester.id);
 
   if (patient.id !== patientId) {
     throw new ApiError(403, "Access denied");

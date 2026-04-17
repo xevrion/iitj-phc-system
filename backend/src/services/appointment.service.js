@@ -1,6 +1,10 @@
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 import { cache } from "../utils/cache.js";
+import {
+  getDoctorProfileForUser,
+  getPatientProfileForUser,
+} from "./profile-cache.service.js";
 
 const APPOINTMENT_LIST_CACHE_PREFIX = "appointment:list:";
 const APPOINTMENT_CACHE_TTL_MS = 15 * 1000;
@@ -107,8 +111,7 @@ export const bookAppointment = async (
       "Doctor is currently unavailable. Set isEmergency: true to override."
     );
 
-  const patient = await prisma.patient.findUnique({ where: { userId: patientUserId } });
-  if (!patient) throw new ApiError(404, "Patient profile not found");
+  const patient = await getPatientProfileForUser(patientUserId);
 
   const appointment = await prisma.appointment.create({
     data: {
@@ -166,8 +169,7 @@ export const bookAppointmentAsStaff = async (
 
 // Patient views own appointments
 export const getMyAppointmentsAsPatient = async (userId) => {
-  const patient = await prisma.patient.findUnique({ where: { userId } });
-  if (!patient) throw new ApiError(404, "Patient profile not found");
+  const patient = await getPatientProfileForUser(userId);
 
   return cache.getOrSet(
     getAppointmentListCacheKey("patient", patient.id),
@@ -185,8 +187,7 @@ export const getMyAppointmentsAsPatient = async (userId) => {
 
 // Doctor views own appointments
 export const getMyAppointmentsAsDoctor = async (userId) => {
-  const doctor = await prisma.doctor.findUnique({ where: { userId } });
-  if (!doctor) throw new ApiError(404, "Doctor profile not found");
+  const doctor = await getDoctorProfileForUser(userId);
 
   return cache.getOrSet(
     getAppointmentListCacheKey("doctor", doctor.id),

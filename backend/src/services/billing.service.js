@@ -1,5 +1,6 @@
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
+import { getPatientProfileForUser } from "./profile-cache.service.js";
 
 // REQ-49: pharmacy generates bill; atomically deducts stock
 export const generateBill = async (visitId, { items }) => {
@@ -101,11 +102,7 @@ export const markBillPaid = async (billId) => {
 };
 
 export const getMyBills = async (userId) => {
-  const patient = await prisma.patient.findUnique({
-    where: { userId },
-    select: { id: true },
-  });
-  if (!patient) throw new ApiError(404, "Patient profile not found");
+  const patient = await getPatientProfileForUser(userId);
 
   return prisma.bill.findMany({
     where: { visit: { patientId: patient.id } },

@@ -1,17 +1,9 @@
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
+import { getPatientProfileForUser as getCachedPatientProfileForUser } from "./profile-cache.service.js";
 
 const getPatientProfileForUser = async (userId) => {
-  const patient = await prisma.patient.findUnique({
-    where: { userId },
-    select: { id: true },
-  });
-
-  if (!patient) {
-    throw new ApiError(404, "Patient profile not found");
-  }
-
-  return patient;
+  return getCachedPatientProfileForUser(userId);
 };
 
 const assertPatientOwnsRecord = async (patientId, requester) => {
@@ -63,8 +55,7 @@ export const getPatientByQrCode = async (qrCode) => {
 };
 
 export const updatePatientProfile = async (userId, data) => {
-  const patient = await prisma.patient.findUnique({ where: { userId } });
-  if (!patient) throw new ApiError(404, "Patient profile not found");
+  await getPatientProfileForUser(userId);
 
   const allowed = ["name", "dob", "email", "bloodGroup", "phone", "address"];
   const updateData = Object.fromEntries(

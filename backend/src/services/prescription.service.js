@@ -1,10 +1,10 @@
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
+import { getDoctorProfileForUser } from "./profile-cache.service.js";
 
 // REQ-44, REQ-48: doctor creates prescription; rejects if incomplete
 export const createPrescription = async (visitId, doctorUserId, { notes, items }) => {
-  const doctor = await prisma.doctor.findUnique({ where: { userId: doctorUserId } });
-  if (!doctor) throw new ApiError(404, "Doctor profile not found");
+  const doctor = await getDoctorProfileForUser(doctorUserId);
 
   const visit = await prisma.visit.findUnique({ where: { id: visitId } });
   if (!visit) throw new ApiError(404, "Visit not found");

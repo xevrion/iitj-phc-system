@@ -1,11 +1,14 @@
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 import { deleteFromCloudinary, uploadBufferToCloudinary } from "../utils/cloudinary.js";
+import {
+  getDoctorProfileForUser,
+  getLabStaffProfileForUser,
+} from "./profile-cache.service.js";
 
 // REQ-26: doctor requests a lab test during consultation
 export const createLabRequest = async (visitId, doctorUserId, { testName }) => {
-  const doctor = await prisma.doctor.findUnique({ where: { userId: doctorUserId } });
-  if (!doctor) throw new ApiError(404, "Doctor profile not found");
+  const doctor = await getDoctorProfileForUser(doctorUserId);
 
   const visit = await prisma.visit.findUnique({ where: { id: visitId } });
   if (!visit) throw new ApiError(404, "Visit not found");
@@ -146,10 +149,7 @@ export const getPendingLabRequests = async () => {
 
 // REQ-54, REQ-55: lab staff uploads report; audit trail via uploadedByLabStaffId
 export const uploadLabReport = async (labRequestId, labStaffUserId, file = null) => {
-  const labStaff = await prisma.labStaff.findUnique({
-    where: { userId: labStaffUserId },
-  });
-  if (!labStaff) throw new ApiError(404, "Lab staff profile not found");
+  const labStaff = await getLabStaffProfileForUser(labStaffUserId);
 
   const request = await prisma.labRequest.findUnique({
     where: { id: labRequestId },

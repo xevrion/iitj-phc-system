@@ -1,6 +1,10 @@
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 import { cache } from "../utils/cache.js";
+import {
+  getDoctorProfileForUser,
+  getPatientProfileForUser,
+} from "./profile-cache.service.js";
 
 const VISIT_CACHE_TTL_MS = 5 * 1000;
 const VISIT_DETAIL_CACHE_TTL_MS = 15 * 1000;
@@ -104,11 +108,7 @@ export const claimVisit = async (visitId, doctorUserId) => {
   if (visit.visitStatus !== "WAITING")
     throw new ApiError(400, "Only WAITING visits can be claimed");
 
-  const doctor = await prisma.doctor.findUnique({
-    where: { userId: doctorUserId },
-    select: { id: true, isAvailable: true },
-  });
-  if (!doctor) throw new ApiError(404, "Doctor profile not found");
+  const doctor = await getDoctorProfileForUser(doctorUserId);
 
   const activeAttendance = await prisma.doctorAttendance.findFirst({
     where: { doctorId: doctor.id, checkOut: null },
@@ -132,8 +132,7 @@ export const claimVisit = async (visitId, doctorUserId) => {
 
 // REQ-24: doctor records clinical observations
 export const saveConsultationNotes = async (visitId, consultationNotes, doctorUserId) => {
-  const doctor = await prisma.doctor.findUnique({ where: { userId: doctorUserId } });
-  if (!doctor) throw new ApiError(404, "Doctor profile not found");
+  const doctor = await getDoctorProfileForUser(doctorUserId);
 
   const visit = await prisma.visit.findUnique({ where: { id: visitId } });
   if (!visit) throw new ApiError(404, "Visit not found");
@@ -150,8 +149,7 @@ export const saveConsultationNotes = async (visitId, consultationNotes, doctorUs
 };
 
 export const completeVisit = async (visitId, doctorUserId) => {
-  const doctor = await prisma.doctor.findUnique({ where: { userId: doctorUserId } });
-  if (!doctor) throw new ApiError(404, "Doctor profile not found");
+  const doctor = await getDoctorProfileForUser(doctorUserId);
 
   const visit = await prisma.visit.findUnique({ where: { id: visitId } });
   if (!visit) throw new ApiError(404, "Visit not found");
@@ -186,8 +184,7 @@ export const cancelVisit = async (visitId) => {
 
 // REQ-21: returns waiting visits assigned to or unassigned for this doctor
 export const getDoctorQueue = async (doctorUserId) => {
-  const doctor = await prisma.doctor.findUnique({ where: { userId: doctorUserId } });
-  if (!doctor) throw new ApiError(404, "Doctor profile not found");
+  const doctor = await getDoctorProfileForUser(doctorUserId);
 
   return cache.getOrSet(
     `${VISIT_CACHE_PREFIX}doctor-queue:${doctor.id}`,
@@ -312,11 +309,7 @@ export const getMyCurrentVisit = async (patientUserId) => {
   const endOfDay = new Date(now);
   endOfDay.setHours(23, 59, 59, 999);
 
-  const patient = await prisma.patient.findUnique({
-    where: { userId: patientUserId },
-    select: { id: true },
-  });
-  if (!patient) throw new ApiError(404, "Patient profile not found");
+  const patient = await getPatientProfileForUser(patientUserId);
 
   return cache.getOrSet(
     `${VISIT_CACHE_PREFIX}patient-current:${patient.id}`,
