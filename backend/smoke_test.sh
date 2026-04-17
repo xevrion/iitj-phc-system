@@ -181,6 +181,8 @@ check "TC-F-014" "Doctor checks out (closes attendance, computes hours)" 200 "$H
 req GET "$BASE/prescriptions/pending" "$PHARMACY_TOKEN" ""
 check "TC-F-015" "Pharmacy views undispensed prescription queue" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
 
+req PUT "$BASE/medicines/$MEDICINE_ID/stock" "$PHARMACY_TOKEN" '{"stockQuantity":200}' > /dev/null 2>&1
+
 req POST "$BASE/visits/$VISIT_ID/bill" "$PHARMACY_TOKEN" \
   "{\"items\":[{\"medicineId\":\"$MEDICINE_ID\",\"quantity\":2}]}"
 check "TC-F-017" "Pharmacy generates bill with atomic stock deduction" 201 "$HTTP_STATUS" "$RESPONSE_TIME"
