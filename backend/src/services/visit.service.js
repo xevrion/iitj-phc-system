@@ -10,6 +10,104 @@ const VISIT_CACHE_TTL_MS = 5 * 1000;
 const VISIT_DETAIL_CACHE_TTL_MS = 15 * 1000;
 const VISIT_CACHE_PREFIX = "visit:";
 
+const selectAutoAssignedDoctor = (doctors, attendanceRows, waitingRows, appointmentRows) => {
+  const checkedInDoctorIds = new Set(attendanceRows.map((row) => row.doctorId));
+
+  const waitingCountByDoctorId = new Map(
+    waitingRows.map((row) => [row.doctorId, row._count._all])
+  );
+  const appointmentCountByDoctorId = new Map(
+    appointmentRows.map((row) => [row.doctorId, row._count._all])
+  );
+
+  return doctors
+    .filter((doctor) => checkedInDoctorIds.has(doctor.id))
+    .sort((left, right) => {
+      const waitingDiff =
+        (waitingCountByDoctorId.get(left.id) || 0) -
+        (waitingCountByDoctorId.get(right.id) || 0);
+      if (waitingDiff !== 0) {
+        return waitingDiff;
+      }
+
+      const appointmentDiff =
+        (appointmentCountByDoctorId.get(left.id) || 0) -
+        (appointmentCountByDoctorId.get(right.id) || 0);
+      if (appointmentDiff !== 0) {
+        return appointmentDiff;
+      }
+
+      return (left.name || left.id).localeCompare(right.name || right.id);
+    })[0];
+};
+
+export const resolveAssignedDoctorId = async (doctorId = null) => {
+  if (doctorId) {
+    const doctor = await prisma.doctor.findUnique({ where: { id: doctorId } });
+    if (!doctor) throw new ApiError(404, "Doctor not found");
+    if (!doctor.isAvailable)
+      throw new ApiError(400, "Selected doctor is currently unavailable");
+
+    return doctor.id;
+  }
+
+  const availableDoctors = await prisma.doctor.findMany({
+    where: { isAvailable: true },
+    select: {
+      id: true,
+      name: true,
+    },
+  });
+
+  if (!availableDoctors.length) {
+    throw new ApiError(400, "No available doctor found for auto-assignment");
+  }
+
+  const availableDoctorIds = availableDoctors.map((doctor) => doctor.id);
+  const now = new Date();
+
+  const [attendanceRows, waitingRows, appointmentRows] = await prisma.$transaction([
+    prisma.doctorAttendance.groupBy({
+      by: ["doctorId"],
+      where: {
+        doctorId: { in: availableDoctorIds },
+        checkOut: null,
+      },
+      _count: { _all: true },
+    }),
+    prisma.visit.groupBy({
+      by: ["doctorId"],
+      where: {
+        doctorId: { in: availableDoctorIds },
+        visitStatus: "WAITING",
+      },
+      _count: { _all: true },
+    }),
+    prisma.appointment.groupBy({
+      by: ["doctorId"],
+      where: {
+        doctorId: { in: availableDoctorIds },
+        status: "BOOKED",
+        appointmentTime: { gte: now },
+      },
+      _count: { _all: true },
+    }),
+  ]);
+
+  const autoAssignedDoctor = selectAutoAssignedDoctor(
+    availableDoctors,
+    attendanceRows,
+    waitingRows,
+    appointmentRows
+  );
+
+  if (!autoAssignedDoctor) {
+    throw new ApiError(400, "No checked-in available doctor found for auto-assignment");
+  }
+
+  return autoAssignedDoctor.id;
+};
+
 const invalidateVisitCaches = ({ visitId, patientId, doctorId } = {}) => {
   cache.delPrefix(VISIT_CACHE_PREFIX);
 
@@ -31,17 +129,12 @@ export const createVisit = async ({ patientId, doctorId, visitType, vitals }) =>
   const patient = await prisma.patient.findUnique({ where: { id: patientId } });
   if (!patient) throw new ApiError(404, "Patient not found");
 
-  if (doctorId) {
-    const doctor = await prisma.doctor.findUnique({ where: { id: doctorId } });
-    if (!doctor) throw new ApiError(404, "Doctor not found");
-    if (!doctor.isAvailable)
-      throw new ApiError(400, "Selected doctor is currently unavailable");
-  }
+  const assignedDoctorId = await resolveAssignedDoctorId(doctorId);
 
   const visit = await prisma.visit.create({
     data: {
       patientId,
-      doctorId: doctorId || null,
+      doctorId: assignedDoctorId,
       visitType,
       visitStatus: "WAITING",
       ...(vitals && {
@@ -57,7 +150,7 @@ export const createVisit = async ({ patientId, doctorId, visitType, vitals }) =>
     include: { vitals: true },
   });
 
-  invalidateVisitCaches({ patientId, doctorId });
+  invalidateVisitCaches({ patientId, doctorId: assignedDoctorId });
   return visit;
 };
 

@@ -7,6 +7,7 @@ import { createVisit, claimVisit } from "../../src/services/visit.service.js";
 import { ApiError } from "../../src/utils/ApiError.js";
 
 const originals = new Map();
+const originalTransaction = prisma.$transaction;
 
 const mockMethod = (path, implementation) => {
   const [scope, method] = path.split(".");
@@ -28,6 +29,7 @@ const restoreMocks = () => {
 
 test.afterEach(() => {
   restoreMocks();
+  prisma.$transaction = originalTransaction;
 });
 
 test("getPatientVisitHistory blocks one patient from reading another patient's visits", async () => {
@@ -91,6 +93,13 @@ test("createVisit rejects unavailable assigned doctor", async () => {
 
 test("createVisit builds waiting visit with nested vitals", async () => {
   mockMethod("patient.findUnique", async () => ({ id: "patient-1" }));
+  mockMethod("doctor.findMany", async () => [
+    { id: "doctor-1", name: "Dr. A" },
+  ]);
+  prisma.$transaction = async (queries) => Promise.all(queries);
+  mockMethod("doctorAttendance.groupBy", async () => [{ doctorId: "doctor-1", _count: { _all: 1 } }]);
+  mockMethod("visit.groupBy", async () => []);
+  mockMethod("appointment.groupBy", async () => []);
   mockMethod("visit.create", async ({ data }) => ({
     id: "visit-1",
     ...data,
@@ -107,7 +116,37 @@ test("createVisit builds waiting visit with nested vitals", async () => {
   });
 
   assert.equal(result.visitStatus, "WAITING");
+  assert.equal(result.doctorId, "doctor-1");
   assert.equal(result.vitals.create.weight, 67.5);
+});
+
+test("createVisit auto-assigns the checked-in available doctor with the lightest queue", async () => {
+  mockMethod("patient.findUnique", async () => ({ id: "patient-1" }));
+  mockMethod("doctor.findMany", async () => [
+    { id: "doctor-1", name: "Dr. Busy" },
+    { id: "doctor-2", name: "Dr. Free" },
+  ]);
+  prisma.$transaction = async (queries) => Promise.all(queries);
+  mockMethod("doctorAttendance.groupBy", async () => [
+    { doctorId: "doctor-1", _count: { _all: 1 } },
+    { doctorId: "doctor-2", _count: { _all: 1 } },
+  ]);
+  mockMethod("visit.groupBy", async () => [
+    { doctorId: "doctor-1", _count: { _all: 3 } },
+    { doctorId: "doctor-2", _count: { _all: 1 } },
+  ]);
+  mockMethod("appointment.groupBy", async () => []);
+  mockMethod("visit.create", async ({ data }) => ({
+    id: "visit-2",
+    ...data,
+  }));
+
+  const result = await createVisit({
+    patientId: "patient-1",
+    visitType: "OPD",
+  });
+
+  assert.equal(result.doctorId, "doctor-2");
 });
 
 test("claimVisit rejects visits that are not waiting", async () => {
