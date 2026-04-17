@@ -62,7 +62,6 @@ const EventsManagement = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">PHC Events</h1>
-          <p className="text-gray-500">Publish announcements and health events for the campus.</p>
         </div>
         <Button onClick={() => setShowForm(!showForm)}>
           <Plus size={16} className="mr-2" />

@@ -83,7 +83,6 @@ const Profile = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">My Medical Profile</h1>
-          <p className="text-gray-500">Manage your personal and medical information.</p>
         </div>
         {!isEditing && (
           <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
@@ -123,9 +122,6 @@ const Profile = () => {
                 </div>
               )}
             </div>
-            <p className="text-xs text-gray-400 mt-4 px-4 italic">
-              Scan this QR at the PHC reception desk for instant check-in.
-            </p>
           </div>
         </div>
 

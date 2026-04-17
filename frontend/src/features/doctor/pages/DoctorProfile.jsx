@@ -78,7 +78,7 @@ const DoctorProfile = () => {
       if (res.success) {
         await checkAuth();
         await fetchAttendance();
-        setMessage({ type: "success", text: "Checked in for today. Open consultations when you are ready." });
+        setMessage({ type: "success", text: "Checked in for today." });
       }
     } catch (err) {
       setMessage({
@@ -124,7 +124,6 @@ const DoctorProfile = () => {
       <div className="flex justify-between items-end">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Doctor Profile</h1>
-          <p className="text-gray-500">Manage attendance, consultation readiness, and view clinical activity.</p>
         </div>
         <div className="flex gap-3">
           {isCheckedIn ? (
@@ -194,9 +193,6 @@ const DoctorProfile = () => {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="font-bold text-gray-900">Consultation Availability</h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  Use this when taking a break or when you are back and ready to take new patients.
-                </p>
               </div>
               <span
                 className={cn(
@@ -227,11 +223,6 @@ const DoctorProfile = () => {
                 {user?.doctor?.isAvailable ? <CircleX size={18} /> : <CircleCheck size={18} />}
                 {user?.doctor?.isAvailable ? "Pause Consultations" : "Open Consultations"}
               </Button>
-              {!isCheckedIn && (
-                <p className="text-xs text-gray-400">
-                  Check in first before marking yourself available for consultations.
-                </p>
-              )}
             </div>
           </div>
         </div>

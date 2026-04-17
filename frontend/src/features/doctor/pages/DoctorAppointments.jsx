@@ -122,9 +122,6 @@ const DoctorAppointments = () => {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">My Appointments</h1>
-          <p className="text-gray-500">
-            View active booked slots separately from cancelled and historical records.
-          </p>
         </div>
         <Button variant="outline" onClick={fetchAppointments}>
           Refresh

@@ -141,7 +141,6 @@ const PatientOverview = () => {
           <h1 className="text-2xl font-bold text-gray-900">
             Welcome back, {user?.patient?.name || user?.fullName || "Patient"}!
           </h1>
-          <p className="text-gray-500">Your health overview and recent activities at IITJ PHC.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <Button variant="outline" className="flex gap-2" onClick={fetchDashboardData}>
@@ -200,9 +199,6 @@ const PatientOverview = () => {
                     Status
                   </p>
                   <p className="mt-1 text-2xl font-bold text-emerald-700">With Doctor</p>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Your turn has started.
-                  </p>
                 </>
               )}
             </div>
@@ -256,9 +252,6 @@ const PatientOverview = () => {
         {/* Quick Links / Info */}
         <div className="bg-blue-600 rounded-xl p-8 text-white shadow-lg">
           <h2 className="text-xl font-bold mb-4">Need Help?</h2>
-          <p className="text-blue-100 mb-6 text-sm leading-relaxed">
-            In case of emergency, please contact the PHC reception or call the 24/7 campus helpline.
-          </p>
           <div className="space-y-4">
             <div className="p-4 bg-white/10 rounded-lg backdrop-blur-sm border border-white/10">
               <p className="text-xs text-blue-200 uppercase font-bold tracking-wider mb-1">Reception</p>

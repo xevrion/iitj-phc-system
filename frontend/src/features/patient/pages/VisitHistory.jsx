@@ -71,7 +71,6 @@ const VisitHistory = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Visit History</h1>
-        <p className="text-gray-500">View details of your past consultations and medical visits.</p>
       </div>
 
       <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm space-y-3">

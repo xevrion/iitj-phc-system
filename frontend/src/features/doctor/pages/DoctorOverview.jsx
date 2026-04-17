@@ -140,7 +140,6 @@ const DoctorOverview = () => {
           <h1 className="text-2xl font-bold text-gray-900">
             Welcome, {formatDoctorName(user?.doctor?.name, user?.ldapId || "Doctor")}
           </h1>
-          <p className="text-gray-500">Track queue, appointments, and your current duty status.</p>
           {lastUpdated && (
             <p className="text-xs text-gray-400 mt-1">Synced at {lastUpdated.toLocaleTimeString("en-IN")}</p>
           )}
@@ -199,9 +198,6 @@ const DoctorOverview = () => {
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h2 className="text-lg font-bold text-gray-900">Consultation Availability</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Attendance marks whether you are present today. Availability controls whether reception and patients can send new consultations to you right now.
-          </p>
         </div>
         <div className="flex flex-col sm:items-end gap-3">
           <span
@@ -249,14 +245,7 @@ const DoctorOverview = () => {
               </p>
             </div>
           ) : (
-            <div className="space-y-2">
-              <p className="text-gray-500 text-sm">No upcoming appointments scheduled.</p>
-              {queue.length > 0 && (
-                <p className="text-xs text-gray-400">
-                  Queue patients come from active PHC visits. They are separate from booked appointment slots.
-                </p>
-              )}
-            </div>
+            <p className="text-gray-500 text-sm">No upcoming appointments scheduled.</p>
           )}
         </div>
 
@@ -273,9 +262,6 @@ const DoctorOverview = () => {
             </p>
             <p>
               Total Appointments (all statuses): {appointments.length}
-            </p>
-            <p className="text-xs text-gray-500 pt-2">
-              Queue and appointments are tracked separately: queue = active visits, appointments = booked future slots.
             </p>
           </div>
         </div>

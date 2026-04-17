@@ -110,7 +110,6 @@ const MyAppointments = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">My Appointments</h1>
-          <p className="text-gray-500">Review upcoming bookings and your appointment history.</p>
         </div>
         <Button onClick={() => navigate("/patient/appointments/book")}>
           Book Appointment

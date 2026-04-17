@@ -39,7 +39,6 @@ const PatientsList = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Patient Lookup</h1>
-        <p className="text-gray-500">Search for a patient by QR code to view their record.</p>
       </div>
 
       <form onSubmit={handleSearch} className="flex gap-3 max-w-lg">

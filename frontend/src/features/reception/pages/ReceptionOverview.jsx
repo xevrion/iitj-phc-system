@@ -99,7 +99,6 @@ const ReceptionOverview = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Reception Desk</h1>
-          <p className="text-gray-500">Manage patient registrations and monitor the live PHC queue.</p>
         </div>
         <Button className="gap-2" onClick={() => navigate("/reception-staff/checkin")}>
           <UserPlus size={18} />

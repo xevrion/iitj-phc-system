@@ -138,11 +138,10 @@ const PharmacyOverview = () => {
     (prescription) => prescription.visit?.bill?.paymentStatus === "PAID"
   );
 
-  const renderPrescriptionSection = (list, title, description, emptyMessage) => (
+  const renderPrescriptionSection = (list, title, emptyMessage) => (
     <div className="border-t border-gray-100 first:border-t-0">
       <div className="px-5 py-4 bg-gray-50/80 border-b border-gray-100">
         <h3 className="font-semibold text-gray-900">{title}</h3>
-        <p className="text-xs text-gray-500 mt-1">{description}</p>
       </div>
       <div className="divide-y divide-gray-50">
         {list.map((p) => (
@@ -269,7 +268,6 @@ const PharmacyOverview = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Pharmacy Desk</h1>
-          <p className="text-gray-500">Generate medicine bills, collect payment, then dispense medicines.</p>
         </div>
         <Button variant="outline" onClick={fetchData}>Refresh</Button>
       </div>
@@ -294,12 +292,6 @@ const PharmacyOverview = () => {
           <p className="text-sm font-medium">{error}</p>
         </div>
       )}
-
-      <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900">
-        `Generate Bill` creates the unpaid bill and deducts medicine stock.
-        `Mark Paid` settles that bill.
-        `Dispense` is the final step after payment and moves the prescription into pharmacy history.
-      </div>
 
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
@@ -336,13 +328,11 @@ const PharmacyOverview = () => {
           {renderPrescriptionSection(
             awaitingBillingOrPayment,
             "Awaiting Bill Or Payment",
-            "These prescriptions still need a bill to be generated or the patient still needs to pay.",
             "No prescriptions are waiting for billing or payment."
           )}
           {renderPrescriptionSection(
             readyToDispense,
             "Ready To Dispense",
-            "Payment is complete. These medicines can now be handed over to the patient.",
             "No prescriptions are currently ready to dispense."
           )}
         </div>

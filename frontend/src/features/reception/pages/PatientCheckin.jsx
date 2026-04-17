@@ -164,7 +164,6 @@ const PatientCheckin = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Patient Check-in</h1>
-          <p className="text-gray-500">Register a new visit and record vitals.</p>
         </div>
         <div className="flex gap-2">
           {[1, 2].map(s => (
@@ -191,7 +190,6 @@ const PatientCheckin = () => {
             </div>
             <div>
               <h3 className="text-lg font-bold text-gray-900">Scan Digital ID</h3>
-              <p className="text-sm text-gray-500 mt-1">Enter the QR code string from the patient's mobile app.</p>
             </div>
             <form onSubmit={handleIdentify} className="space-y-4">
               <Input 
@@ -212,7 +210,6 @@ const PatientCheckin = () => {
             </div>
             <div>
               <h3 className="text-lg font-bold text-gray-900">Manual Search</h3>
-              <p className="text-sm text-gray-500 mt-1">Enter the patient's QR code (e.g. QR001) or full patient ID.</p>
             </div>
             <form onSubmit={handleManualSearch} className="space-y-3">
               <Input

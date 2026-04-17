@@ -57,7 +57,6 @@ const DoctorQueue = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Doctor Queue</h1>
-          <p className="text-gray-500">Patients waiting for consultation: {queue.length}</p>
           {lastUpdated && (
             <p className="text-xs text-gray-400 mt-1">Updated {lastUpdated.toLocaleTimeString("en-IN")}</p>
           )}

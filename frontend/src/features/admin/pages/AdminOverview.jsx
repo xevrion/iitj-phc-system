@@ -51,7 +51,6 @@ const AdminOverview = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Admin Overview</h1>
-          <p className="text-gray-500">System-wide statistics and health metrics.</p>
         </div>
         <Button variant="outline" onClick={fetchData}>Refresh</Button>
       </div>

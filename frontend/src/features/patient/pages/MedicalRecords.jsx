@@ -94,7 +94,6 @@ const MedicalRecords = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Medical Vault</h1>
-          <p className="text-gray-500">Securely store and manage your external medical reports and prescriptions.</p>
         </div>
         <Button onClick={() => setIsUploadModalOpen(true)} className="gap-2">
           <Upload size={18} />

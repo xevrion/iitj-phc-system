@@ -63,7 +63,6 @@ const LabOverview = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Lab Desk</h1>
-          <p className="text-gray-500">Process pending test requests and upload reports.</p>
         </div>
         <Button variant="outline" onClick={fetchRequests} isLoading={loading}>Refresh</Button>
       </div>

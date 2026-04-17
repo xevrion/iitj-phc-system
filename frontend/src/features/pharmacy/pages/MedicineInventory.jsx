@@ -68,7 +68,6 @@ const MedicineInventory = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Medicine Inventory</h1>
-          <p className="text-gray-500">View and update stock levels.</p>
         </div>
         <Button variant="outline" onClick={fetchMedicines}>Refresh</Button>
       </div>

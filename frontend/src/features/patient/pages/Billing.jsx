@@ -64,7 +64,6 @@ const Billing = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Billing & Payments</h1>
-        <p className="text-gray-500">View your medical expenses and payment status for PHC visits.</p>
       </div>
 
       <div className="grid grid-cols-1 gap-6">

@@ -85,7 +85,6 @@ const UserManagement = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-          <p className="text-gray-500">Create and manage system users.</p>
         </div>
         <Button onClick={() => setShowForm(!showForm)}>
           <UserPlus size={16} className="mr-2" />
