@@ -3,6 +3,7 @@ import "dotenv/config";
 const BASE_URL = process.env.LOAD_TEST_BASE_URL || "http://localhost:8000/api/v1";
 const CONCURRENCY = Number(process.env.LOAD_TEST_CONCURRENCY || 20);
 const ITERATIONS = Number(process.env.LOAD_TEST_ITERATIONS || 5);
+const LOAD_TEST_TOKEN = process.env.LOAD_TEST_TOKEN || null;
 
 const requestJson = async (method, path, { body, token } = {}) => {
   const startedAt = performance.now();
@@ -32,24 +33,8 @@ const percentile = (values, p) => {
   return sorted[index];
 };
 
-const login = async (ldapId, password) => {
-  const response = await fetch(`${BASE_URL}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ldapId, password }),
-  });
-
-  const payload = await response.json().catch(() => null);
-
-  if (response.status !== 200) {
-    throw new Error(`Login failed for ${ldapId}: ${payload?.message || response.statusText}`);
-  }
-
-  return payload.data.token;
-};
-
 const main = async () => {
-  const patientToken = await login("patient01", "patient01pass");
+  const patientToken = LOAD_TEST_TOKEN;
   const doctors = [];
 
   for (let iteration = 0; iteration < ITERATIONS; iteration += 1) {
@@ -61,7 +46,7 @@ const main = async () => {
           return requestJson("GET", "/healthcheck");
         }
 
-        if (requestType === 1) {
+        if (requestType === 1 && patientToken) {
           return requestJson("GET", "/auth/me", { token: patientToken });
         }
 

@@ -17,6 +17,9 @@ BASE="${1:-http://localhost:8000/api/v1}"
 PASS=0
 FAIL=0
 FUTURE_EVENT_DATE=$(date -u -d '+10 days' '+%Y-%m-%dT09:00:00.000Z' 2>/dev/null || date -u -v+10d '+%Y-%m-%dT09:00:00.000Z')
+FUTURE_APPOINTMENT_DATE=$(date -u -d '+2 days' '+%Y-%m-%dT10:00:00.000Z' 2>/dev/null || date -u -v+2d '+%Y-%m-%dT10:00:00.000Z')
+FUTURE_EMERGENCY_APPOINTMENT_DATE=$(date -u -d '+3 days' '+%Y-%m-%dT10:00:00.000Z' 2>/dev/null || date -u -v+3d '+%Y-%m-%dT10:00:00.000Z')
+FUTURE_UNAVAILABLE_APPOINTMENT_DATE=$(date -u -d '+4 days' '+%Y-%m-%dT10:00:00.000Z' 2>/dev/null || date -u -v+4d '+%Y-%m-%dT10:00:00.000Z')
 TMP_LAB_REPORT="/tmp/phc-lab-report.pdf"
 
 # ── Colours ──────────────────────────────────────────────────────────
@@ -75,6 +78,12 @@ login() {
   jv "d['data']['token']"
 }
 
+ensure_doctor_ready() {
+  req POST "$BASE/doctors/me/checkout" "$DOCTOR_TOKEN" "" > /dev/null 2>&1
+  req POST "$BASE/doctors/me/checkin" "$DOCTOR_TOKEN" "" > /dev/null 2>&1
+  req PUT "$BASE/doctors/me/availability" "$DOCTOR_TOKEN" '{"isAvailable":true}' > /dev/null 2>&1
+}
+
 # ════════════════════════════════════════════════════════════════════
 echo
 echo -e "${YELLOW}╔══════════════════════════════════════════════════╗${NC}"
@@ -105,7 +114,6 @@ fi
 echo -e "  ${GREEN}✓ All 6 role tokens acquired${NC}"
 
 # ── Reset doctor state before grabbing IDs ────────────────────────────
-# Checkout first (idempotent) so attendance-related tests start clean
 req POST "$BASE/doctors/me/checkout" "$DOCTOR_TOKEN" "" > /dev/null 2>&1
 
 # ── Grab stable IDs ───────────────────────────────────────────────────
@@ -136,14 +144,14 @@ check "TC-F-004" "Patient updates own profile" 200 "$HTTP_STATUS" "$RESPONSE_TIM
 req GET "$BASE/patients/qr/QR001" "$RECEPTION_TOKEN" ""
 check "TC-F-005" "Reception identifies patient by QR code" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
 
+req POST "$BASE/doctors/me/checkin" "$DOCTOR_TOKEN" ""
+check "TC-F-007" "Doctor checks in (opens attendance record)" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
+req PUT "$BASE/doctors/me/availability" "$DOCTOR_TOKEN" '{"isAvailable":true}' > /dev/null 2>&1
+
 req POST "$BASE/checkin" "$RECEPTION_TOKEN" \
   '{"qrCode":"QR001","visitType":"OPD","vitals":{"weight":65.5,"temperature":98.6,"bloodPressure":"120/80"}}'
 check "TC-F-006" "QR check-in creates visit + vitals atomically" 201 "$HTTP_STATUS" "$RESPONSE_TIME"
 VISIT_ID=$(jv "d['data']['id']")
-
-req POST "$BASE/doctors/me/checkin" "$DOCTOR_TOKEN" ""
-check "TC-F-007" "Doctor checks in (opens attendance record)" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
-req PUT "$BASE/doctors/me/availability" "$DOCTOR_TOKEN" '{"isAvailable":true}' > /dev/null 2>&1
 
 req GET "$BASE/visits/my-queue" "$DOCTOR_TOKEN" ""
 check "TC-F-008" "Doctor views waiting patient queue" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
@@ -173,9 +181,6 @@ check "TC-F-014" "Doctor checks out (closes attendance, computes hours)" 200 "$H
 req GET "$BASE/prescriptions/pending" "$PHARMACY_TOKEN" ""
 check "TC-F-015" "Pharmacy views undispensed prescription queue" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
 
-req PUT "$BASE/prescriptions/$PRESCRIPTION_ID/dispense" "$PHARMACY_TOKEN" ""
-check "TC-F-016" "Pharmacy dispenses prescription" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
-
 req POST "$BASE/visits/$VISIT_ID/bill" "$PHARMACY_TOKEN" \
   "{\"items\":[{\"medicineId\":\"$MEDICINE_ID\",\"quantity\":2}]}"
 check "TC-F-017" "Pharmacy generates bill with atomic stock deduction" 201 "$HTTP_STATUS" "$RESPONSE_TIME"
@@ -183,6 +188,9 @@ BILL_ID=$(jv "d['data']['id']")
 
 req PUT "$BASE/bills/$BILL_ID/pay" "$PHARMACY_TOKEN" ""
 check "TC-F-018" "Pharmacy marks bill as paid" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
+
+req PUT "$BASE/prescriptions/$PRESCRIPTION_ID/dispense" "$PHARMACY_TOKEN" ""
+check "TC-F-016" "Pharmacy dispenses prescription" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
 
 printf '%s' 'CBC report from smoke test' > "$TMP_LAB_REPORT"
 raw=$(curl -s -X POST \
@@ -203,7 +211,7 @@ check "TC-F-020" "Patient views a single completed lab request/report" 200 "$HTT
 req POST "$BASE/doctors/me/checkin" "$DOCTOR_TOKEN" "" > /dev/null 2>&1
 req PUT "$BASE/doctors/me/availability" "$DOCTOR_TOKEN" '{"isAvailable":true}'
 req POST "$BASE/appointments" "$PATIENT_TOKEN" \
-  "{\"doctorId\":\"$DOCTOR_ID\",\"appointmentTime\":\"2026-04-01T10:00:00.000Z\",\"slotDuration\":15}"
+  "{\"doctorId\":\"$DOCTOR_ID\",\"appointmentTime\":\"$FUTURE_APPOINTMENT_DATE\",\"slotDuration\":15}"
 check "TC-F-021" "Patient books appointment with available doctor" 201 "$HTTP_STATUS" "$RESPONSE_TIME"
 APPOINTMENT_ID=$(jv "d['data']['id']")
 
@@ -277,16 +285,15 @@ req POST "$BASE/visits/$VISIT_ID/bill" "$PATIENT_TOKEN" '{"items":[]}'
 check "TC-N-004" "Patient attempting to generate bill → 403" 403 "$HTTP_STATUS" "$RESPONSE_TIME"
 
 # Fresh visit for prescription empty-items test
+ensure_doctor_ready
 req POST "$BASE/checkin" "$RECEPTION_TOKEN" '{"qrCode":"QR001","visitType":"OPD"}'
 NEG_VISIT_ID=$(jv "d['data']['id']")
-# Check doctor back in (checked out in F-014), reopen consultations, then claim
-req POST "$BASE/doctors/me/checkin" "$DOCTOR_TOKEN" "" > /dev/null 2>&1
-req PUT "$BASE/doctors/me/availability" "$DOCTOR_TOKEN" '{"isAvailable":true}' > /dev/null 2>&1
 req PUT "$BASE/visits/$NEG_VISIT_ID/claim" "$DOCTOR_TOKEN" "" > /dev/null 2>&1
 req POST "$BASE/visits/$NEG_VISIT_ID/prescription" "$DOCTOR_TOKEN" '{"items":[]}'
 check "TC-N-005" "Prescription with empty items array → 400" 400 "$HTTP_STATUS" "$RESPONSE_TIME"
 
 # Insufficient stock: dedicated fresh visit so no pre-existing bill
+ensure_doctor_ready
 req POST "$BASE/checkin" "$RECEPTION_TOKEN" '{"qrCode":"QR001","visitType":"OPD"}'
 N6_VISIT_ID=$(jv "d['data']['id']")
 req PUT "$BASE/medicines/$NEW_MED_ID/stock" "$ADMIN_TOKEN" '{"stockQuantity":0}'
@@ -305,7 +312,7 @@ check "TC-N-008" "Duplicate prescription for same visit → 409" 409 "$HTTP_STAT
 
 req PUT "$BASE/doctors/me/availability" "$DOCTOR_TOKEN" '{"isAvailable":false}'
 req POST "$BASE/appointments" "$PATIENT_TOKEN" \
-  "{\"doctorId\":\"$DOCTOR_ID\",\"appointmentTime\":\"2026-04-02T10:00:00.000Z\",\"slotDuration\":15,\"isEmergency\":false}"
+  "{\"doctorId\":\"$DOCTOR_ID\",\"appointmentTime\":\"$FUTURE_UNAVAILABLE_APPOINTMENT_DATE\",\"slotDuration\":15,\"isEmergency\":false}"
 check "TC-N-009" "Booking unavailable doctor (no emergency flag) → 400" 400 "$HTTP_STATUS" "$RESPONSE_TIME"
 
 req POST "$BASE/checkin" "$RECEPTION_TOKEN" '{"qrCode":"INVALID_QR_DOES_NOT_EXIST","visitType":"OPD"}'
@@ -321,6 +328,7 @@ check "TC-B-001" "Prescription with exactly 1 item (minimum valid) → 201" 201 
 
 # Stock = 3, bill with quantity = 3 (exactly at boundary)
 req PUT "$BASE/medicines/$NEW_MED_ID/stock" "$ADMIN_TOKEN" '{"stockQuantity":3}'
+ensure_doctor_ready
 req POST "$BASE/checkin" "$RECEPTION_TOKEN" '{"qrCode":"QR001","visitType":"OPD"}'
 B2_VISIT_ID=$(jv "d['data']['id']")
 req POST "$BASE/visits/$B2_VISIT_ID/bill" "$PHARMACY_TOKEN" \
@@ -329,6 +337,7 @@ check "TC-B-002" "Bill with quantity = stock exactly (at boundary) → 201" 201 
 
 # Stock = 3, bill with quantity = 4 (one over boundary)
 req PUT "$BASE/medicines/$NEW_MED_ID/stock" "$ADMIN_TOKEN" '{"stockQuantity":3}'
+ensure_doctor_ready
 req POST "$BASE/checkin" "$RECEPTION_TOKEN" '{"qrCode":"QR001","visitType":"OPD"}'
 B3_VISIT_ID=$(jv "d['data']['id']")
 req POST "$BASE/visits/$B3_VISIT_ID/bill" "$PHARMACY_TOKEN" \
@@ -337,7 +346,7 @@ check "TC-B-003" "Bill with quantity = stock + 1 (over boundary) → 400" 400 "$
 
 # Doctor unavailable (set in N-009) but isEmergency = true → must succeed
 req POST "$BASE/appointments" "$PATIENT_TOKEN" \
-  "{\"doctorId\":\"$DOCTOR_ID\",\"appointmentTime\":\"2026-04-03T10:00:00.000Z\",\"slotDuration\":15,\"isEmergency\":true}"
+  "{\"doctorId\":\"$DOCTOR_ID\",\"appointmentTime\":\"$FUTURE_EMERGENCY_APPOINTMENT_DATE\",\"slotDuration\":15,\"isEmergency\":true}"
 check "TC-B-004" "Emergency appointment bypasses unavailability → 201" 201 "$HTTP_STATUS" "$RESPONSE_TIME"
 
 req PUT "$BASE/medicines/$NEW_MED_ID/stock" "$ADMIN_TOKEN" '{"stockQuantity":0}'
@@ -363,6 +372,7 @@ req GET "$BASE/visits/$VISIT_ID/prescription" "$PHARMACY_TOKEN" ""
 check "TC-P-003" "Prescription retrieval < ${T}ms" 200 "$HTTP_STATUS" "$RESPONSE_TIME" "$TOK"
 
 req PUT "$BASE/medicines/$NEW_MED_ID/stock" "$ADMIN_TOKEN" '{"stockQuantity":100}'
+ensure_doctor_ready
 req POST "$BASE/checkin" "$RECEPTION_TOKEN" '{"qrCode":"QR001","visitType":"OPD"}'
 P4_VISIT_ID=$(jv "d['data']['id']")
 req POST "$BASE/visits/$P4_VISIT_ID/bill" "$PHARMACY_TOKEN" \
@@ -370,23 +380,26 @@ req POST "$BASE/visits/$P4_VISIT_ID/bill" "$PHARMACY_TOKEN" \
 [ "$RESPONSE_TIME" -le "$T_ATOMIC" ] && TOK=true || TOK=false
 check "TC-P-004" "Bill generation (atomic + stock deduct) < ${T_ATOMIC}ms" 201 "$HTTP_STATUS" "$RESPONSE_TIME" "$TOK"
 
+ensure_doctor_ready
 req POST "$BASE/checkin" "$RECEPTION_TOKEN" \
   '{"qrCode":"QR001","visitType":"OPD","vitals":{"weight":70,"temperature":98.4,"bloodPressure":"118/76"}}'
 [ "$RESPONSE_TIME" -le "$T" ] && TOK=true || TOK=false
 check "TC-P-005" "QR check-in (atomic visit + vitals) < ${T}ms" 201 "$HTTP_STATUS" "$RESPONSE_TIME" "$TOK"
 
 # ════════════════════════════════════════════════════════════════════
-section "Repeatability / Stability Tests (15 runs each)"
-echo -e "  Each test is executed 15 consecutive times."
+section "Repeatability / Stability Tests"
+echo -e "  Patient profile and QR check-in are executed 15 consecutive times."
 echo -e "  Pass = HTTP 200/201 AND response time within threshold."
 echo -e "  Threshold: ${CYAN}3000ms${NC}  (SRS §5.1)\n"
 
 REPEAT_N=15
+LOGIN_REPEAT_N=10
 REPEAT_T=3000
 
 # ── TC-R-001: Login endpoint ──────────────────────────────────────────
+echo -e "  Login repeatability uses ${CYAN}${LOGIN_REPEAT_N}${NC} runs to stay below the auth rate limit."
 R_PASS=0; R_FAIL=0; R_TIMES=""
-for i in $(seq 1 $REPEAT_N); do
+for i in $(seq 1 $LOGIN_REPEAT_N); do
   req POST "$BASE/auth/login" "" '{"ldapId":"patient01","password":"patient01pass"}'
   if [ "$HTTP_STATUS" -eq 200 ] && [ "$RESPONSE_TIME" -le "$REPEAT_T" ]; then
     R_PASS=$((R_PASS+1))
@@ -399,10 +412,10 @@ R_AVG=$(echo "$R_TIMES" | tr ' ' '\n' | grep -v '^$' | awk '{s+=$1;c++} END{prin
 R_MAX=$(echo "$R_TIMES" | tr ' ' '\n' | grep -v '^$' | sort -n | tail -1)
 R_MIN=$(echo "$R_TIMES" | tr ' ' '\n' | grep -v '^$' | sort -n | head -1)
 if [ "$R_FAIL" -eq 0 ]; then
-  printf "  ${GREEN}✓ PASS${NC}  [TC-R-001] Login endpoint (${REPEAT_N}x)  ${CYAN}min=%sms avg=%sms max=%sms  all passed${NC}\n" "$R_MIN" "$R_AVG" "$R_MAX"
+  printf "  ${GREEN}✓ PASS${NC}  [TC-R-001] Login endpoint (${LOGIN_REPEAT_N}x)  ${CYAN}min=%sms avg=%sms max=%sms  all passed${NC}\n" "$R_MIN" "$R_AVG" "$R_MAX"
   PASS=$((PASS+1))
 else
-  printf "  ${RED}✗ FAIL${NC}  [TC-R-001] Login endpoint (${REPEAT_N}x)  ${CYAN}min=%sms avg=%sms max=%sms  %d/%d failed${NC}\n" "$R_MIN" "$R_AVG" "$R_MAX" "$R_FAIL" "$REPEAT_N"
+  printf "  ${RED}✗ FAIL${NC}  [TC-R-001] Login endpoint (${LOGIN_REPEAT_N}x)  ${CYAN}min=%sms avg=%sms max=%sms  %d/%d failed${NC}\n" "$R_MIN" "$R_AVG" "$R_MAX" "$R_FAIL" "$LOGIN_REPEAT_N"
   FAIL=$((FAIL+1))
 fi
 
@@ -430,6 +443,7 @@ fi
 
 # ── TC-R-003: Atomic QR check-in ─────────────────────────────────────
 R_PASS=0; R_FAIL=0; R_TIMES=""
+ensure_doctor_ready
 for i in $(seq 1 $REPEAT_N); do
   req POST "$BASE/checkin" "$RECEPTION_TOKEN" '{"qrCode":"QR001","visitType":"OPD"}'
   if [ "$HTTP_STATUS" -eq 201 ] && [ "$RESPONSE_TIME" -le "$REPEAT_T" ]; then

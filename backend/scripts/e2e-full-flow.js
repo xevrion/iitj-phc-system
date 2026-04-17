@@ -296,11 +296,6 @@ const main = async () => {
       expectedStatus: 200,
     });
 
-    await request(baseUrl, "PUT", `/prescriptions/${prescriptionId}/dispense`, {
-      token: pharmacyToken,
-      expectedStatus: 200,
-    });
-
     const billRes = await request(baseUrl, "POST", `/visits/${visitId}/bill`, {
       token: pharmacyToken,
       body: {
@@ -316,6 +311,11 @@ const main = async () => {
     const billId = billRes.payload.data.id;
 
     await request(baseUrl, "PUT", `/bills/${billId}/pay`, {
+      token: pharmacyToken,
+      expectedStatus: 200,
+    });
+
+    await request(baseUrl, "PUT", `/prescriptions/${prescriptionId}/dispense`, {
       token: pharmacyToken,
       expectedStatus: 200,
     });
