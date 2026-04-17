@@ -144,6 +144,63 @@ Important:
 
 See [TESTING.md](TESTING.md) for prerequisites, sequencing, Bruno usage, and troubleshooting.
 
+## Technology Readiness Level
+
+Current assessment: **TRL 6**
+
+This project has cleared TRL 1 through TRL 6 based on the repository contents and the implemented verification assets.
+
+### TRL 1 — Basic principles observed
+
+Cleared because the repository defines the core PHC digital workflow domains and technical foundations:
+- role-based healthcare workflows are modeled across patients, visits, prescriptions, lab, billing, appointments, documents, admin, events, and notifications
+- the backend stack and frontend stack are concretely selected and implemented in [backend/package.json](backend/package.json) and [frontend/package.json](frontend/package.json)
+- the core data model is formalized in `backend/prisma/schema.prisma`
+
+### TRL 2 — Technology concept formulated
+
+Cleared because the system concept is no longer abstract:
+- the repository separates the product into backend API, frontend dashboards, database schema, and test assets
+- the backend architecture is implemented as routes -> controllers -> services -> Prisma
+- local infrastructure for realistic authentication and uploads exists through Docker LDAP support, JWT auth, and Cloudinary-backed upload code
+
+### TRL 3 — Experimental proof of concept
+
+Cleared because the project includes executable proof-of-concept implementations:
+- the Express app is assembled in `backend/src/app.js`
+- database access, auth, billing, lab, appointment, and visit flows are implemented in `backend/src/services/`
+- the React application exists in `frontend/src/` with routed role-oriented UI code rather than only mockups or design notes
+
+### TRL 4 — Technology validated in the lab
+
+Cleared because the integrated code is validated at component and subsystem level:
+- Prisma schema, migrations, and seed data provide a reproducible database-backed environment
+- service-level automated tests exist in `backend/tests/unit/`
+- local development execution is supported through `npm run dev`, `npm run seed`, and Prisma migration commands
+
+### TRL 5 — Technology validated in a relevant environment
+
+Cleared because the system is exercised in a representative integration environment rather than only isolated unit logic:
+- role-based access control is verified by `npm run test:rbac`
+- realistic multi-step backend flow coverage exists in `backend/scripts/e2e-full-flow.js`
+- the Bruno collection in `backend/tests/iitj-phc-system/` and `backend/smoke_test.sh` cover representative PHC workflows against a running server
+- the project includes representative integrations such as PostgreSQL via Prisma, JWT auth, LDAP-based login flow, and Cloudinary-backed uploads
+
+### TRL 6 — Representative prototype demonstrated in a relevant environment
+
+Cleared because the repository now contains an integrated system prototype with successful end-to-end verification evidence:
+- the backend exposes 63 implemented application routes across the major PHC modules
+- the frontend is present and buildable, with pages, routes, features, store, hooks, and services under `frontend/src/`
+- automated verification commands exist for unit, RBAC, E2E, load, and smoke testing
+- recent local verification evidence showed `npm run test:unit`, `npm run test:rbac`, `npm run test:e2e`, `npm run test:load`, and `bash smoke_test.sh` succeeding after the current test-script fixes
+
+### Why the project is not claimed above TRL 6
+
+This README does not claim TRL 7 or higher because the repository does not by itself demonstrate:
+- live operation in the actual IIT Jodhpur PHC or another operational deployment environment
+- sustained field use by real clinical staff and patients
+- production deployment, operational support, and field acceptance evidence
+
 ## Notes
 
 - `backend/generated/prisma/` is generated code and should not be edited manually.
