@@ -3,6 +3,7 @@ import {
   create,
   getByVisit,
   pending,
+  history,
   dispense,
 } from "../controllers/prescription.controller.js";
 import { verifyJWT, authorizeRoles } from "../middlewares/auth.middleware.js";
@@ -23,6 +24,7 @@ const prescriptionRouter = Router();
 prescriptionRouter.use(verifyJWT);
 
 prescriptionRouter.get("/pending", authorizeRoles("PHARMACY_STAFF", "ADMIN"), pending);
+prescriptionRouter.get("/history", authorizeRoles("PHARMACY_STAFF", "ADMIN"), history);
 prescriptionRouter.put("/:id/dispense", authorizeRoles("PHARMACY_STAFF"), dispense);
 
 export { visitPrescriptionRouter, prescriptionRouter };

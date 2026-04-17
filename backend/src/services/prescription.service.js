@@ -94,6 +94,33 @@ export const getPendingPrescriptions = async () => {
   });
 };
 
+export const getDispensedPrescriptions = async () => {
+  return prisma.prescription.findMany({
+    where: { isDispensed: true },
+    include: {
+      items: { include: { medicine: true } },
+      visit: {
+        select: {
+          id: true,
+          visitType: true,
+          createdAt: true,
+          patient: { select: { id: true, name: true } },
+          bill: {
+            select: {
+              id: true,
+              totalAmount: true,
+              paymentStatus: true,
+              createdAt: true,
+            },
+          },
+        },
+      },
+      doctor: { select: { name: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+};
+
 // REQ-46: pharmacy staff marks prescription as dispensed after handing out medicines
 export const dispensePrescription = async (prescriptionId) => {
   const prescription = await prisma.prescription.findUnique({

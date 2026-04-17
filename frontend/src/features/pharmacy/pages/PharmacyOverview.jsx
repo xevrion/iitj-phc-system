@@ -2,7 +2,14 @@ import React, { useState, useEffect } from "react";
 import { Pill, Receipt, CheckCircle2, Loader2, AlertCircle, Package } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import { cn } from "../../../utils/cn";
-import { getPendingPrescriptions, dispensePrescription, getUnpaidBills, payBill, generateBillForVisit } from "../services/pharmacy.service";
+import {
+  getPendingPrescriptions,
+  getDispensedPrescriptions,
+  dispensePrescription,
+  getUnpaidBills,
+  payBill,
+  generateBillForVisit,
+} from "../services/pharmacy.service";
 
 const PAYMENT_STATUS_COLORS = {
   UNPAID: "bg-amber-100 text-amber-700",
@@ -11,6 +18,7 @@ const PAYMENT_STATUS_COLORS = {
 
 const PharmacyOverview = () => {
   const [prescriptions, setPrescriptions] = useState([]);
+  const [dispensedHistory, setDispensedHistory] = useState([]);
   const [bills, setBills] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -24,12 +32,14 @@ const PharmacyOverview = () => {
     setLoading(true);
     setError("");
     try {
-      const [presRes, billRes] = await Promise.all([
+      const [presRes, billRes, historyRes] = await Promise.all([
         getPendingPrescriptions(),
         getUnpaidBills(),
+        getDispensedPrescriptions(),
       ]);
       if (presRes.success) setPrescriptions(presRes.data);
       if (billRes.success) setBills(billRes.data);
+      if (historyRes.success) setDispensedHistory(historyRes.data);
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -121,6 +131,130 @@ const PharmacyOverview = () => {
     }
   };
 
+  const awaitingBillingOrPayment = prescriptions.filter(
+    (prescription) => prescription.visit?.bill?.paymentStatus !== "PAID"
+  );
+  const readyToDispense = prescriptions.filter(
+    (prescription) => prescription.visit?.bill?.paymentStatus === "PAID"
+  );
+
+  const renderPrescriptionSection = (list, title, description, emptyMessage) => (
+    <div className="border-t border-gray-100 first:border-t-0">
+      <div className="px-5 py-4 bg-gray-50/80 border-b border-gray-100">
+        <h3 className="font-semibold text-gray-900">{title}</h3>
+        <p className="text-xs text-gray-500 mt-1">{description}</p>
+      </div>
+      <div className="divide-y divide-gray-50">
+        {list.map((p) => (
+          <div key={p.id} className="p-5 flex items-start justify-between hover:bg-gray-50 gap-4">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center shrink-0">
+                <Pill size={18} />
+              </div>
+              <div className="space-y-3">
+                <p className="font-semibold text-gray-900 text-sm">
+                  {p.visit?.patient?.name || "Patient"}
+                </p>
+                <p className="text-xs text-gray-400">
+                  Visit: {p.visit?.createdAt
+                    ? new Date(p.visit.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+                    : new Date(p.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                </p>
+
+                <div className="space-y-2">
+                  {p.items?.map((item) => (
+                    <div key={item.id} className="rounded-lg border border-blue-100 bg-blue-50/60 p-3">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold text-blue-900">{item.medicine?.name || "Medicine"}</p>
+                          <p className="text-xs text-blue-700">
+                            Dosage: {item.dosage || "N/A"} | Duration: {item.duration || "N/A"}
+                          </p>
+                        </div>
+
+                        {!p.visit?.bill && (
+                          <div className="flex items-center gap-2">
+                            <label className="text-xs font-bold text-blue-700 uppercase tracking-wider">Qty</label>
+                            <input
+                              type="number"
+                              min="1"
+                              className="w-20 h-9 rounded-md border border-blue-200 bg-white px-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none"
+                              value={billDrafts[p.id]?.[item.medicineId] || "1"}
+                              onChange={(event) => handleBillQtyChange(p.id, item.medicineId, event.target.value)}
+                            />
+                          </div>
+                        )}
+
+                        {p.visit?.bill && (
+                          <div className="text-right">
+                            <p className="text-xs font-bold text-blue-700 uppercase tracking-wider">Billed Qty</p>
+                            <p className="text-sm font-semibold text-blue-900">
+                              {p.visit.bill.items?.find((billItem) => billItem.medicineId === item.medicineId)?.quantity || 0}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {p.visit?.bill && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-semibold text-gray-600">Bill:</span>
+                    <span className={cn(
+                      "px-2 py-0.5 rounded-full text-xs font-bold",
+                      PAYMENT_STATUS_COLORS[p.visit.bill.paymentStatus] || "bg-gray-100 text-gray-600"
+                    )}>
+                      {p.visit.bill.paymentStatus}
+                    </span>
+                    <span className="text-xs font-semibold text-gray-700">
+                      ₹{Number(p.visit.bill.totalAmount || 0).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="shrink-0 flex flex-col items-end gap-2">
+              {!p.visit?.bill && (
+                <Button
+                  size="sm"
+                  onClick={() => handleGenerateBill(p)}
+                  isLoading={billing === p.id}
+                >
+                  Generate Bill
+                </Button>
+              )}
+
+              {p.visit?.bill?.paymentStatus === "UNPAID" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setTab("bills")}
+                >
+                  Open Unpaid Bill
+                </Button>
+              )}
+
+              {p.visit?.bill?.paymentStatus === "PAID" && (
+                <Button
+                  size="sm"
+                  onClick={() => handleDispense(p.id)}
+                  isLoading={dispensing === p.id}
+                  className="shrink-0"
+                >
+                  Dispense
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
+        {list.length === 0 && (
+          <div className="px-5 py-10 text-center text-gray-400 text-sm">{emptyMessage}</div>
+        )}
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
@@ -140,9 +274,10 @@ const PharmacyOverview = () => {
         <Button variant="outline" onClick={fetchData}>Refresh</Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Pending Prescriptions", value: prescriptions.length, color: "text-blue-600" },
+          { label: "Awaiting Action", value: prescriptions.length, color: "text-blue-600" },
+          { label: "Ready to Dispense", value: readyToDispense.length, color: "text-emerald-600" },
           { label: "Unpaid Bills", value: bills.length, color: "text-amber-600" },
           { label: "Total Outstanding", value: `₹${bills.reduce((s, b) => s + (Number(b.totalAmount) || 0), 0).toFixed(2)}`, color: "text-rose-600" },
         ].map(s => (
@@ -163,7 +298,7 @@ const PharmacyOverview = () => {
       <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900">
         `Generate Bill` creates the unpaid bill and deducts medicine stock.
         `Mark Paid` settles that bill.
-        `Dispense` is the final step and is only allowed after payment.
+        `Dispense` is the final step after payment and moves the prescription into pharmacy history.
       </div>
 
       {/* Tabs */}
@@ -171,6 +306,7 @@ const PharmacyOverview = () => {
         {[
           { key: "prescriptions", label: "Prescriptions", count: prescriptions.length },
           { key: "bills", label: "Unpaid Bills", count: bills.length },
+          { key: "history", label: "Dispensed History", count: dispensedHistory.length },
         ].map(t => (
           <button
             key={t.key}
@@ -194,120 +330,21 @@ const PharmacyOverview = () => {
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="p-5 border-b border-gray-100">
             <h2 className="font-bold text-gray-900 flex items-center gap-2">
-              <Pill size={18} className="text-blue-500" /> Pending Prescriptions
+              <Pill size={18} className="text-blue-500" /> Pharmacy Workflow Queue
             </h2>
           </div>
-          <div className="divide-y divide-gray-50">
-            {prescriptions.map(p => (
-              <div key={p.id} className="p-5 flex items-start justify-between hover:bg-gray-50 gap-4">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center shrink-0">
-                    <Pill size={18} />
-                  </div>
-                  <div className="space-y-3">
-                    <p className="font-semibold text-gray-900 text-sm">
-                      {p.visit?.patient?.name || "Patient"}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      Visit: {p.visit?.createdAt
-                        ? new Date(p.visit.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
-                        : new Date(p.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                    </p>
-
-                    <div className="space-y-2">
-                      {p.items?.map((item) => (
-                        <div key={item.id} className="rounded-lg border border-blue-100 bg-blue-50/60 p-3">
-                          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                            <div>
-                              <p className="text-sm font-semibold text-blue-900">{item.medicine?.name || "Medicine"}</p>
-                              <p className="text-xs text-blue-700">
-                                Dosage: {item.dosage || "N/A"} | Duration: {item.duration || "N/A"}
-                              </p>
-                            </div>
-
-                            {!p.visit?.bill && (
-                              <div className="flex items-center gap-2">
-                                <label className="text-xs font-bold text-blue-700 uppercase tracking-wider">Qty</label>
-                                <input
-                                  type="number"
-                                  min="1"
-                                  className="w-20 h-9 rounded-md border border-blue-200 bg-white px-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none"
-                                  value={billDrafts[p.id]?.[item.medicineId] || "1"}
-                                  onChange={(event) => handleBillQtyChange(p.id, item.medicineId, event.target.value)}
-                                />
-                              </div>
-                            )}
-
-                            {p.visit?.bill && (
-                              <div className="text-right">
-                                <p className="text-xs font-bold text-blue-700 uppercase tracking-wider">Billed Qty</p>
-                                <p className="text-sm font-semibold text-blue-900">
-                                  {p.visit.bill.items?.find((billItem) => billItem.medicineId === item.medicineId)?.quantity || 0}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {p.visit?.bill && (
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-semibold text-gray-600">Bill:</span>
-                        <span className={cn(
-                          "px-2 py-0.5 rounded-full text-xs font-bold",
-                          PAYMENT_STATUS_COLORS[p.visit.bill.paymentStatus] || "bg-gray-100 text-gray-600"
-                        )}>
-                          {p.visit.bill.paymentStatus}
-                        </span>
-                        <span className="text-xs font-semibold text-gray-700">
-                          ₹{Number(p.visit.bill.totalAmount || 0).toFixed(2)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="shrink-0 flex flex-col items-end gap-2">
-                  {!p.visit?.bill && (
-                    <Button
-                      size="sm"
-                      onClick={() => handleGenerateBill(p)}
-                      isLoading={billing === p.id}
-                    >
-                      Generate Bill
-                    </Button>
-                  )}
-
-                  {p.visit?.bill?.paymentStatus === "UNPAID" && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setTab("bills")}
-                    >
-                      Open Unpaid Bill
-                    </Button>
-                  )}
-
-                  {p.visit?.bill?.paymentStatus === "PAID" && (
-                    <Button
-                      size="sm"
-                      onClick={() => handleDispense(p.id)}
-                      isLoading={dispensing === p.id}
-                      className="shrink-0"
-                    >
-                      Dispense
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
-            {prescriptions.length === 0 && (
-              <div className="py-16 flex flex-col items-center text-center">
-                <CheckCircle2 size={36} className="text-emerald-400 mb-3" />
-                <p className="font-bold text-gray-900">No pending prescriptions</p>
-              </div>
-            )}
-          </div>
+          {renderPrescriptionSection(
+            awaitingBillingOrPayment,
+            "Awaiting Bill Or Payment",
+            "These prescriptions still need a bill to be generated or the patient still needs to pay.",
+            "No prescriptions are waiting for billing or payment."
+          )}
+          {renderPrescriptionSection(
+            readyToDispense,
+            "Ready To Dispense",
+            "Payment is complete. These medicines can now be handed over to the patient.",
+            "No prescriptions are currently ready to dispense."
+          )}
         </div>
       )}
 
@@ -405,6 +442,68 @@ const PharmacyOverview = () => {
             {bills.length === 0 && (
               <div className="px-5 py-12 text-center text-gray-400 text-sm">
                 No unpaid bills.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {tab === "history" && (
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-gray-100">
+            <h2 className="font-bold text-gray-900 flex items-center gap-2">
+              <Package size={18} className="text-emerald-500" /> Dispensed History
+            </h2>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {dispensedHistory.map((prescription) => (
+              <div key={prescription.id} className="p-5 space-y-3 hover:bg-gray-50">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="font-semibold text-gray-900 text-sm">
+                      {prescription.visit?.patient?.name || "Patient"}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Visit date:{" "}
+                      {prescription.visit?.createdAt
+                        ? new Date(prescription.visit.createdAt).toLocaleString("en-IN", {
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                          })
+                        : "—"}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">
+                      DISPENSED
+                    </span>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Bill {prescription.visit?.bill?.paymentStatus || "PAID"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {prescription.items?.map((item) => (
+                    <div key={item.id} className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
+                      <p className="text-sm font-semibold text-gray-900">{item.medicine?.name || "Medicine"}</p>
+                      <p className="text-xs text-gray-500">
+                        Dosage: {item.dosage || "N/A"} | Duration: {item.duration || "N/A"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <p className="text-xs text-gray-500">
+                  Dispensed after bill payment of ₹{Number(prescription.visit?.bill?.totalAmount || 0).toFixed(2)}
+                </p>
+              </div>
+            ))}
+
+            {dispensedHistory.length === 0 && (
+              <div className="py-16 flex flex-col items-center text-center">
+                <CheckCircle2 size={36} className="text-emerald-400 mb-3" />
+                <p className="font-bold text-gray-900">No dispensed history yet</p>
               </div>
             )}
           </div>

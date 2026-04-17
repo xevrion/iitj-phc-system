@@ -4,6 +4,7 @@ import {
   createPrescription,
   getPrescriptionByVisit,
   getPendingPrescriptions,
+  getDispensedPrescriptions,
   dispensePrescription,
 } from "../services/prescription.service.js";
 
@@ -30,6 +31,13 @@ export const pending = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, prescriptions, "Pending prescriptions fetched"));
+});
+
+export const history = asyncHandler(async (_req, res) => {
+  const prescriptions = await getDispensedPrescriptions();
+  return res
+    .status(200)
+    .json(new ApiResponse(200, prescriptions, "Dispensed prescriptions fetched"));
 });
 
 export const dispense = asyncHandler(async (req, res) => {

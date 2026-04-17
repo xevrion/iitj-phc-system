@@ -5,6 +5,11 @@ export const getPendingPrescriptions = async () => {
   return response.data;
 };
 
+export const getDispensedPrescriptions = async () => {
+  const response = await api.get("/prescriptions/history");
+  return response.data;
+};
+
 export const dispensePrescription = async (id) => {
   const response = await api.put(`/prescriptions/${id}/dispense`);
   return response.data;
