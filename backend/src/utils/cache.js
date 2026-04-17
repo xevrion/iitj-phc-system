@@ -13,6 +13,17 @@ export const cache = {
 
   set(key, value, ttlMs) {
     store.set(key, { value, expiresAt: Date.now() + ttlMs });
+    return value;
+  },
+
+  async getOrSet(key, ttlMs, loadValue) {
+    const cachedValue = this.get(key);
+    if (cachedValue !== null) {
+      return cachedValue;
+    }
+
+    const value = await loadValue();
+    return this.set(key, value, ttlMs);
   },
 
   del(key) {

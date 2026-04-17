@@ -1,5 +1,9 @@
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
+import { cache } from "../utils/cache.js";
+
+const UPCOMING_EVENTS_CACHE_KEY = "event:list:upcoming";
+const EVENT_CACHE_TTL_MS = 60 * 1000;
 
 const getValidatedEventDate = (eventDate) => {
   if (!eventDate) {
@@ -35,7 +39,7 @@ export const publishPHCEvent = async (publishedByUserId, { title, description, e
     throw new ApiError(404, "User not found");
   }
 
-  return prisma.pHCEvent.create({
+  const event = await prisma.pHCEvent.create({
     data: {
       title: trimmedTitle,
       description: description?.trim() || null,
@@ -52,22 +56,27 @@ export const publishPHCEvent = async (publishedByUserId, { title, description, e
       },
     },
   });
+
+  cache.del(UPCOMING_EVENTS_CACHE_KEY);
+  return event;
 };
 
 export const listUpcomingPHCEvents = async () => {
-  return prisma.pHCEvent.findMany({
-    where: {
-      eventDate: {
-        gte: new Date(),
+  return cache.getOrSet(UPCOMING_EVENTS_CACHE_KEY, EVENT_CACHE_TTL_MS, () =>
+    prisma.pHCEvent.findMany({
+      where: {
+        eventDate: {
+          gte: new Date(),
+        },
       },
-    },
-    select: {
-      id: true,
-      title: true,
-      description: true,
-      eventDate: true,
-      publishedAt: true,
-    },
-    orderBy: { eventDate: "asc" },
-  });
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        eventDate: true,
+        publishedAt: true,
+      },
+      orderBy: { eventDate: "asc" },
+    })
+  );
 };

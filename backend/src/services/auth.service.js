@@ -3,6 +3,10 @@ import { Client } from "ldapts";
 import { config } from "../config/index.js";
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
+import { cache } from "../utils/cache.js";
+
+const CURRENT_USER_CACHE_PREFIX = "auth:me:";
+const CURRENT_USER_CACHE_TTL_MS = 30 * 1000;
 
 const generateToken = (user) => {
   return jwt.sign(
@@ -69,20 +73,25 @@ export const loginUser = async (ldapId, password) => {
 };
 
 export const getCurrentUser = async (userId) => {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      ldapId: true,
-      role: true,
-      isActive: true,
-      createdAt: true,
-      patient: { select: { id: true, name: true, qrCode: true } },
-      doctor: {
-        select: { id: true, name: true, doctorType: true, isAvailable: true },
-      },
-    },
-  });
+  const user = await cache.getOrSet(
+    `${CURRENT_USER_CACHE_PREFIX}${userId}`,
+    CURRENT_USER_CACHE_TTL_MS,
+    () =>
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          ldapId: true,
+          role: true,
+          isActive: true,
+          createdAt: true,
+          patient: { select: { id: true, name: true, qrCode: true } },
+          doctor: {
+            select: { id: true, name: true, doctorType: true, isAvailable: true },
+          },
+        },
+      })
+  );
 
   if (!user) throw new ApiError(404, "User not found");
   return user;

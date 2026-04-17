@@ -1,5 +1,10 @@
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
+import { cache } from "../utils/cache.js";
+
+const DOCTOR_LIST_CACHE_KEY = "doctor:list:available";
+const DOCTOR_PROFILE_CACHE_PREFIX = "doctor:profile:";
+const DOCTOR_CACHE_TTL_MS = 30 * 1000;
 
 const getDoctorOrThrow = async (where) => {
   const doctor = await prisma.doctor.findUnique({
@@ -123,34 +128,44 @@ const setDoctorAvailabilityState = async (tx, doctor, isAvailable, notificationR
     data: { isAvailable },
   });
 
+  cache.del(DOCTOR_LIST_CACHE_KEY);
+  cache.del(`${DOCTOR_PROFILE_CACHE_PREFIX}${doctor.id}`);
+
   return { doctor: updatedDoctor, notificationSummary };
 };
 
 // REQ-43: real-time doctor availability for patient and staff dashboards
 export const listAvailableDoctors = async () => {
-  return prisma.doctor.findMany({
-    where: { isAvailable: true },
-    select: {
-      id: true,
-      name: true,
-      doctorType: true,
-      specialization: true,
-      isAvailable: true,
-    },
-  });
+  return cache.getOrSet(DOCTOR_LIST_CACHE_KEY, DOCTOR_CACHE_TTL_MS, () =>
+    prisma.doctor.findMany({
+      where: { isAvailable: true },
+      select: {
+        id: true,
+        name: true,
+        doctorType: true,
+        specialization: true,
+        isAvailable: true,
+      },
+    })
+  );
 };
 
 export const getDoctorProfile = async (doctorId) => {
-  const doctor = await prisma.doctor.findUnique({
-    where: { id: doctorId },
-    select: {
-      id: true,
-      name: true,
-      doctorType: true,
-      specialization: true,
-      isAvailable: true,
-    },
-  });
+  const doctor = await cache.getOrSet(
+    `${DOCTOR_PROFILE_CACHE_PREFIX}${doctorId}`,
+    DOCTOR_CACHE_TTL_MS,
+    () =>
+      prisma.doctor.findUnique({
+        where: { id: doctorId },
+        select: {
+          id: true,
+          name: true,
+          doctorType: true,
+          specialization: true,
+          isAvailable: true,
+        },
+      })
+  );
   if (!doctor) throw new ApiError(404, "Doctor not found");
   return doctor;
 };
