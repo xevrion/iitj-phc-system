@@ -52,6 +52,8 @@ model Doctor {
   notifications  Notification[]
   prescriptions  Prescription[]
   visits         Visit[]
+
+  @@index([isAvailable, doctorType])
 }
 
 model ReceptionStaff {
@@ -89,6 +91,11 @@ model Visit {
   doctor            Doctor?            @relation(fields: [doctorId], references: [id])
   patient           Patient            @relation(fields: [patientId], references: [id])
   vitals            VisitVitals?
+
+  @@index([patientId, createdAt])
+  @@index([patientId, visitStatus, createdAt])
+  @@index([doctorId, visitStatus, createdAt])
+  @@index([visitStatus, createdAt])
 }
 
 model VisitVitals {
@@ -111,6 +118,10 @@ model Appointment {
   doctor          Doctor            @relation(fields: [doctorId], references: [id])
   patient         Patient           @relation(fields: [patientId], references: [id])
   notifications   Notification[]
+
+  @@index([doctorId, appointmentTime])
+  @@index([patientId, appointmentTime])
+  @@index([status, appointmentTime])
 }
 
 model Prescription {
@@ -123,6 +134,9 @@ model Prescription {
   doctor      Doctor             @relation(fields: [doctorId], references: [id])
   visit       Visit              @relation(fields: [visitId], references: [id])
   items       PrescriptionItem[]
+
+  @@index([isDispensed, createdAt])
+  @@index([doctorId, createdAt])
 }
 
 model PrescriptionItem {
@@ -144,6 +158,10 @@ model LabRequest {
   report   LabReport?
   doctor   Doctor           @relation(fields: [doctorId], references: [id])
   visit    Visit            @relation(fields: [visitId], references: [id])
+
+  @@index([visitId])
+  @@index([doctorId])
+  @@index([status])
 }
 
 model LabReport {
@@ -177,6 +195,8 @@ model Medicine {
   unitPrice         Decimal            @db.Decimal(10, 2)
   billItems         BillItem[]
   prescriptionItems PrescriptionItem[]
+
+  @@index([name])
 }
 
 model Bill {
@@ -187,6 +207,8 @@ model Bill {
   createdAt     DateTime      @default(now())
   visit         Visit         @relation(fields: [visitId], references: [id])
   items         BillItem[]
+
+  @@index([paymentStatus, createdAt])
 }
 
 model BillItem {
@@ -206,6 +228,9 @@ model DoctorAttendance {
   checkOut   DateTime?
   totalHours Float?
   doctor     Doctor    @relation(fields: [doctorId], references: [id])
+
+  @@index([doctorId, checkOut])
+  @@index([doctorId, checkIn])
 }
 
 model PHCEvent {
@@ -216,6 +241,8 @@ model PHCEvent {
   publishedAt       DateTime @default(now())
   publishedByUserId String?
   publishedBy       User?    @relation(fields: [publishedByUserId], references: [id])
+
+  @@index([eventDate])
 }
 
 model Notification {
@@ -231,6 +258,11 @@ model Notification {
   appointment      Appointment?     @relation(fields: [appointmentId], references: [id])
   doctor           Doctor?          @relation(fields: [doctorId], references: [id])
   user             User             @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt, createdAt])
+  @@index([doctorId])
+  @@index([appointmentId])
 }
 
 enum UserRole {
