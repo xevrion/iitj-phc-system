@@ -72,8 +72,22 @@ export const claimVisit = async (visitId, doctorUserId) => {
   if (visit.visitStatus !== "WAITING")
     throw new ApiError(400, "Only WAITING visits can be claimed");
 
-  const doctor = await prisma.doctor.findUnique({ where: { userId: doctorUserId } });
+  const doctor = await prisma.doctor.findUnique({
+    where: { userId: doctorUserId },
+    select: { id: true, isAvailable: true },
+  });
   if (!doctor) throw new ApiError(404, "Doctor profile not found");
+
+  const activeAttendance = await prisma.doctorAttendance.findFirst({
+    where: { doctorId: doctor.id, checkOut: null },
+    select: { id: true },
+  });
+  if (!activeAttendance) {
+    throw new ApiError(400, "Check in before claiming patients");
+  }
+  if (!doctor.isAvailable) {
+    throw new ApiError(400, "Open consultations before claiming patients");
+  }
 
   return prisma.visit.update({
     where: { id: visitId },
@@ -235,6 +249,12 @@ export const getReceptionLiveQueue = async () => {
 };
 
 export const getMyCurrentVisit = async (patientUserId) => {
+  const now = new Date();
+  const startOfDay = new Date(now);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(now);
+  endOfDay.setHours(23, 59, 59, 999);
+
   const patient = await prisma.patient.findUnique({
     where: { userId: patientUserId },
     select: { id: true },
@@ -246,6 +266,10 @@ export const getMyCurrentVisit = async (patientUserId) => {
       patientId: patient.id,
       visitStatus: {
         in: ["WAITING", "IN_CONSULTATION"],
+      },
+      createdAt: {
+        gte: startOfDay,
+        lte: endOfDay,
       },
     },
     include: {

@@ -48,7 +48,7 @@ const MyAppointments = () => {
     fetchAppointments();
   }, []);
 
-  const { upcoming, history } = useMemo(() => {
+  const { upcoming, history, cancelled } = useMemo(() => {
     const now = Date.now();
 
     return {
@@ -62,9 +62,12 @@ const MyAppointments = () => {
       history: sortByTimeDesc(
         appointments.filter(
           (appointment) =>
-            appointment.status === "CANCELLED" ||
+            appointment.status !== "CANCELLED" &&
             new Date(appointment.appointmentTime).getTime() < now
         )
+      ),
+      cancelled: sortByTimeDesc(
+        appointments.filter((appointment) => appointment.status === "CANCELLED")
       ),
     };
   }, [appointments]);
@@ -136,7 +139,16 @@ const MyAppointments = () => {
             History <span className="text-gray-400 font-normal text-sm">({history.length})</span>
           </h2>
         </div>
-        <AppointmentList appointments={history} onCancel={handleCancel} cancellingId={cancellingId} emptyMessage="No appointment history yet." />
+        <AppointmentList appointments={history} onCancel={handleCancel} cancellingId={cancellingId} emptyMessage="No past appointment history yet." />
+      </section>
+
+      <section className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-gray-100">
+          <h2 className="font-bold text-gray-900">
+            Cancelled Appointments <span className="text-gray-400 font-normal text-sm">({cancelled.length})</span>
+          </h2>
+        </div>
+        <AppointmentList appointments={cancelled} onCancel={handleCancel} cancellingId={cancellingId} emptyMessage="No cancelled appointments." />
       </section>
     </div>
   );

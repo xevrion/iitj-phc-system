@@ -90,7 +90,7 @@ export const getPendingPrescriptions = async () => {
       },
       doctor: { select: { name: true } },
     },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: "desc" },
   });
 };
 
