@@ -3,6 +3,11 @@ import { Loader2, CalendarDays, UserRound, Phone, Siren } from "lucide-react";
 import { cn } from "../../../utils/cn";
 import Button from "../../../components/ui/Button";
 import { getDoctorAppointments } from "../services/doctor.service";
+import {
+  isFutureAppointmentDay,
+  isPastAppointmentDay,
+  isTodayQueueAppointment,
+} from "../../../utils/appointmentQueue";
 
 const DoctorAppointments = () => {
   const [appointments, setAppointments] = useState([]);
@@ -26,17 +31,16 @@ const DoctorAppointments = () => {
     fetchAppointments();
   }, []);
 
-  const { upcomingBooked, cancelled, history } = useMemo(() => {
-    const now = Date.now();
+  const { todayQueue, upcomingBooked, cancelled, history } = useMemo(() => {
+    const now = new Date();
     const sorted = [...appointments].sort(
       (a, b) => new Date(a.appointmentTime).getTime() - new Date(b.appointmentTime).getTime()
     );
 
     return {
+      todayQueue: sorted.filter((item) => isTodayQueueAppointment(item, now)),
       upcomingBooked: sorted.filter(
-        (item) =>
-          item.status !== "CANCELLED" &&
-          new Date(item.appointmentTime).getTime() >= now
+        (item) => item.status === "BOOKED" && isFutureAppointmentDay(item.appointmentTime, now)
       ),
       cancelled: sorted
         .filter((item) => item.status === "CANCELLED")
@@ -49,7 +53,9 @@ const DoctorAppointments = () => {
         .filter(
           (item) =>
             item.status !== "CANCELLED" &&
-            new Date(item.appointmentTime).getTime() < now
+            !isTodayQueueAppointment(item, now) &&
+            !isFutureAppointmentDay(item.appointmentTime, now) &&
+            (item.status === "COMPLETED" || isPastAppointmentDay(item.appointmentTime, now))
         )
         .sort(
           (a, b) =>
@@ -136,12 +142,22 @@ const DoctorAppointments = () => {
 
       <section className="space-y-4">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-bold text-gray-900">Upcoming Booked Slots</h2>
+          <h2 className="text-lg font-bold text-gray-900">Today's Appointment Queue</h2>
+          <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold uppercase tracking-wide">
+            {todayQueue.length}
+          </span>
+        </div>
+        {renderCards(todayQueue, "No booked appointments in today's queue.")}
+      </section>
+
+      <section className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-bold text-gray-900">Future Booked Slots</h2>
           <span className="px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold uppercase tracking-wide">
             {upcomingBooked.length}
           </span>
         </div>
-        {renderCards(upcomingBooked, "No upcoming booked appointment slots.")}
+        {renderCards(upcomingBooked, "No future booked appointment slots.")}
       </section>
 
       <section className="space-y-4">

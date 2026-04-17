@@ -4,6 +4,11 @@ import Button from "../../../components/ui/Button";
 import { cancelMyAppointment, getMyAppointments } from "../services/patient.service";
 import { cn } from "../../../utils/cn";
 import { useNavigate } from "react-router";
+import {
+  isFutureAppointmentDay,
+  isPastAppointmentDay,
+  isTodayQueueAppointment,
+} from "../../../utils/appointmentQueue";
 
 const STATUS_STYLES = {
   BOOKED: "bg-blue-100 text-blue-700",
@@ -48,22 +53,27 @@ const MyAppointments = () => {
     fetchAppointments();
   }, []);
 
-  const { upcoming, history, cancelled } = useMemo(() => {
-    const now = Date.now();
+  const { todayQueue, upcoming, history, cancelled } = useMemo(() => {
+    const now = new Date();
 
     return {
+      todayQueue: sortByTimeAsc(
+        appointments.filter((appointment) => isTodayQueueAppointment(appointment, now))
+      ),
       upcoming: sortByTimeAsc(
         appointments.filter(
           (appointment) =>
-            appointment.status !== "CANCELLED" &&
-            new Date(appointment.appointmentTime).getTime() >= now
+            appointment.status === "BOOKED" &&
+            isFutureAppointmentDay(appointment.appointmentTime, now)
         )
       ),
       history: sortByTimeDesc(
         appointments.filter(
           (appointment) =>
             appointment.status !== "CANCELLED" &&
-            new Date(appointment.appointmentTime).getTime() < now
+            !isTodayQueueAppointment(appointment, now) &&
+            (appointment.status === "COMPLETED" ||
+              isPastAppointmentDay(appointment.appointmentTime, now))
         )
       ),
       cancelled: sortByTimeDesc(
@@ -126,10 +136,19 @@ const MyAppointments = () => {
       <section className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="p-5 border-b border-gray-100">
           <h2 className="font-bold text-gray-900">
-            Upcoming Appointments <span className="text-gray-400 font-normal text-sm">({upcoming.length})</span>
+            Today's Queue <span className="text-gray-400 font-normal text-sm">({todayQueue.length})</span>
           </h2>
         </div>
-        <AppointmentList appointments={upcoming} onCancel={handleCancel} cancellingId={cancellingId} emptyMessage="No upcoming appointments." />
+        <AppointmentList appointments={todayQueue} onCancel={handleCancel} cancellingId={cancellingId} emptyMessage="No booked appointments in today's queue." />
+      </section>
+
+      <section className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-gray-100">
+          <h2 className="font-bold text-gray-900">
+            Future Appointments <span className="text-gray-400 font-normal text-sm">({upcoming.length})</span>
+          </h2>
+        </div>
+        <AppointmentList appointments={upcoming} onCancel={handleCancel} cancellingId={cancellingId} emptyMessage="No future appointments." />
       </section>
 
       <section className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
@@ -198,7 +217,7 @@ const AppointmentList = ({ appointments, onCancel, cancellingId, emptyMessage })
             </div>
           </div>
 
-          {appointment.status === "BOOKED" && new Date(appointment.appointmentTime).getTime() >= Date.now() && (
+          {appointment.status === "BOOKED" && !isPastAppointmentDay(appointment.appointmentTime) && (
             <Button
               variant="outline"
               className="gap-2 text-red-600 border-red-200 hover:bg-red-50"

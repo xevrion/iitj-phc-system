@@ -4,6 +4,11 @@ import Button from "../../../components/ui/Button";
 import { cn } from "../../../utils/cn";
 import { formatDoctorName } from "../../../utils/doctorName";
 import { getAvailableDoctors, cancelAppointment, bookAppointmentStaff, getAllAppointments } from "../services/reception.service";
+import {
+  isFutureAppointmentDay,
+  isPastAppointmentDay,
+  isTodayQueueAppointment,
+} from "../../../utils/appointmentQueue";
 
 const STATUS_COLORS = {
   BOOKED: "bg-blue-100 text-blue-700",
@@ -84,17 +89,25 @@ const ReceptionAppointments = () => {
 
   useEffect(() => { fetchData(); }, []);
 
-  const now = Date.now();
+  const now = new Date();
+  const todayQueueAppointments = sortUpcomingAppointments(
+    appointments.filter((appointment) => isTodayQueueAppointment(appointment, now))
+  );
   const upcomingAppointments = sortUpcomingAppointments(
-    appointments.filter((appointment) => {
-      const appointmentTime = new Date(appointment.appointmentTime).getTime();
-      return appointment.status !== "CANCELLED" && appointmentTime >= now;
-    })
+    appointments.filter(
+      (appointment) =>
+        appointment.status === "BOOKED" &&
+        isFutureAppointmentDay(appointment.appointmentTime, now)
+    )
   );
   const pastAppointments = sortHistoricalAppointments(
     appointments.filter((appointment) => {
-      const appointmentTime = new Date(appointment.appointmentTime).getTime();
-      return appointment.status !== "CANCELLED" && appointmentTime < now;
+      return (
+        appointment.status !== "CANCELLED" &&
+        !isTodayQueueAppointment(appointment, now) &&
+        (appointment.status === "COMPLETED" ||
+          isPastAppointmentDay(appointment.appointmentTime, now))
+      );
     })
   );
   const cancelledAppointments = sortHistoricalAppointments(
@@ -251,7 +264,14 @@ const ReceptionAppointments = () => {
       <div className="space-y-6">
         <section className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="p-5 border-b border-gray-100">
-            <h2 className="font-bold text-gray-900">Upcoming Appointments <span className="text-gray-400 font-normal text-sm">({upcomingAppointments.length})</span></h2>
+            <h2 className="font-bold text-gray-900">Today's Appointment Queue <span className="text-gray-400 font-normal text-sm">({todayQueueAppointments.length})</span></h2>
+          </div>
+          <AppointmentTable appointments={todayQueueAppointments} onCancel={handleCancel} formatDoctorName={formatDoctorName} emptyMessage="No booked appointments in today's queue." />
+        </section>
+
+        <section className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-gray-100">
+            <h2 className="font-bold text-gray-900">Future Appointments <span className="text-gray-400 font-normal text-sm">({upcomingAppointments.length})</span></h2>
           </div>
           <AppointmentTable appointments={upcomingAppointments} onCancel={handleCancel} formatDoctorName={formatDoctorName} />
         </section>

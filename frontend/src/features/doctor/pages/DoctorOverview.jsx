@@ -20,6 +20,10 @@ import {
   checkOutDoctor,
   updateMyAvailability,
 } from "../services/doctor.service";
+import {
+  isFutureAppointmentDay,
+  isTodayQueueAppointment,
+} from "../../../utils/appointmentQueue";
 
 const DoctorOverview = () => {
   const { user, checkAuth } = useAuthStore();
@@ -57,11 +61,15 @@ const DoctorOverview = () => {
     fetchOverview();
   }, []);
 
+  const todayQueueAppointments = useMemo(() => {
+    const now = new Date();
+    return appointments.filter((item) => isTodayQueueAppointment(item, now));
+  }, [appointments]);
+
   const upcomingCount = useMemo(() => {
-    const now = Date.now();
+    const now = new Date();
     return appointments.filter(
-      (item) =>
-        item.status !== "CANCELLED" && new Date(item.appointmentTime).getTime() >= now
+      (item) => item.status === "BOOKED" && isFutureAppointmentDay(item.appointmentTime, now)
     ).length;
   }, [appointments]);
 
@@ -71,11 +79,19 @@ const DoctorOverview = () => {
   );
 
   const nextAppointment = useMemo(() => {
-    const now = Date.now();
-    return appointments.find(
-      (item) =>
-        item.status !== "CANCELLED" && new Date(item.appointmentTime).getTime() >= now
-    );
+    const now = new Date();
+    return appointments
+      .filter(
+        (item) =>
+          item.status === "BOOKED" &&
+          (isTodayQueueAppointment(item, now) ||
+            isFutureAppointmentDay(item.appointmentTime, now))
+      )
+      .sort(
+        (left, right) =>
+          new Date(left.appointmentTime).getTime() -
+          new Date(right.appointmentTime).getTime()
+      )[0];
   }, [appointments]);
 
   const handleCheckIn = async () => {
@@ -185,8 +201,8 @@ const DoctorOverview = () => {
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Upcoming Slots</p>
-          <p className="text-3xl font-bold text-gray-900">{upcomingCount}</p>
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Today's Appointment Queue</p>
+          <p className="text-3xl font-bold text-gray-900">{todayQueueAppointments.length}</p>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
@@ -261,7 +277,7 @@ const DoctorOverview = () => {
               Active Queue Patients: {queue.length}
             </p>
             <p>
-              Total Appointments (all statuses): {appointments.length}
+              Future Booked Slots: {upcomingCount}
             </p>
           </div>
         </div>
