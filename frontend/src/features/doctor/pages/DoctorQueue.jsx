@@ -3,9 +3,11 @@ import { useNavigate } from "react-router";
 import { Loader2, Thermometer, HeartPulse, ClipboardCheck } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import { getDoctorQueue, claimVisit } from "../services/doctor.service";
+import useAuthStore from "../../../store/useAuthStore";
 
 const DoctorQueue = () => {
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
   const [queue, setQueue] = useState([]);
   const [loading, setLoading] = useState(true);
   const [claimingId, setClaimingId] = useState(null);
@@ -31,6 +33,11 @@ const DoctorQueue = () => {
   }, []);
 
   const handleClaim = async (visitId) => {
+    if (!user?.doctor?.isAvailable) {
+      setError("Open consultations before claiming patients from the queue.");
+      return;
+    }
+
     setClaimingId(visitId);
     setError("");
     try {
@@ -67,6 +74,13 @@ const DoctorQueue = () => {
       {error && (
         <div className="p-3 bg-red-50 text-red-600 text-sm rounded-md border border-red-100">
           {error}
+        </div>
+      )}
+
+      {!user?.doctor?.isAvailable && (
+        <div className="p-3 bg-amber-50 text-amber-800 text-sm rounded-md border border-amber-100">
+          Consultations are currently paused. Waiting patients assigned earlier should be re-routed
+          back to the reception live queue for reassignment.
         </div>
       )}
 
@@ -111,6 +125,7 @@ const DoctorQueue = () => {
                       onClick={() => handleClaim(visit.id)}
                       isLoading={claimingId === visit.id}
                       className="gap-2"
+                      disabled={!user?.doctor?.isAvailable}
                     >
                       <ClipboardCheck size={14} />
                       Claim Visit

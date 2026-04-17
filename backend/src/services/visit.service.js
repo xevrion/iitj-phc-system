@@ -10,6 +10,10 @@ const VISIT_CACHE_TTL_MS = 5 * 1000;
 const VISIT_DETAIL_CACHE_TTL_MS = 15 * 1000;
 const VISIT_CACHE_PREFIX = "visit:";
 
+export const invalidateAllVisitCaches = () => {
+  cache.delPrefix(VISIT_CACHE_PREFIX);
+};
+
 const selectAutoAssignedDoctor = (doctors, attendanceRows, waitingRows, appointmentRows) => {
   const checkedInDoctorIds = new Set(attendanceRows.map((row) => row.doctorId));
 
@@ -109,7 +113,7 @@ export const resolveAssignedDoctorId = async (doctorId = null) => {
 };
 
 const invalidateVisitCaches = ({ visitId, patientId, doctorId } = {}) => {
-  cache.delPrefix(VISIT_CACHE_PREFIX);
+  invalidateAllVisitCaches();
 
   if (visitId) {
     cache.del(`${VISIT_CACHE_PREFIX}detail:${visitId}`);
@@ -122,6 +126,24 @@ const invalidateVisitCaches = ({ visitId, patientId, doctorId } = {}) => {
   if (doctorId) {
     cache.del(`${VISIT_CACHE_PREFIX}doctor-queue:${doctorId}`);
   }
+};
+
+export const releaseWaitingVisitsForDoctor = async (tx, doctorId) => {
+  const releasedVisits = await tx.visit.updateMany({
+    where: {
+      doctorId,
+      visitStatus: "WAITING",
+    },
+    data: {
+      doctorId: null,
+    },
+  });
+
+  if (releasedVisits.count > 0) {
+    invalidateAllVisitCaches();
+  }
+
+  return releasedVisits.count;
 };
 
 // REQ-17, REQ-28: reception creates a visit and generates a VisitID

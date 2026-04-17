@@ -2,6 +2,8 @@ import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 import { cache } from "../utils/cache.js";
 import { invalidateNotificationCache } from "./notification.service.js";
+import { invalidateDoctorProfileCacheForUser } from "./profile-cache.service.js";
+import { releaseWaitingVisitsForDoctor } from "./visit.service.js";
 
 const DOCTOR_LIST_CACHE_KEY = "doctor:list:available";
 const DOCTOR_PROFILE_CACHE_PREFIX = "doctor:profile:";
@@ -118,9 +120,15 @@ const setDoctorAvailabilityState = async (tx, doctor, isAvailable, notificationR
   let notificationSummary = {
     affectedAppointments: 0,
     notificationsCreated: 0,
+    releasedWaitingVisits: 0,
   };
 
   if (doctor.isAvailable !== isAvailable && !isAvailable) {
+    const releasedWaitingVisits = await releaseWaitingVisitsForDoctor(
+      tx,
+      doctor.id
+    );
+
     if (doctor.doctorType === "SPECIALIST") {
       notificationSummary = await createSpecialistUnavailableNotifications(tx, doctor);
     } else {
@@ -130,6 +138,11 @@ const setDoctorAvailabilityState = async (tx, doctor, isAvailable, notificationR
         notificationReason
       );
     }
+
+    notificationSummary = {
+      ...notificationSummary,
+      releasedWaitingVisits,
+    };
   }
 
   const updatedDoctor = await tx.doctor.update({
@@ -139,6 +152,7 @@ const setDoctorAvailabilityState = async (tx, doctor, isAvailable, notificationR
 
   cache.del(DOCTOR_LIST_CACHE_KEY);
   cache.del(`${DOCTOR_PROFILE_CACHE_PREFIX}${doctor.id}`);
+  invalidateDoctorProfileCacheForUser(doctor.userId);
 
   return { doctor: updatedDoctor, notificationSummary };
 };

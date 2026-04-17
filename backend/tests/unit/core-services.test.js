@@ -13,6 +13,7 @@ import { markNotificationRead } from "../../src/services/notification.service.js
 import { ApiError } from "../../src/utils/ApiError.js";
 
 const originals = new Map();
+const originalTransaction = prisma.$transaction;
 
 const mockMethod = (path, implementation) => {
   const [scope, method] = path.split(".");
@@ -34,6 +35,7 @@ const restoreMocks = () => {
 
 test.afterEach(() => {
   restoreMocks();
+  prisma.$transaction = originalTransaction;
 });
 
 test("bookAppointment rejects unavailable doctor when not emergency", async () => {
@@ -125,6 +127,34 @@ test("setAvailability requires an open attendance record before opening consulta
       error.statusCode === 400 &&
       error.message === "Check in first before opening consultations"
   );
+});
+
+test("setAvailability releases assigned waiting visits when pausing consultations", async () => {
+  mockMethod("doctor.findUnique", async () => ({
+    id: "doctor-1",
+    userId: "user-1",
+    name: "Dr. Sharma",
+    doctorType: "PHYSICIAN",
+    specialization: null,
+    isAvailable: true,
+  }));
+  mockMethod("doctorAttendance.findFirst", async () => ({
+    id: "attendance-1",
+    doctorId: "doctor-1",
+    checkOut: null,
+  }));
+  mockMethod("user.findMany", async () => []);
+  mockMethod("visit.updateMany", async () => ({ count: 2 }));
+  mockMethod("doctor.update", async ({ data }) => ({
+    id: "doctor-1",
+    isAvailable: data.isAvailable,
+  }));
+  prisma.$transaction = async (callback) => callback(prisma);
+
+  const result = await setAvailability("user-1", false);
+
+  assert.equal(result.doctor.isAvailable, false);
+  assert.equal(result.notificationSummary.releasedWaitingVisits, 2);
 });
 
 test("checkInDoctor rejects duplicate open attendance", async () => {

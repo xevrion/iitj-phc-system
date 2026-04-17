@@ -4,6 +4,18 @@ import { cache } from "../utils/cache.js";
 
 const PROFILE_CACHE_TTL_MS = 60 * 1000;
 
+export const invalidatePatientProfileCacheForUser = (userId) => {
+  cache.del(`profile:patient:${userId}`);
+};
+
+export const invalidateDoctorProfileCacheForUser = (userId) => {
+  cache.del(`profile:doctor:${userId}`);
+};
+
+export const invalidateLabStaffProfileCacheForUser = (userId) => {
+  cache.del(`profile:lab-staff:${userId}`);
+};
+
 const getCachedProfile = async (key, loader, missingMessage) => {
   const profile = await cache.getOrSet(key, PROFILE_CACHE_TTL_MS, loader);
 
