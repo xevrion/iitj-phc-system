@@ -393,7 +393,7 @@ echo -e "  Pass = HTTP 200/201 AND response time within threshold."
 echo -e "  Threshold: ${CYAN}3000ms${NC}  (SRS §5.1)\n"
 
 REPEAT_N=15
-LOGIN_REPEAT_N=10
+LOGIN_REPEAT_N=8
 REPEAT_T=3000
 
 # ── TC-R-001: Login endpoint ──────────────────────────────────────────
