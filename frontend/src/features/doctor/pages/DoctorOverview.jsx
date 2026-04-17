@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import useAuthStore from "../../../store/useAuthStore";
+import { formatDoctorName } from "../../../utils/doctorName";
 import {
   getDoctorQueue,
   getDoctorAppointments,
@@ -112,7 +113,7 @@ const DoctorOverview = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            Welcome, Dr. {user?.doctor?.name || user?.ldapId || "Doctor"}
+            Welcome, {formatDoctorName(user?.doctor?.name, user?.ldapId || "Doctor")}
           </h1>
           <p className="text-gray-500">Track queue, appointments, and your current duty status.</p>
           {lastUpdated && (

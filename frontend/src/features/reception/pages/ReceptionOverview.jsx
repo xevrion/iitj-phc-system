@@ -15,6 +15,7 @@ import OverviewCard from "../../patient/components/OverviewCard";
 import Button from "../../../components/ui/Button";
 import { getAvailableDoctors, getLiveQueue } from "../services/reception.service";
 import { cn } from "../../../utils/cn";
+import { formatDoctorName, getDoctorInitial } from "../../../utils/doctorName";
 
 const formatVisitStatus = (status) => status?.replace("_", " ") || "UNKNOWN";
 
@@ -196,10 +197,10 @@ const ReceptionOverview = () => {
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-bold">
-                      {doctor.name.charAt(0)}
+                      {getDoctorInitial(doctor.name)}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-gray-900">Dr. {doctor.name}</p>
+                      <p className="text-sm font-semibold text-gray-900">{formatDoctorName(doctor.name)}</p>
                       <p className="text-xs text-gray-500">
                         {doctor.specialization || doctor.doctorType}
                       </p>

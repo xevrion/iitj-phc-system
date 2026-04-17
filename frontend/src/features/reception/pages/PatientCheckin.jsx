@@ -14,6 +14,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import { cn } from "../../../utils/cn";
+import { formatDoctorName } from "../../../utils/doctorName";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import { identifyPatientByQR, getPatientById, getAvailableDoctors, createVisit } from "../services/reception.service";
@@ -288,7 +289,7 @@ const PatientCheckin = () => {
                       <option value="">Auto-assign or next available...</option>
                       {doctors.map(doc => (
                         <option key={doc.id} value={doc.id}>
-                          Dr. {doc.name} ({doc.specialization || doc.doctorType})
+                          {formatDoctorName(doc.name)} ({doc.specialization || doc.doctorType})
                         </option>
                       ))}
                     </select>

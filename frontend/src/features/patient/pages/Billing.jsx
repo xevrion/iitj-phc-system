@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Receipt, CreditCard, Calendar, Clock, Loader2, CheckCircle2, Download, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "../../../utils/cn";
+import { formatDoctorName } from "../../../utils/doctorName";
 import Button from "../../../components/ui/Button";
 import { getMyBills } from "../services/patient.service";
 
@@ -99,7 +100,9 @@ const Billing = () => {
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
                           <p className="text-sm text-gray-900 font-medium">{bill.visit?.visitType || "OPD Visit"}</p>
-                          <p className="text-xs text-gray-500">Dr. {bill.visit?.doctor?.name || "PHC Physician"}</p>
+                          <p className="text-xs text-gray-500">
+                            {formatDoctorName(bill.visit?.doctor?.name, "PHC Physician")}
+                          </p>
                         </div>
                       </td>
                       <td className="px-6 py-4">

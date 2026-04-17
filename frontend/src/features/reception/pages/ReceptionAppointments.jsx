@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { XCircle, AlertCircle, Loader2 } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import { cn } from "../../../utils/cn";
+import { formatDoctorName } from "../../../utils/doctorName";
 import { getAvailableDoctors, cancelAppointment, bookAppointmentStaff, getAllAppointments } from "../services/reception.service";
 
 const STATUS_COLORS = {
@@ -47,14 +48,6 @@ const sortHistoricalAppointments = (appointments) =>
 
     return (left.patient?.name || "").localeCompare(right.patient?.name || "");
   });
-
-const formatDoctorName = (name) => {
-  if (!name) {
-    return "—";
-  }
-
-  return name.startsWith("Dr. ") ? name : `Dr. ${name}`;
-};
 
 const ReceptionAppointments = () => {
   const [appointments, setAppointments] = useState([]);
@@ -201,7 +194,7 @@ const ReceptionAppointments = () => {
               >
                 <option value="">Select doctor...</option>
                 {doctors.map(d => (
-                  <option key={d.id} value={d.id}>Dr. {d.name} ({d.doctorType})</option>
+                  <option key={d.id} value={d.id}>{formatDoctorName(d.name)} ({d.doctorType})</option>
                 ))}
               </select>
             </div>

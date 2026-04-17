@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FlaskConical, Clock, CheckCircle2, Loader2, AlertCircle, Upload, X } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import { cn } from "../../../utils/cn";
+import { formatDoctorName } from "../../../utils/doctorName";
 import { getPendingLabRequests, uploadLabReport } from "../services/lab.service";
 
 const LabOverview = () => {
@@ -137,7 +138,7 @@ const LabOverview = () => {
             <div className="bg-gray-50 rounded-lg p-4 space-y-1">
               <p className="text-sm font-bold text-gray-700">{reportModal.testName}</p>
               <p className="text-xs text-gray-500">
-                Requested by Dr. {reportModal.doctor?.name || "—"}
+                Requested by {formatDoctorName(reportModal.doctor?.name, "—")}
               </p>
             </div>
             <form onSubmit={handleUpload} className="space-y-4">

@@ -6,6 +6,7 @@ import {
   X
 } from "lucide-react";
 import { cn } from "../../utils/cn";
+import { getDoctorInitial, stripDoctorPrefix } from "../../utils/doctorName";
 import useAuthStore from "../../store/useAuthStore";
 import NotificationCenter from "../ui/NotificationCenter";
 
@@ -123,11 +124,15 @@ const DashboardLayout = ({ children, role, navItems }) => {
                   {role.replace("_", " ")}
                 </div>
                 <div className="text-sm font-bold text-gray-900">
-                  {user?.patient?.name?.split(" ")[0] || user?.doctor?.name?.split(" ").pop() || user?.ldapId || "User"}
+                  {user?.patient?.name?.split(" ")[0] ||
+                    stripDoctorPrefix(user?.doctor?.name || "").split(" ").pop() ||
+                    user?.ldapId ||
+                    "User"}
                 </div>
               </div>
               <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold border-2 border-white shadow-sm">
-                {(user?.patient?.name || user?.doctor?.name?.replace("Dr. ", "") || user?.ldapId || "U").charAt(0).toUpperCase()}
+                {(user?.patient?.name?.charAt(0)?.toUpperCase()) ||
+                  getDoctorInitial(user?.doctor?.name, user?.ldapId || "U")}
               </div>
             </div>
           </div>

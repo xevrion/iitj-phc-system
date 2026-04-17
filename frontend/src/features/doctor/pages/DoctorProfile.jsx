@@ -13,6 +13,7 @@ import {
   CircleX
 } from "lucide-react";
 import { cn } from "../../../utils/cn";
+import { getDoctorInitial } from "../../../utils/doctorName";
 import Button from "../../../components/ui/Button";
 import useAuthStore from "../../../store/useAuthStore";
 import { getDoctorAttendance, updateMyAvailability } from "../services/doctor.service";
@@ -99,7 +100,7 @@ const DoctorProfile = () => {
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm text-center">
             <div className="w-24 h-24 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl font-bold border-4 border-white shadow-sm">
-              {user?.doctor?.name?.replace("Dr. ", "").charAt(0)}
+              {getDoctorInitial(user?.doctor?.name)}
             </div>
             <h2 className="text-xl font-bold text-gray-900">{user?.doctor?.name}</h2>
             <p className="text-xs text-blue-600 font-bold uppercase tracking-widest mt-1 bg-blue-50 px-3 py-1 rounded-full inline-block">
