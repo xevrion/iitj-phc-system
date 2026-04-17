@@ -162,13 +162,20 @@ export const setAvailability = async (userId, isAvailable) => {
   }
 
   const doctor = await getDoctorOrThrow({ userId });
+  const openRecord = await prisma.doctorAttendance.findFirst({
+    where: { doctorId: doctor.id, checkOut: null },
+  });
+
+  if (isAvailable && !openRecord) {
+    throw new ApiError(400, "Check in first before opening consultations");
+  }
 
   return prisma.$transaction(async (tx) => {
     return setDoctorAvailabilityState(tx, doctor, isAvailable);
   });
 };
 
-// REQ-35, REQ-36: specialist checks in — marks available, opens attendance record
+// REQ-35, REQ-36: specialist checks in — opens attendance record for the day
 export const checkInDoctor = async (userId) => {
   const doctor = await getDoctorOrThrow({ userId });
 
@@ -177,20 +184,12 @@ export const checkInDoctor = async (userId) => {
   });
   if (openRecord) throw new ApiError(400, "Already checked in");
 
-  const [attendance] = await prisma.$transaction([
-    prisma.doctorAttendance.create({
-      data: { doctorId: doctor.id, checkIn: new Date() },
-    }),
-    prisma.doctor.update({
-      where: { id: doctor.id },
-      data: { isAvailable: true },
-    }),
-  ]);
-
-  return attendance;
+  return prisma.doctorAttendance.create({
+    data: { doctorId: doctor.id, checkIn: new Date() },
+  });
 };
 
-// REQ-36, REQ-37, REQ-38: check out — marks unavailable, computes total hours
+// REQ-36, REQ-37, REQ-38: check out — ends attendance and marks unavailable
 export const checkOutDoctor = async (userId) => {
   const doctor = await getDoctorOrThrow({ userId });
 

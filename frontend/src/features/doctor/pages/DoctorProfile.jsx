@@ -16,7 +16,12 @@ import { cn } from "../../../utils/cn";
 import { getDoctorInitial } from "../../../utils/doctorName";
 import Button from "../../../components/ui/Button";
 import useAuthStore from "../../../store/useAuthStore";
-import { getDoctorAttendance, updateMyAvailability } from "../services/doctor.service";
+import {
+  getDoctorAttendance,
+  updateMyAvailability,
+  checkInDoctor,
+  checkOutDoctor,
+} from "../services/doctor.service";
 
 const DoctorProfile = () => {
   const { user, checkAuth } = useAuthStore();
@@ -24,20 +29,23 @@ const DoctorProfile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
+  const [isCheckedIn, setIsCheckedIn] = useState(false);
+
+  const fetchAttendance = async () => {
+    try {
+      const response = await getDoctorAttendance();
+      if (response.success) {
+        setAttendance(response.data);
+        setIsCheckedIn(response.data.some((record) => !record.checkOut));
+      }
+    } catch (err) {
+      console.error("Failed to load attendance", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchAttendance = async () => {
-      try {
-        const response = await getDoctorAttendance();
-        if (response.success) {
-          setAttendance(response.data);
-        }
-      } catch (err) {
-        console.error("Failed to load attendance", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchAttendance();
   }, [user]);
 
@@ -49,10 +57,54 @@ const DoctorProfile = () => {
       const res = await updateMyAvailability(nextValue);
       if (res.success) {
         await checkAuth();
+        await fetchAttendance();
         setMessage({ type: "success", text: `Status updated to ${nextValue ? "Available" : "Unavailable"}` });
       }
     } catch (err) {
-      setMessage({ type: "error", text: "Failed to update availability status." });
+      setMessage({
+        type: "error",
+        text: err.response?.data?.message || "Failed to update availability status.",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCheckIn = async () => {
+    setSaving(true);
+    setMessage({ type: "", text: "" });
+    try {
+      const res = await checkInDoctor();
+      if (res.success) {
+        await checkAuth();
+        await fetchAttendance();
+        setMessage({ type: "success", text: "Checked in for today. Open consultations when you are ready." });
+      }
+    } catch (err) {
+      setMessage({
+        type: "error",
+        text: err.response?.data?.message || "Failed to check in.",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCheckOut = async () => {
+    setSaving(true);
+    setMessage({ type: "", text: "" });
+    try {
+      const res = await checkOutDoctor();
+      if (res.success) {
+        await checkAuth();
+        await fetchAttendance();
+        setMessage({ type: "success", text: "Checked out for the day." });
+      }
+    } catch (err) {
+      setMessage({
+        type: "error",
+        text: err.response?.data?.message || "Failed to check out.",
+      });
     } finally {
       setSaving(false);
     }
@@ -72,17 +124,21 @@ const DoctorProfile = () => {
       <div className="flex justify-between items-end">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Doctor Profile</h1>
-          <p className="text-gray-500">Manage your duty status and view clinical activity.</p>
+          <p className="text-gray-500">Manage attendance, consultation readiness, and view clinical activity.</p>
         </div>
-        <Button 
-          variant={user?.doctor?.isAvailable ? "secondary" : "primary"}
-          onClick={handleToggleAvailability}
-          isLoading={saving}
-          className="gap-2"
-        >
-          {user?.doctor?.isAvailable ? <CircleX size={18} /> : <CircleCheck size={18} />}
-          {user?.doctor?.isAvailable ? "Go Offline" : "Set Available"}
-        </Button>
+        <div className="flex gap-3">
+          {isCheckedIn ? (
+            <Button variant="secondary" onClick={handleCheckOut} isLoading={saving} className="gap-2">
+              <CircleX size={18} />
+              Check Out
+            </Button>
+          ) : (
+            <Button variant="primary" onClick={handleCheckIn} isLoading={saving} className="gap-2">
+              <CircleCheck size={18} />
+              Check In
+            </Button>
+          )}
+        </div>
       </div>
 
       {message.text && (
@@ -122,15 +178,60 @@ const DoctorProfile = () => {
                   <Activity size={18} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Current Status</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Attendance</p>
                   <p className={cn(
                     "text-sm font-bold",
-                    user?.doctor?.isAvailable ? "text-emerald-600" : "text-amber-600"
+                    isCheckedIn ? "text-emerald-600" : "text-amber-600"
                   )}>
-                    {user?.doctor?.isAvailable ? "Online & Available" : "Offline / On Break"}
+                    {isCheckedIn ? "Checked In Today" : "Checked Out"}
                   </p>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="font-bold text-gray-900">Consultation Availability</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Use this when taking a break or when you are back and ready to take new patients.
+                </p>
+              </div>
+              <span
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide",
+                  !isCheckedIn
+                    ? "bg-slate-100 text-slate-700"
+                    : user?.doctor?.isAvailable
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-amber-100 text-amber-700"
+                )}
+              >
+                {!isCheckedIn
+                  ? "Off Duty"
+                  : user?.doctor?.isAvailable
+                    ? "Open For Consultations"
+                    : "Temporarily Paused"}
+              </span>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              <Button
+                variant={user?.doctor?.isAvailable ? "secondary" : "primary"}
+                onClick={handleToggleAvailability}
+                isLoading={saving}
+                disabled={!isCheckedIn}
+                className="w-full gap-2"
+              >
+                {user?.doctor?.isAvailable ? <CircleX size={18} /> : <CircleCheck size={18} />}
+                {user?.doctor?.isAvailable ? "Pause Consultations" : "Open Consultations"}
+              </Button>
+              {!isCheckedIn && (
+                <p className="text-xs text-gray-400">
+                  Check in first before marking yourself available for consultations.
+                </p>
+              )}
             </div>
           </div>
         </div>

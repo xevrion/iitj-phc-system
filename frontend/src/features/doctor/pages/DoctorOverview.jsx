@@ -10,12 +10,15 @@ import {
 } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import useAuthStore from "../../../store/useAuthStore";
+import { cn } from "../../../utils/cn";
 import { formatDoctorName } from "../../../utils/doctorName";
 import {
   getDoctorQueue,
   getDoctorAppointments,
+  getDoctorAttendance,
   checkInDoctor,
   checkOutDoctor,
+  updateMyAvailability,
 } from "../services/doctor.service";
 
 const DoctorOverview = () => {
@@ -26,18 +29,22 @@ const DoctorOverview = () => {
   const [appointments, setAppointments] = useState([]);
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [isCheckedIn, setIsCheckedIn] = useState(false);
 
   const fetchOverview = async () => {
     setLoading(true);
     setError("");
     try {
-      const [queueRes, appointmentsRes] = await Promise.all([
+      const [queueRes, appointmentsRes, attendanceRes] = await Promise.all([
         getDoctorQueue(),
         getDoctorAppointments(),
+        getDoctorAttendance(),
       ]);
 
       setQueue(queueRes.success ? queueRes.data : []);
       setAppointments(appointmentsRes.success ? appointmentsRes.data : []);
+      const attendance = attendanceRes.success ? attendanceRes.data : [];
+      setIsCheckedIn(attendance.some((record) => !record.checkOut));
       setLastUpdated(new Date());
     } catch {
       setError("Unable to load doctor dashboard data right now.");
@@ -99,6 +106,24 @@ const DoctorOverview = () => {
     }
   };
 
+  const handleAvailabilityToggle = async () => {
+    const nextValue = !user?.doctor?.isAvailable;
+    setSaving(true);
+    setError("");
+    try {
+      await updateMyAvailability(nextValue);
+      await checkAuth();
+      await fetchOverview();
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          "Failed to update consultation availability."
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
@@ -124,7 +149,7 @@ const DoctorOverview = () => {
           <Button variant="outline" onClick={fetchOverview} isLoading={loading || saving}>
             Refresh Data
           </Button>
-          {user?.doctor?.isAvailable ? (
+          {isCheckedIn ? (
             <Button variant="secondary" onClick={handleCheckOut} isLoading={saving}>
               Check Out
             </Button>
@@ -144,14 +169,14 @@ const DoctorOverview = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Availability</p>
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Attendance</p>
           <p className="text-lg font-bold text-gray-900 flex items-center gap-2">
-            {user?.doctor?.isAvailable ? (
+            {isCheckedIn ? (
               <CircleCheck className="w-5 h-5 text-emerald-600" />
             ) : (
               <CircleX className="w-5 h-5 text-red-600" />
             )}
-            {user?.doctor?.isAvailable ? "Available" : "Unavailable"}
+            {isCheckedIn ? "Checked In" : "Checked Out"}
           </p>
         </div>
 
@@ -168,6 +193,41 @@ const DoctorOverview = () => {
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
           <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Emergency Cases</p>
           <p className="text-3xl font-bold text-gray-900">{emergencyCount}</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-bold text-gray-900">Consultation Availability</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Attendance marks whether you are present today. Availability controls whether reception and patients can send new consultations to you right now.
+          </p>
+        </div>
+        <div className="flex flex-col sm:items-end gap-3">
+          <span
+            className={cn(
+              "px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide w-fit",
+              !isCheckedIn
+                ? "bg-slate-100 text-slate-700"
+                : user?.doctor?.isAvailable
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-amber-100 text-amber-700"
+            )}
+          >
+            {!isCheckedIn
+              ? "Off Duty"
+              : user?.doctor?.isAvailable
+                ? "Open For Consultations"
+                : "Temporarily Paused"}
+          </span>
+          <Button
+            variant={user?.doctor?.isAvailable ? "secondary" : "primary"}
+            onClick={handleAvailabilityToggle}
+            isLoading={saving}
+            disabled={!isCheckedIn}
+          >
+            {user?.doctor?.isAvailable ? "Pause Consultations" : "Open Consultations"}
+          </Button>
         </div>
       </div>
 
