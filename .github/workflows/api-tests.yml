@@ -1,0 +1,136 @@
+name: API Tests
+
+on:
+  push:
+    paths:
+      - ".github/workflows/api-tests.yml"
+      - "backend/**"
+      - "TESTING.md"
+      - "README.md"
+  pull_request:
+    paths:
+      - ".github/workflows/api-tests.yml"
+      - "backend/**"
+      - "TESTING.md"
+      - "README.md"
+  workflow_dispatch:
+
+jobs:
+  backend-core:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: iitj_phc
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d iitj_phc"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/iitj_phc?schema=public
+      JWT_SECRET: ci-test-secret
+      JWT_EXPIRY: 7d
+      NODE_ENV: test
+      CORS_ORIGIN: http://localhost:5173
+      ENFORCE_HTTPS: "false"
+      RATE_LIMIT_WINDOW_MS: 900000
+      RATE_LIMIT_MAX_REQUESTS: 300
+      AUTH_RATE_LIMIT_WINDOW_MS: 600000
+      AUTH_RATE_LIMIT_MAX_REQUESTS: 50
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+
+      - name: Seed database
+        run: npm run seed
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Run RBAC smoke tests
+        run: npm run test:rbac
+
+  upload-flow:
+    if: ${{ secrets.CLOUDINARY_CLOUD_NAME != '' && secrets.CLOUDINARY_API_KEY != '' && secrets.CLOUDINARY_API_SECRET != '' }}
+    runs-on: ubuntu-latest
+    needs: backend-core
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: iitj_phc
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d iitj_phc"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/iitj_phc?schema=public
+      JWT_SECRET: ci-test-secret
+      JWT_EXPIRY: 7d
+      NODE_ENV: test
+      CORS_ORIGIN: http://localhost:5173
+      ENFORCE_HTTPS: "false"
+      RATE_LIMIT_WINDOW_MS: 900000
+      RATE_LIMIT_MAX_REQUESTS: 300
+      AUTH_RATE_LIMIT_WINDOW_MS: 600000
+      AUTH_RATE_LIMIT_MAX_REQUESTS: 50
+      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+      CLOUDINARY_FOLDER: iitj-phc-system/ci
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+
+      - name: Seed database
+        run: npm run seed
+
+      - name: Run end-to-end flow
+        run: npm run test:e2e

@@ -1,10 +1,10 @@
 # PHC Backend API Documentation
 
-Route index and integration notes for the Sprint 5 backend.
+Current route index for the implementation checked on April 18, 2026.
 
 Base URL: `http://localhost:8000/api/v1`
 
-## Response envelope
+## Response Envelope
 
 Successful responses use:
 
@@ -23,17 +23,20 @@ Errors are normalized by the global error handler into the same shape.
 
 - `POST /auth/login`
   - Public
-  - Body: `{ "ldapId": "doctor01", "password": "doctor01pass" }`
-  - Returns JWT token plus current user role.
+  - Returns a JWT in `data.token`
 - `GET /auth/me`
   - Any authenticated user
-  - Returns the current user plus role-specific profile data when present.
+  - Returns the current user plus available profile data
 
-Authentication is performed through LDAP bind using the configured LDAP server. For local development, the repository provides a Docker Compose LDAP server seeded with the PHC test users.
+When `LDAP_URL` is unset, dev mode accepts any password for an existing `ldapId`.
 
-## Module route index
+## Route Index
 
-### Patient
+### Healthcheck
+
+- `GET /healthcheck`
+
+### Patients
 
 - `GET /patients/me`
 - `PUT /patients/me`
@@ -42,32 +45,25 @@ Authentication is performed through LDAP bind using the configured LDAP server. 
 - `GET /patients/:id`
 - `GET /patients/:id/visits`
 
-### Doctor
+### Doctors
 
 - `GET /doctors`
-- `GET /doctors/:id`
 - `PUT /doctors/me/availability`
 - `POST /doctors/me/checkin`
 - `POST /doctors/me/checkout`
 - `GET /doctors/me/appointments`
+- `GET /doctors/me/attendance`
 - `GET /doctors/attendance/records`
 - `POST /doctors/:id/absence`
-  - Reception staff or admin marks a physician unavailable using an absence form.
-  - Body: `{ "reason": "On approved leave" }`
+- `GET /doctors/:id`
 - `GET /doctors/:id/appointments`
 
-### Notifications
-
-- `GET /notifications/mine`
-  - Any authenticated user.
-  - Returns notifications created by specialist unavailability or physician absence broadcasts.
-- `PUT /notifications/:id/read`
-  - Marks one notification as read for the current user.
-
-### Visit lifecycle
+### Visits
 
 - `POST /visits`
 - `GET /visits/my-queue`
+- `GET /visits/live-queue`
+- `GET /visits/my-current`
 - `GET /visits/:id`
 - `POST /visits/:id/vitals`
 - `PUT /visits/:id/claim`
@@ -75,11 +71,12 @@ Authentication is performed through LDAP bind using the configured LDAP server. 
 - `PUT /visits/:id/complete`
 - `PUT /visits/:id/cancel`
 
-### Prescription
+### Prescriptions
 
 - `POST /visits/:visitId/prescription`
 - `GET /visits/:visitId/prescription`
 - `GET /prescriptions/pending`
+- `GET /prescriptions/history`
 - `PUT /prescriptions/:id/dispense`
 
 ### Laboratory
@@ -90,33 +87,52 @@ Authentication is performed through LDAP bind using the configured LDAP server. 
 - `GET /lab-requests/:id`
 - `POST /lab-requests/:id/report`
 
-### Medicine and billing
+`POST /lab-requests/:id/report` is a multipart upload route and requires a real file.
+
+### Medicines
 
 - `GET /medicines`
 - `GET /medicines/:id`
 - `POST /medicines`
 - `PUT /medicines/:id/stock`
+
+### Billing
+
 - `POST /visits/:visitId/bill`
 - `GET /visits/:visitId/bill`
+- `GET /bills/mine`
 - `GET /bills/unpaid`
-- `PUT /bills/:id/pay`
+- `PUT /bills/:billId/pay`
 
-### Appointment
+### Appointments
 
+- `GET /appointments`
 - `POST /appointments`
-- `POST /appointments/staff`
 - `GET /appointments/my`
 - `PUT /appointments/:id/cancel`
 - `GET /doctors/:id/appointments`
 - `GET /doctors/me/appointments`
 
-### Check-in and documents
+### Check-in
 
 - `POST /checkin`
+
+### Documents
+
 - `POST /patients/:id/documents`
 - `GET /patients/:id/documents`
+- `DELETE /patients/:id/documents/:docId`
 
-### Admin and events
+The document upload service accepts either:
+- multipart upload with a `file` field
+- JSON with `fileUrl`
+
+### Notifications
+
+- `GET /notifications/mine`
+- `PUT /notifications/:id/read`
+
+### Admin
 
 - `POST /admin/users`
 - `GET /admin/users`
@@ -124,32 +140,25 @@ Authentication is performed through LDAP bind using the configured LDAP server. 
 - `POST /admin/events`
 - `GET /admin/reports/usage`
 - `GET /admin/reports/attendance`
+
+### Public Events
+
 - `GET /events`
 
-## Integration commands
+## Verification Commands
 
 From `backend/`:
 
 ```bash
-npm run ldap:up
+npx prisma generate
+npx prisma migrate deploy
 npm run seed
+npm run test:unit
+npm run test:rbac
 npm run test:e2e
 bash smoke_test.sh
-npm run migrate:deploy
 ```
 
-## Full backend flow covered by `npm run test:e2e`
-
-The end-to-end script performs:
-
-1. role logins,
-2. doctor readiness and availability reset,
-3. patient QR lookup and check-in,
-4. doctor claim and consultation,
-5. prescription creation,
-6. lab request creation and report upload,
-7. bill generation and payment,
-8. final patient-visible lab verification,
-9. doctor checkout.
-
-This command is the most direct verification of Sprint 5 backend integration because it boots the app in-process and drives the HTTP API against the configured database.
+Notes:
+- `test:e2e` and `smoke_test.sh` require Cloudinary env vars because they exercise upload-backed routes
+- `test:load` expects a separately running backend server

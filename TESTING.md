@@ -1,53 +1,34 @@
-# PHC System — Setup, Testing, and Exploration Guide
+# PHC System Testing Guide
 
-This guide is for a new developer or evaluator who wants to run the IITJ PHC System from scratch, verify the backend, and explore the frontend dashboards role by role.
+Testing and setup reference for the current repository state on April 18, 2026.
 
-The system now includes:
-- backend API
-- React frontend
-- role-based dashboards
-- Cloudinary-backed medical vault uploads
-- Cloudinary-backed lab report uploads
-- Sprint 7 hardening and validation scripts
+This guide covers:
+- backend setup
+- optional LDAP and frontend setup
+- automated test commands
+- Bruno collection usage
+- upload-related prerequisites
 
----
+## 1. Prerequisites
 
-## 1. What You Need
-
-- Node.js `v20+`
+- Node.js `20+`
 - npm
-- Docker and Docker Compose
-- a PostgreSQL database
-  - Prisma Postgres works well and is what the repo documents
-- Cloudinary account
-  - required for patient vault uploads and lab report uploads
+- PostgreSQL
+- optional Docker and Docker Compose for local LDAP
+- optional Cloudinary credentials for upload-backed routes and tests
 
-Optional but useful:
-- Bruno for API exploration
-- Prisma Studio for database inspection
+Useful extras:
+- Bruno
+- Prisma Studio
 
----
-
-## 2. Repo Services and Ports
+## 2. Services and Ports
 
 - frontend: `http://localhost:5173`
 - backend API: `http://localhost:8000/api/v1`
 - backend healthcheck: `http://localhost:8000/api/v1/healthcheck`
-- LDAP dev service: started through Docker Compose
+- local LDAP container: `ldap://127.0.0.1:1389`
 
----
-
-## 3. First-Time Local Setup
-
-### 3.1 Start LDAP
-
-From the repo root:
-
-```bash
-docker compose up -d ldap
-```
-
-### 3.2 Backend Setup
+## 3. Backend Setup
 
 ```bash
 cd backend
@@ -55,49 +36,58 @@ npm install
 cp .env.example .env
 ```
 
-Fill `backend/.env` with at least:
+Minimum `.env` values:
 
 ```env
-DATABASE_URL=your_database_url
-JWT_SECRET=any-long-random-string
+DATABASE_URL=postgresql://...
+JWT_SECRET=change-this
 CORS_ORIGIN=http://localhost:5173
+```
 
+Optional LDAP values:
+
+```env
 LDAP_URL=ldap://127.0.0.1:1389
 LDAP_BASE_DN=dc=iitj,dc=ac,dc=in
 LDAP_USERS_OU=ou=users
+```
 
+Optional Cloudinary values for upload-backed routes:
+
+```env
 CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
 CLOUDINARY_FOLDER=iitj-phc-system/medical-documents
 ```
 
-Optional Sprint 7 hardening values:
-
-```env
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=300
-AUTH_RATE_LIMIT_WINDOW_MS=600000
-AUTH_RATE_LIMIT_MAX_REQUESTS=20
-ENFORCE_HTTPS=false
-```
-
-Run DB setup:
+Initialize the database:
 
 ```bash
-npx prisma migrate dev --name "initial-schema"
+cd backend
+npx prisma generate
+npx prisma migrate deploy
 npm run seed
 ```
 
-Start backend:
+Start the backend:
 
 ```bash
+cd backend
 npm run dev
 ```
 
-### 3.3 Frontend Setup
+## 4. Optional LDAP Setup
 
-In a separate terminal:
+If you want real LDAP-backed local login:
+
+```bash
+docker compose up -d ldap
+```
+
+If `LDAP_URL` is not set, the backend uses dev mode and accepts any password for an existing `ldapId`.
+
+## 5. Optional Frontend Setup
 
 ```bash
 cd frontend
@@ -105,124 +95,57 @@ npm install
 npm run dev
 ```
 
-Open:
+Frontend URL:
 
 ```text
 http://localhost:5173
 ```
 
----
+## 6. Seeded Users
 
-## 4. Seeded Login Accounts
+| ldapId | Role | Password in dev mode |
+|---|---|---|
+| `doctor01` | `DOCTOR` | any if `LDAP_URL` is unset |
+| `reception01` | `RECEPTION_STAFF` | any if `LDAP_URL` is unset |
+| `patient01` | `PATIENT` | any if `LDAP_URL` is unset |
+| `pharmacy01` | `PHARMACY_STAFF` | any if `LDAP_URL` is unset |
+| `lab01` | `LAB_STAFF` | any if `LDAP_URL` is unset |
+| `admin01` | `ADMIN` | any if `LDAP_URL` is unset |
 
-Use these on the frontend login page or against `/auth/login`.
+Seeded reference data:
+- patient name: `Rahul Verma`
+- patient QR code: `QR001`
+- medicines: `Paracetamol 500mg`, `Amoxicillin 250mg`
 
-| ldapId | Role | Password |
-|--------|------|----------|
-| `doctor01` | `DOCTOR` | `doctor01pass` |
-| `reception01` | `RECEPTION_STAFF` | `reception01pass` |
-| `patient01` | `PATIENT` | `patient01pass` |
-| `pharmacy01` | `PHARMACY_STAFF` | `pharmacy01pass` |
-| `lab01` | `LAB_STAFF` | `lab01pass` |
-| `admin01` | `ADMIN` | `admin01pass` |
-
-Seeded patient details:
-- patient: `Rahul Verma`
-- QR code: `QR001`
-
-Seeded medicines:
-- `Paracetamol 500mg`
-- `Amoxicillin 250mg`
-
----
-
-## 5. Frontend Routes by Role
-
-After login, users are redirected automatically based on role.
-
-### Patient
-
-- `/patient`
-- `/patient/appointments`
-- `/patient/appointments/book`
-- `/patient/visits`
-- `/patient/prescriptions`
-- `/patient/lab-reports`
-- `/patient/vault`
-- `/patient/billing`
-- `/patient/profile`
-
-### Doctor
-
-- `/doctor`
-- `/doctor/queue`
-- `/doctor/appointments`
-- `/doctor/profile`
-
-### Reception
-
-- `/reception-staff`
-- `/reception-staff/checkin`
-- `/reception-staff/patients`
-- `/reception-staff/appointments`
-
-### Lab
-
-- `/lab-staff`
-
-### Pharmacy
-
-- `/pharmacy-staff`
-- `/pharmacy-staff/inventory`
-
-### Admin
-
-- `/admin`
-- user/event/report screens are available through the admin dashboard routes
-
----
-
-## 6. Automated Validation Commands
+## 7. Automated Test Matrix
 
 Run these from `backend/`.
 
-### Full smoke suite
+### `npm run test:unit`
 
-```bash
-bash smoke_test.sh
-```
+- Runs the Node test runner against `backend/tests/unit/*.test.js`
+- Requires: database access for the services being exercised
+- Does not require a separately started server
 
-Or with a custom API base URL:
+### `npm run test:rbac`
 
-```bash
-bash smoke_test.sh http://localhost:8000/api/v1
-```
+- Boots the backend in-process
+- Verifies role boundaries against real HTTP routes
+- Requires: database access
+- Does not require Cloudinary
 
-### Full core integration flow
+### `npm run test:e2e`
 
-```bash
-npm run test:e2e
-```
+- Boots the backend in-process
+- Executes the main visit -> consultation -> prescription -> lab -> billing flow
+- Requires: database access
+- Requires: valid Cloudinary credentials because the flow uploads a lab report
 
-### RBAC smoke checks
+### `npm run test:load`
 
-```bash
-npm run test:rbac
-```
-
-### Core service unit-style tests
-
-```bash
-npm run test:unit
-```
-
-### Lightweight concurrent load check
-
-This expects a running backend server.
-
-```bash
-npm run test:load
-```
+- Hits a running backend server
+- Uses repeated requests against `/healthcheck`, `/auth/me`, and `/events`
+- Requires: backend already running at `LOAD_TEST_BASE_URL` or default `http://localhost:8000/api/v1`
 
 Optional overrides:
 
@@ -233,314 +156,175 @@ LOAD_TEST_ITERATIONS=5 \
 npm run test:load
 ```
 
-### Production migration path
+### `bash smoke_test.sh`
+
+- Full Bash smoke suite
+- Script header currently advertises 59 automated checks
+- Requires: running backend server
+- Requires: seeded DB
+- Requires: valid Cloudinary credentials because the suite uploads a lab report
+
+Default:
 
 ```bash
-npx prisma migrate deploy
+cd backend
+bash smoke_test.sh
 ```
 
-### Seed data
+Custom base URL:
 
 ```bash
-npm run seed
+cd backend
+bash smoke_test.sh http://localhost:8000/api/v1
 ```
 
----
+## 8. Recommended Verification Order
 
-## 7. Recommended “Does Everything Work?” Check
+For backend-only verification:
 
-Use this order:
+1. Configure `backend/.env`
+2. Run `npx prisma migrate deploy`
+3. Run `npm run seed`
+4. Run `npm run test:unit`
+5. Run `npm run test:rbac`
 
-1. Start LDAP
-2. Start backend
-3. Start frontend
-4. Log in to the frontend with each role once
-5. Run:
-   - `npm run test:unit`
-   - `npm run test:e2e`
-   - `npm run test:rbac`
-   - `npm run test:load`
-6. Manually verify the dashboard flows below
+For full verification including uploads:
 
----
+1. Configure Cloudinary env vars
+2. Start the backend
+3. Run `npm run test:e2e`
+4. Run `bash smoke_test.sh`
+5. Optionally run `npm run test:load`
 
-## 8. Manual Frontend Exploration by Role
+## 9. Bruno Collection
 
-### 8.1 Reception Flow
-
-Login as `reception01`.
-
-Check:
-- `/reception-staff` shows the live queue for today only
-- available doctors list loads
-- patient check-in works using QR `QR001`
-- new visit appears in the reception live queue
-- reception appointments page loads and sorts cleanly
-
-Expected behavior:
-- queue shows only current-day active visits
-- cancelled appointments sit separately / lower than active slots
-- reception can create appointments and cancel them
-
-### 8.2 Doctor Flow
-
-Login as `doctor01`.
-
-Check:
-- `/doctor` loads without `Dr. Dr. ...` duplication
-- attendance and availability are separate
-- `Check In / Check Out` controls daily attendance
-- `Open Consultations / Pause Consultations` controls active availability
-- `/doctor/queue` shows waiting patients
-- `/doctor/appointments` separates:
-  - upcoming booked slots
-  - cancelled slots
-  - past booked appointments
-
-Expected behavior:
-- doctor cannot open consultations before checking in
-- checking out ends attendance and marks doctor unavailable
-
-### 8.3 Patient Flow
-
-Login as `patient01`.
-
-Check:
-- `/patient` shows current PHC status if the patient is in queue
-- `/patient/appointments` shows booked appointments
-- `/patient/lab-reports` opens actual uploaded reports
-- `/patient/vault` uploads files to Cloudinary
-- deleting a vault document also deletes it from Cloudinary
-- `/patient/billing` shows generated bills
-
-Expected behavior:
-- current queue status comes from active visit, not booked appointment
-- lab reports should not show the old placeholder messaging
-
-### 8.4 Lab Flow
-
-Login as `lab01`.
-
-Check:
-- pending requests load
-- upload modal accepts `PDF`, `PNG`, `JPG`
-- upload sends a real file, not a pasted URL
-
-Expected behavior:
-- uploaded report is stored via Cloudinary-backed URL flow
-- patient can later open that report from `/patient/lab-reports`
-
-### 8.5 Pharmacy Flow
-
-Login as `pharmacy01`.
-
-Check:
-- pending prescriptions load
-- `Generate Bill` creates unpaid bill and deducts stock
-- `Mark Paid` settles the bill
-- `Dispense` is only available after payment
-- unpaid bills show useful context:
-  - patient
-  - visit
-  - medicines
-  - totals
-  - timestamps
-
-Expected behavior:
-- dispensing is not the same as bill generation
-- stock should reduce when the bill is generated
-
-### 8.6 Admin Flow
-
-Login as `admin01`.
-
-Check:
-- user management loads
-- reports load
-- events can be published
-
-Expected behavior:
-- admin can create/deactivate users
-- attendance summary and usage report endpoints respond
-
----
-
-## 9. API Exploration with Bruno
-
-Bruno collection path:
+Collection path:
 
 ```text
 backend/tests/iitj-phc-system/
 ```
 
-### Open it
+Open `backend/tests/iitj-phc-system/opencollection.yml` in Bruno.
 
-1. Install Bruno
-2. Open collection
-3. Select `backend/tests/iitj-phc-system/`
+### What the collection covers
 
-### Important note
+The collection includes requests for:
+- auth
+- patients
+- doctors
+- visits
+- prescriptions
+- lab
+- medicines
+- billing
+- appointments
+- check-in
+- documents
+- admin
+- events
+- notifications
 
-The stored bearer tokens in the collection are stale. Always log in first and replace the token manually.
+Recent collection additions in this update:
+- reception live queue
+- patient current visit
+- doctor attendance self-view
+- dispensed prescription history
+- patient bill list
+- staff appointment list
+- document delete
+
+### Token handling
+
+Many request files use literal placeholders such as `ADMIN_TOKEN`, `DOCTOR_TOKEN`, or `{{token}}`.
+Log in first and replace them with current values before replaying dependent requests.
 
 ### Common placeholders
 
-| Placeholder | Replace with |
-|-------------|--------------|
-| `PATIENT_PROFILE_ID` | patient `id` from `GET /patients/qr/QR001` |
-| `DOCTOR_PROFILE_ID` | doctor `id` from `GET /auth/me` as doctor or `GET /doctors` |
-| `VISIT_ID` | created visit id |
-| `PRESCRIPTION_ID` | created prescription id |
-| `LAB_REQUEST_ID` | created lab request id |
-| `MEDICINE_ID` | medicine id from `GET /medicines` |
-| `BILL_ID` | generated bill id |
-| `APPOINTMENT_ID` | created appointment id |
-| `USER_ID` | admin-created user id |
-| `NOTIFICATION_ID` | notification id from `GET /notifications/mine` |
+| Placeholder | Meaning |
+|---|---|
+| `PATIENT_ID` | patient profile id |
+| `PATIENT_PROFILE_ID` | patient profile id |
+| `DOCTOR_ID` | doctor profile id |
+| `DOCTOR_PROFILE_ID` | doctor profile id |
+| `VISIT_ID` | visit id |
+| `PRESCRIPTION_ID` | prescription id |
+| `LAB_REQUEST_ID` | lab request id |
+| `MEDICINE_ID` | medicine id |
+| `BILL_ID` | bill id |
+| `APPOINTMENT_ID` | appointment id |
+| `USER_ID` | admin-managed user id |
+| `DOC_ID` | external document id |
+| `NOTIFICATION_ID` | notification id |
 
----
+### Upload routes in Bruno
 
-## 10. Cloudinary Notes
+The implemented upload endpoints are:
+- `POST /api/v1/lab-requests/:id/report`
+- `POST /api/v1/patients/:id/documents`
 
-Cloudinary is used for:
-- patient vault uploads
-- lab report uploads
+The document service supports either:
+- multipart upload with a `file` field
+- JSON body with `fileUrl`
 
-If uploads succeed but opening PDFs returns `401`, check the Cloudinary product environment setting that allows PDF delivery.
+The lab report upload requires a real multipart file upload.
 
-If you change Cloudinary env vars:
-1. update `backend/.env`
-2. restart backend
+## 10. CI Workflow
 
----
+The repo now includes `.github/workflows/api-tests.yml`.
 
-## 11. Useful Developer Commands
+Current behavior:
+- always runs `test:unit` and `test:rbac` against a PostgreSQL service
+- runs `test:e2e` only when Cloudinary secrets are available
 
-From `backend/`:
+That split is intentional because the upload-backed flow will fail without Cloudinary configuration.
 
-```bash
-npx prisma studio
-```
-
-```bash
-npx prisma generate
-```
-
-```bash
-npx prisma migrate dev --name "<change-name>"
-```
-
-```bash
-npx prisma migrate deploy
-```
-
-From `frontend/`:
-
-```bash
-npm run build
-```
-
----
-
-## 12. Common Problems
+## 11. Troubleshooting
 
 ### Backend not reachable
 
-Symptom:
-- frontend shows `Failed to load ...`
-- console shows `ERR_CONNECTION_REFUSED`
-
-Fix:
-- start backend with `npm run dev`
-
-### Login fails for valid seeded users
-
-Check:
-- LDAP container is running
-- seed has been executed
-
-Commands:
-
-```bash
-docker compose up -d ldap
-cd backend
-npm run seed
-```
-
-### Cloudinary upload works but PDF view fails
-
-Likely cause:
-- Cloudinary PDF delivery restriction/settings
-
-Fix:
-- enable PDF delivery in the Cloudinary console
-
-### Doctor cannot open consultations
-
-Expected if:
-- doctor is not checked in
-
-Correct flow:
-1. check in
-2. open consultations
-
-### Sidebar moves with long page content
-
-This was fixed. The dashboard sidebar should now stay pinned while the right pane scrolls.
-
----
-
-## 13. Reset / Cleanup Notes
-
-Usually you do not need a full reset.
-
-### To reseed safely
+Start it:
 
 ```bash
 cd backend
-npm run seed
+npm run dev
 ```
 
-### To apply new migrations without wiping data
+### Login fails unexpectedly
+
+Check one of these:
+- the user exists and `npm run seed` has been run
+- `LDAP_URL` is unset for dev-mode auth
+- or the local LDAP container is up and reachable
+
+### Upload routes fail with Cloudinary errors
+
+The upload helpers throw a `500` if these env vars are missing:
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
+
+### Doctor remains checked in between tests
+
+Reset with:
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer <DOCTOR_TOKEN>" \
+  http://localhost:8000/api/v1/doctors/me/checkout
+```
+
+### Need a clean local DB
+
+Apply migrations normally:
 
 ```bash
 cd backend
-npx prisma migrate dev
+npx prisma migrate deploy
 ```
 
-### Nuclear reset
-
-Only do this if you truly want to wipe all local DB data:
+Destructive local reset only if you explicitly want to wipe data:
 
 ```bash
 cd backend
 npx prisma migrate reset
 ```
-
-### Doctor stuck as checked in
-
-If a previous run left `doctor01` checked in:
-
-```bash
-POST /api/v1/doctors/me/checkout
-```
-
-You can do this from Bruno or by logging in as the doctor and using the UI.
-
----
-
-## 14. Suggested Demo Order
-
-For a clean project walkthrough:
-
-1. Reception creates a visit for `QR001`
-2. Doctor checks in and opens consultations
-3. Doctor claims visit, writes notes, prescription, lab request
-4. Pharmacy generates bill and marks it paid
-5. Lab uploads report
-6. Patient checks queue status, appointments, billing, vault, lab reports
-7. Admin shows user management and reports
-
-Also see:
-- [DEPLOYMENT_PLAN.md](DEPLOYMENT_PLAN.md)
-- [DEMO_CHECKLIST.md](DEMO_CHECKLIST.md)
