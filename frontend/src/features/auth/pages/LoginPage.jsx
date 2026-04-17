@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Lock, User } from "lucide-react";
+import { Eye, EyeOff, Lock, User } from "lucide-react";
 import { useNavigate } from "react-router";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
@@ -8,10 +8,10 @@ import useAuthStore from "../../../store/useAuthStore";
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const setAuth = useAuthStore((state) => state.setAuth);
   
   const [ldapId, setLdapId] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -76,14 +76,26 @@ const LoginPage = () => {
             <div className="relative">
               <Input
                 label="Password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="pl-10"
+                className="pl-10 pr-11"
               />
               <Lock className="absolute left-3 top-9 w-4 h-4 text-gray-400" />
+              <button
+                type="button"
+                onClick={() => setShowPassword((current) => !current)}
+                className="absolute right-3 top-8.5 text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+              </button>
             </div>
 
             {error && (
