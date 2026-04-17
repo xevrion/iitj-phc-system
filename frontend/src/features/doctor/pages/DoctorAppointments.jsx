@@ -26,15 +26,36 @@ const DoctorAppointments = () => {
     fetchAppointments();
   }, []);
 
-  const { upcoming, past } = useMemo(() => {
+  const { upcomingBooked, cancelled, history } = useMemo(() => {
     const now = Date.now();
     const sorted = [...appointments].sort(
       (a, b) => new Date(a.appointmentTime).getTime() - new Date(b.appointmentTime).getTime()
     );
 
     return {
-      upcoming: sorted.filter((item) => new Date(item.appointmentTime).getTime() >= now),
-      past: sorted.filter((item) => new Date(item.appointmentTime).getTime() < now),
+      upcomingBooked: sorted.filter(
+        (item) =>
+          item.status !== "CANCELLED" &&
+          new Date(item.appointmentTime).getTime() >= now
+      ),
+      cancelled: sorted
+        .filter((item) => item.status === "CANCELLED")
+        .sort(
+          (a, b) =>
+            new Date(b.appointmentTime).getTime() -
+            new Date(a.appointmentTime).getTime()
+        ),
+      history: sorted
+        .filter(
+          (item) =>
+            item.status !== "CANCELLED" &&
+            new Date(item.appointmentTime).getTime() < now
+        )
+        .sort(
+          (a, b) =>
+            new Date(b.appointmentTime).getTime() -
+            new Date(a.appointmentTime).getTime()
+        ),
     };
   }, [appointments]);
 
@@ -47,7 +68,7 @@ const DoctorAppointments = () => {
     );
   }
 
-  const renderCards = (list) => (
+  const renderCards = (list, emptyMessage) => (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
       {list.map((item) => (
         <div key={item.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
@@ -90,7 +111,7 @@ const DoctorAppointments = () => {
       ))}
       {list.length === 0 && (
         <div className="xl:col-span-2 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-center py-10 text-gray-500">
-          No records in this section.
+          {emptyMessage}
         </div>
       )}
     </div>
@@ -101,7 +122,9 @@ const DoctorAppointments = () => {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">My Appointments</h1>
-          <p className="text-gray-500">View upcoming and historical appointment slots.</p>
+          <p className="text-gray-500">
+            View active booked slots separately from cancelled and historical records.
+          </p>
         </div>
         <Button variant="outline" onClick={fetchAppointments}>
           Refresh
@@ -115,13 +138,33 @@ const DoctorAppointments = () => {
       )}
 
       <section className="space-y-4">
-        <h2 className="text-lg font-bold text-gray-900">Upcoming</h2>
-        {renderCards(upcoming)}
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-bold text-gray-900">Upcoming Booked Slots</h2>
+          <span className="px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold uppercase tracking-wide">
+            {upcomingBooked.length}
+          </span>
+        </div>
+        {renderCards(upcomingBooked, "No upcoming booked appointment slots.")}
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-lg font-bold text-gray-900">Past</h2>
-        {renderCards(past)}
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-bold text-gray-900">Cancelled Slots</h2>
+          <span className="px-2.5 py-1 rounded-full bg-red-50 text-red-700 text-xs font-bold uppercase tracking-wide">
+            {cancelled.length}
+          </span>
+        </div>
+        {renderCards(cancelled, "No cancelled appointment slots.")}
+      </section>
+
+      <section className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-bold text-gray-900">Past Visits From Appointments</h2>
+          <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold uppercase tracking-wide">
+            {history.length}
+          </span>
+        </div>
+        {renderCards(history, "No past booked appointment records.")}
       </section>
     </div>
   );
