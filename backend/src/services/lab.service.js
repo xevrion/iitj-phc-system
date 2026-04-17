@@ -1,10 +1,26 @@
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 import { deleteFromCloudinary, uploadBufferToCloudinary } from "../utils/cloudinary.js";
+import { cache } from "../utils/cache.js";
 import {
   getDoctorProfileForUser,
   getLabStaffProfileForUser,
 } from "./profile-cache.service.js";
+
+const LAB_CACHE_PREFIX = "lab-request:";
+const LAB_CACHE_TTL_MS = 15 * 1000;
+
+const invalidateLabCaches = (labRequestId = null, visitId = null) => {
+  cache.delPrefix(LAB_CACHE_PREFIX);
+
+  if (labRequestId) {
+    cache.del(`${LAB_CACHE_PREFIX}id:${labRequestId}`);
+  }
+
+  if (visitId) {
+    cache.del(`${LAB_CACHE_PREFIX}visit:${visitId}`);
+  }
+};
 
 // REQ-26: doctor requests a lab test during consultation
 export const createLabRequest = async (visitId, doctorUserId, { testName }) => {
@@ -17,9 +33,12 @@ export const createLabRequest = async (visitId, doctorUserId, { testName }) => {
 
   if (!testName?.trim()) throw new ApiError(400, "Test name is required");
 
-  return prisma.labRequest.create({
+  const labRequest = await prisma.labRequest.create({
     data: { visitId, doctorId: doctor.id, testName: testName.trim() },
   });
+
+  invalidateLabCaches(labRequest.id, visitId);
+  return labRequest;
 };
 
 // REQ-55: link lab reports to patient visit
@@ -43,51 +62,55 @@ export const getLabRequestsByVisit = async (visitId, requester) => {
     throw new ApiError(403, "Access denied");
   }
 
-  return prisma.labRequest.findMany({
-    where: { visitId },
-    include: { report: true },
-    orderBy: { id: "asc" },
-  });
+  return cache.getOrSet(`${LAB_CACHE_PREFIX}visit:${visitId}`, LAB_CACHE_TTL_MS, () =>
+    prisma.labRequest.findMany({
+      where: { visitId },
+      include: { report: true },
+      orderBy: { id: "asc" },
+    })
+  );
 };
 
 export const getLabRequestById = async (labRequestId, requester) => {
-  const request = await prisma.labRequest.findUnique({
-    where: { id: labRequestId },
-    include: {
-      doctor: {
-        select: {
-          id: true,
-          name: true,
-          specialization: true,
-          userId: true,
+  const request = await cache.getOrSet(`${LAB_CACHE_PREFIX}id:${labRequestId}`, LAB_CACHE_TTL_MS, () =>
+    prisma.labRequest.findUnique({
+      where: { id: labRequestId },
+      include: {
+        doctor: {
+          select: {
+            id: true,
+            name: true,
+            specialization: true,
+            userId: true,
+          },
         },
-      },
-      visit: {
-        select: {
-          id: true,
-          visitType: true,
-          visitStatus: true,
-          patient: {
-            select: {
-              id: true,
-              name: true,
-              userId: true,
+        visit: {
+          select: {
+            id: true,
+            visitType: true,
+            visitStatus: true,
+            patient: {
+              select: {
+                id: true,
+                name: true,
+                userId: true,
+              },
+            },
+          },
+        },
+        report: {
+          include: {
+            uploadedByStaff: {
+              select: {
+                id: true,
+                userId: true,
+              },
             },
           },
         },
       },
-      report: {
-        include: {
-          uploadedByStaff: {
-            select: {
-              id: true,
-              userId: true,
-            },
-          },
-        },
-      },
-    },
-  });
+    })
+  );
 
   if (!request) {
     throw new ApiError(404, "Lab request not found");
@@ -131,20 +154,22 @@ export const getLabRequestById = async (labRequestId, requester) => {
 
 // REQ-54: lab staff views all pending (REQUESTED) test orders
 export const getPendingLabRequests = async () => {
-  return prisma.labRequest.findMany({
-    where: { status: "REQUESTED" },
-    include: {
-      visit: {
-        select: {
-          id: true,
-          visitType: true,
-          patient: { select: { id: true, name: true } },
+  return cache.getOrSet(`${LAB_CACHE_PREFIX}pending`, LAB_CACHE_TTL_MS, () =>
+    prisma.labRequest.findMany({
+      where: { status: "REQUESTED" },
+      include: {
+        visit: {
+          select: {
+            id: true,
+            visitType: true,
+            patient: { select: { id: true, name: true } },
+          },
         },
+        doctor: { select: { name: true } },
       },
-      doctor: { select: { name: true } },
-    },
-    orderBy: { id: "asc" },
-  });
+      orderBy: { id: "asc" },
+    })
+  );
 };
 
 // REQ-54, REQ-55: lab staff uploads report; audit trail via uploadedByLabStaffId
@@ -188,6 +213,7 @@ export const uploadLabReport = async (labRequestId, labStaffUserId, file = null)
       }),
     ]);
 
+    invalidateLabCaches(labRequestId, request.visitId);
     return report;
   } catch (error) {
     if (uploadResult?.public_id) {

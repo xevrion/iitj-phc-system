@@ -1,6 +1,22 @@
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
+import { cache } from "../utils/cache.js";
 import { getDoctorProfileForUser } from "./profile-cache.service.js";
+
+const PRESCRIPTION_CACHE_PREFIX = "prescription:";
+const PRESCRIPTION_CACHE_TTL_MS = 15 * 1000;
+
+const invalidatePrescriptionCaches = (visitId = null, prescriptionId = null) => {
+  cache.delPrefix(PRESCRIPTION_CACHE_PREFIX);
+
+  if (visitId) {
+    cache.del(`${PRESCRIPTION_CACHE_PREFIX}visit:${visitId}`);
+  }
+
+  if (prescriptionId) {
+    cache.del(`${PRESCRIPTION_CACHE_PREFIX}id:${prescriptionId}`);
+  }
+};
 
 // REQ-44, REQ-48: doctor creates prescription; rejects if incomplete
 export const createPrescription = async (visitId, doctorUserId, { notes, items }) => {
@@ -26,7 +42,7 @@ export const createPrescription = async (visitId, doctorUserId, { notes, items }
   if (medicines.length !== medicineIds.length)
     throw new ApiError(404, "One or more medicines not found in inventory");
 
-  return prisma.prescription.create({
+  const prescription = await prisma.prescription.create({
     data: {
       visitId,
       doctorId: doctor.id,
@@ -41,45 +57,55 @@ export const createPrescription = async (visitId, doctorUserId, { notes, items }
     },
     include: { items: { include: { medicine: true } } },
   });
+
+  invalidatePrescriptionCaches(visitId, prescription.id);
+  return prescription;
 };
 
 // REQ-45, REQ-46: pharmacy and patient can access prescription
 export const getPrescriptionByVisit = async (visitId) => {
-  const prescription = await prisma.prescription.findUnique({
-    where: { visitId },
-    include: {
-      items: { include: { medicine: true } },
-      doctor: { select: { name: true, specialization: true } },
-    },
-  });
+  const prescription = await cache.getOrSet(
+    `${PRESCRIPTION_CACHE_PREFIX}visit:${visitId}`,
+    PRESCRIPTION_CACHE_TTL_MS,
+    () =>
+      prisma.prescription.findUnique({
+        where: { visitId },
+        include: {
+          items: { include: { medicine: true } },
+          doctor: { select: { name: true, specialization: true } },
+        },
+      })
+  );
   if (!prescription) throw new ApiError(404, "Prescription not found");
   return prescription;
 };
 
 // Pharmacy views undispensed prescriptions queue
 export const getPendingPrescriptions = async () => {
-  return prisma.prescription.findMany({
-    where: { isDispensed: false },
-    include: {
-      items: { include: { medicine: true } },
-      visit: {
-        select: {
-          id: true,
-          visitType: true,
-          createdAt: true,
-          patient: { select: { id: true, name: true } },
-          bill: {
-            select: {
-              id: true,
-              totalAmount: true,
-              paymentStatus: true,
-              createdAt: true,
-              items: {
-                include: {
-                  medicine: {
-                    select: {
-                      id: true,
-                      name: true,
+  return cache.getOrSet(`${PRESCRIPTION_CACHE_PREFIX}pending`, PRESCRIPTION_CACHE_TTL_MS, () =>
+    prisma.prescription.findMany({
+      where: { isDispensed: false },
+      include: {
+        items: { include: { medicine: true } },
+        visit: {
+          select: {
+            id: true,
+            visitType: true,
+            createdAt: true,
+            patient: { select: { id: true, name: true } },
+            bill: {
+              select: {
+                id: true,
+                totalAmount: true,
+                paymentStatus: true,
+                createdAt: true,
+                items: {
+                  include: {
+                    medicine: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
                     },
                   },
                 },
@@ -87,38 +113,40 @@ export const getPendingPrescriptions = async () => {
             },
           },
         },
+        doctor: { select: { name: true } },
       },
-      doctor: { select: { name: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      orderBy: { createdAt: "desc" },
+    })
+  );
 };
 
 export const getDispensedPrescriptions = async () => {
-  return prisma.prescription.findMany({
-    where: { isDispensed: true },
-    include: {
-      items: { include: { medicine: true } },
-      visit: {
-        select: {
-          id: true,
-          visitType: true,
-          createdAt: true,
-          patient: { select: { id: true, name: true } },
-          bill: {
-            select: {
-              id: true,
-              totalAmount: true,
-              paymentStatus: true,
-              createdAt: true,
+  return cache.getOrSet(`${PRESCRIPTION_CACHE_PREFIX}dispensed`, PRESCRIPTION_CACHE_TTL_MS, () =>
+    prisma.prescription.findMany({
+      where: { isDispensed: true },
+      include: {
+        items: { include: { medicine: true } },
+        visit: {
+          select: {
+            id: true,
+            visitType: true,
+            createdAt: true,
+            patient: { select: { id: true, name: true } },
+            bill: {
+              select: {
+                id: true,
+                totalAmount: true,
+                paymentStatus: true,
+                createdAt: true,
+              },
             },
           },
         },
+        doctor: { select: { name: true } },
       },
-      doctor: { select: { name: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      orderBy: { createdAt: "desc" },
+    })
+  );
 };
 
 // REQ-46: pharmacy staff marks prescription as dispensed after handing out medicines
@@ -142,8 +170,11 @@ export const dispensePrescription = async (prescriptionId) => {
     throw new ApiError(400, "Collect payment before dispensing medicines");
   }
 
-  return prisma.prescription.update({
+  const updatedPrescription = await prisma.prescription.update({
     where: { id: prescriptionId },
     data: { isDispensed: true },
   });
+
+  invalidatePrescriptionCaches(prescription.visitId, prescriptionId);
+  return updatedPrescription;
 };

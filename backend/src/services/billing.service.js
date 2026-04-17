@@ -1,6 +1,26 @@
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
+import { cache } from "../utils/cache.js";
 import { getPatientProfileForUser } from "./profile-cache.service.js";
+
+const BILL_CACHE_PREFIX = "bill:";
+const BILL_CACHE_TTL_MS = 15 * 1000;
+
+const invalidateBillCaches = (visitId = null, billId = null, patientId = null) => {
+  cache.delPrefix(BILL_CACHE_PREFIX);
+
+  if (visitId) {
+    cache.del(`${BILL_CACHE_PREFIX}visit:${visitId}`);
+  }
+
+  if (billId) {
+    cache.del(`${BILL_CACHE_PREFIX}id:${billId}`);
+  }
+
+  if (patientId) {
+    cache.del(`${BILL_CACHE_PREFIX}patient:${patientId}`);
+  }
+};
 
 // REQ-49: pharmacy generates bill; atomically deducts stock
 export const generateBill = async (visitId, { items }) => {
@@ -65,27 +85,33 @@ export const generateBill = async (visitId, { items }) => {
     ),
   ]);
 
+  invalidateBillCaches(visitId, bill.id, visit.patientId);
   return bill;
 };
 
 export const getBillByVisit = async (visitId) => {
-  const bill = await prisma.bill.findUnique({
-    where: { visitId },
-    include: {
-      items: {
+  const bill = await cache.getOrSet(
+    `${BILL_CACHE_PREFIX}visit:${visitId}`,
+    BILL_CACHE_TTL_MS,
+    () =>
+      prisma.bill.findUnique({
+        where: { visitId },
         include: {
-          medicine: { select: { id: true, name: true, unitPrice: true } },
+          items: {
+            include: {
+              medicine: { select: { id: true, name: true, unitPrice: true } },
+            },
+          },
+          visit: {
+            select: {
+              id: true,
+              visitType: true,
+              patient: { select: { id: true, name: true } },
+            },
+          },
         },
-      },
-      visit: {
-        select: {
-          id: true,
-          visitType: true,
-          patient: { select: { id: true, name: true } },
-        },
-      },
-    },
-  });
+      })
+  );
   if (!bill) throw new ApiError(404, "Bill not found for this visit");
   return bill;
 };
@@ -95,57 +121,64 @@ export const markBillPaid = async (billId) => {
   if (!bill) throw new ApiError(404, "Bill not found");
   if (bill.paymentStatus === "PAID") throw new ApiError(400, "Bill is already paid");
 
-  return prisma.bill.update({
+  const updatedBill = await prisma.bill.update({
     where: { id: billId },
     data: { paymentStatus: "PAID" },
   });
+
+  invalidateBillCaches(bill.visitId, billId);
+  return updatedBill;
 };
 
 export const getMyBills = async (userId) => {
   const patient = await getPatientProfileForUser(userId);
 
-  return prisma.bill.findMany({
-    where: { visit: { patientId: patient.id } },
-    include: {
-      items: { include: { medicine: { select: { id: true, name: true, unitPrice: true } } } },
-      visit: {
-        select: {
-          id: true,
-          visitType: true,
-          createdAt: true,
-          doctor: { select: { name: true } },
-        },
-      },
-    },
-    orderBy: { createdAt: "desc" },
-  });
-};
-
-export const getUnpaidBills = async () => {
-  return prisma.bill.findMany({
-    where: { paymentStatus: "UNPAID" },
-    include: {
-      items: {
-        include: {
-          medicine: {
-            select: {
-              id: true,
-              name: true,
-              unitPrice: true,
-            },
+  return cache.getOrSet(`${BILL_CACHE_PREFIX}patient:${patient.id}`, BILL_CACHE_TTL_MS, () =>
+    prisma.bill.findMany({
+      where: { visit: { patientId: patient.id } },
+      include: {
+        items: { include: { medicine: { select: { id: true, name: true, unitPrice: true } } } },
+        visit: {
+          select: {
+            id: true,
+            visitType: true,
+            createdAt: true,
+            doctor: { select: { name: true } },
           },
         },
       },
-      visit: {
-        select: {
-          id: true,
-          visitType: true,
-          createdAt: true,
-          doctor: { select: { name: true } },
-          patient: { select: { id: true, name: true } },
+      orderBy: { createdAt: "desc" },
+    })
+  );
+};
+
+export const getUnpaidBills = async () => {
+  return cache.getOrSet(`${BILL_CACHE_PREFIX}unpaid`, BILL_CACHE_TTL_MS, () =>
+    prisma.bill.findMany({
+      where: { paymentStatus: "UNPAID" },
+      include: {
+        items: {
+          include: {
+            medicine: {
+              select: {
+                id: true,
+                name: true,
+                unitPrice: true,
+              },
+            },
+          },
+        },
+        visit: {
+          select: {
+            id: true,
+            visitType: true,
+            createdAt: true,
+            doctor: { select: { name: true } },
+            patient: { select: { id: true, name: true } },
+          },
         },
       },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      orderBy: { createdAt: "desc" },
+    })
+  );
 };
