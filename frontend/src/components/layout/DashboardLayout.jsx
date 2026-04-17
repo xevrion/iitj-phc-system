@@ -1,20 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { 
-  LayoutDashboard, 
-  Calendar, 
-  FileText, 
-  FlaskConical, 
-  User, 
   LogOut, 
   Menu, 
-  X,
-  PlusCircle,
-  Clock
+  X
 } from "lucide-react";
 import { cn } from "../../utils/cn";
 import useAuthStore from "../../store/useAuthStore";
-import Button from "../ui/Button";
 import NotificationCenter from "../ui/NotificationCenter";
 
 const DashboardLayout = ({ children, role, navItems }) => {
@@ -43,9 +35,10 @@ const DashboardLayout = ({ children, role, navItems }) => {
   };
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  const desktopSidebarWidthClass = isSidebarOpen ? "lg:pl-64" : "lg:pl-20";
 
   return (
-    <div className="flex min-h-screen bg-gray-50 overflow-hidden">
+    <div className="h-screen bg-gray-50 overflow-hidden">
       {isSidebarOpen && (
         <button
           type="button"
@@ -56,7 +49,7 @@ const DashboardLayout = ({ children, role, navItems }) => {
       )}
       {/* Sidebar for Desktop */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-gray-200 bg-white transition-transform duration-300 ease-in-out lg:static lg:z-40 lg:translate-x-0 lg:flex lg:flex-col",
+        "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-gray-200 bg-white transition-transform duration-300 ease-in-out lg:z-40 lg:translate-x-0",
         isSidebarOpen ? "translate-x-0 lg:w-64" : "-translate-x-full lg:w-20"
       )}>
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
@@ -106,7 +99,7 @@ const DashboardLayout = ({ children, role, navItems }) => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
+      <div className={cn("flex h-full flex-1 flex-col overflow-hidden", desktopSidebarWidthClass)}>
         {/* Header */}
         <header className="bg-white border-b border-gray-200 min-h-16 flex items-center justify-between px-4 sm:px-6 py-3 z-30 gap-4">
           <div className="flex items-center gap-3 min-w-0">
@@ -141,7 +134,7 @@ const DashboardLayout = ({ children, role, navItems }) => {
         </header>
 
         {/* Dynamic Page Content */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
           {children}
         </main>
       </div>
