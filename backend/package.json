@@ -9,6 +9,8 @@
     "start": "node --experimental-strip-types src/server.js",
     "seed": "npx prisma db seed",
     "test:e2e": "node --experimental-strip-types scripts/e2e-full-flow.js",
+    "test:rbac": "node --experimental-strip-types scripts/rbac-smoke.js",
+    "test:load": "node --experimental-strip-types scripts/load-check.js",
     "migrate:deploy": "npx prisma migrate deploy",
     "ldap:up": "docker compose up -d ldap",
     "ldap:down": "docker compose down"

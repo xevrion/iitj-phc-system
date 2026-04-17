@@ -132,6 +132,42 @@ const request = async (baseUrl, method, path, { token, body, expectedStatus } = 
   return { status: response.status, payload };
 };
 
+const requestMultipart = async (
+  baseUrl,
+  method,
+  path,
+  { token, fields = {}, file, expectedStatus } = {}
+) => {
+  const formData = new FormData();
+
+  for (const [key, value] of Object.entries(fields)) {
+    formData.append(key, value);
+  }
+
+  if (file) {
+    formData.append(
+      "file",
+      new Blob([file.content], { type: file.type }),
+      file.name
+    );
+  }
+
+  const response = await fetch(`${baseUrl}${path}`, {
+    method,
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body: formData,
+  });
+
+  const payload = await response.json().catch(() => null);
+
+  if (expectedStatus && response.status !== expectedStatus) {
+    const message = payload?.message || response.statusText;
+    throw new Error(`${method} ${path} -> expected ${expectedStatus}, got ${response.status}: ${message}`);
+  }
+
+  return { status: response.status, payload };
+};
+
 const login = async (baseUrl, ldapId) => {
   const passwordMap = {
     doctor01: "doctor01pass",
@@ -153,14 +189,14 @@ const ensureDoctorReady = async (baseUrl, token) => {
     token,
   });
 
-  await request(baseUrl, "PUT", "/doctors/me/availability", {
+  await request(baseUrl, "POST", "/doctors/me/checkin", {
     token,
-    body: { isAvailable: true },
     expectedStatus: 200,
   });
 
-  await request(baseUrl, "POST", "/doctors/me/checkin", {
+  await request(baseUrl, "PUT", "/doctors/me/availability", {
     token,
+    body: { isAvailable: true },
     expectedStatus: 200,
   });
 };
@@ -284,10 +320,12 @@ const main = async () => {
       expectedStatus: 200,
     });
 
-    await request(baseUrl, "POST", `/lab-requests/${labRequestId}/report`, {
+    await requestMultipart(baseUrl, "POST", `/lab-requests/${labRequestId}/report`, {
       token: labToken,
-      body: {
-        reportUrl: "https://storage.example.com/reports/e2e-cbc.pdf",
+      file: {
+        name: "e2e-cbc-report.pdf",
+        type: "application/pdf",
+        content: "E2E CBC report content",
       },
       expectedStatus: 201,
     });

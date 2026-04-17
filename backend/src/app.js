@@ -2,11 +2,32 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
+import { createRateLimiter } from "./middlewares/rateLimit.middleware.js";
+import {
+  enforceHttps,
+  sanitizeRequestBody,
+} from "./middlewares/security.middleware.js";
 
 const app = express();
+app.set("trust proxy", 1);
+
+const apiRateLimiter = createRateLimiter({
+  windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),
+  maxRequests: Number(process.env.RATE_LIMIT_MAX_REQUESTS || 300),
+  message: "Too many requests. Please try again shortly.",
+  skip: (req) => req.path === "/" || req.path.startsWith("/api/v1/healthcheck"),
+});
+
+const authRateLimiter = createRateLimiter({
+  windowMs: Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS || 10 * 60 * 1000),
+  maxRequests: Number(process.env.AUTH_RATE_LIMIT_MAX_REQUESTS || 20),
+  message: "Too many login attempts. Please wait and try again.",
+});
 
 // Security headers
 app.use(helmet());
+app.use(enforceHttps);
+app.use(apiRateLimiter);
 
 // CORS
 app.use(
@@ -24,6 +45,7 @@ if (process.env.NODE_ENV === "development") {
 // Body parsers
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
+app.use(sanitizeRequestBody);
 
 // Static files
 app.use(express.static("public"));
@@ -58,7 +80,7 @@ import { errorHandler } from "./middlewares/errorHandler.middleware.js";
 
 // Mount routes
 app.use("/api/v1/healthcheck", healthcheckRoutes);
-app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/auth", authRateLimiter, authRoutes);
 app.use("/api/v1/patients", patientRoutes);
 app.use("/api/v1/visits", visitRoutes);
 app.use("/api/v1/doctors", doctorRoutes);

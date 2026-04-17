@@ -25,6 +25,20 @@ cd backend
 npm run test:e2e
 ```
 
+For RBAC verification across major protected routes:
+
+```bash
+cd backend
+npm run test:rbac
+```
+
+For a lightweight concurrent load/performance check against a running server:
+
+```bash
+cd backend
+npm run test:load
+```
+
 ---
 
 ## 2. Prerequisites
@@ -65,6 +79,12 @@ cp .env.example .env
 # Open .env and fill in:
 #   DATABASE_URL=<your prisma cloud connection string>
 #   JWT_SECRET=any-long-random-string
+# Optional Sprint 7 hardening vars:
+#   RATE_LIMIT_WINDOW_MS=900000
+#   RATE_LIMIT_MAX_REQUESTS=300
+#   AUTH_RATE_LIMIT_WINDOW_MS=600000
+#   AUTH_RATE_LIMIT_MAX_REQUESTS=20
+#   ENFORCE_HTTPS=false
 
 # 3. Run migrations — creates all tables in the cloud DB
 npx prisma migrate dev --name "initial-schema"
@@ -206,7 +226,7 @@ Follow the smoke test order in §19 using Bruno. A typical session looks like:
 
 16. Auth/Login and get a token      → ldapId: "lab01" → copy token
 17. Lab/Lab staff views pending requests
-18. Lab/Lab staff uploads report    → paste labRequestId in URL
+18. Lab/Lab staff uploads report    → paste labRequestId in URL and upload a PDF/PNG/JPG file
 19. Patient/Patient views own lab reports
 20. Admin/Admin creates user
 21. Admin/Admin publishes PHC event

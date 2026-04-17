@@ -200,13 +200,19 @@ A web-based healthcare management platform for the Primary Health Centre at IIT 
 **Dates:** Apr 16 – Apr 20, 2026 | **Weeks:** 15–16 | **Status: In Progress**
 
 - [ ] Unit tests for all service functions (happy path + error cases)
-- [ ] Integration tests for all API routes
-- [ ] RBAC tests — verify each role cannot access unauthorized endpoints
-- [ ] Security hardening (rate limiting, input sanitization, HTTPS enforcement)
-- [ ] Performance check under concurrent load
+- [x] Integration test coverage maintained for the full core flow
+  - `npm run test:e2e`
+  - `bash smoke_test.sh`
+- [x] RBAC smoke tests — verify roles cannot access unauthorized endpoints
+  - `npm run test:rbac`
+- [x] Security hardening (rate limiting, input sanitization, HTTPS enforcement)
+- [x] Performance check under concurrent load
+  - `npm run test:load`
 - [ ] Final database migration and seed script
-- [ ] Deployment plan document
-- [ ] Final system demo preparation
+- [x] Deployment plan document
+  - See [DEPLOYMENT_PLAN.md](DEPLOYMENT_PLAN.md)
+- [x] Final system demo preparation
+  - See [DEMO_CHECKLIST.md](DEMO_CHECKLIST.md)
 
 ---
 

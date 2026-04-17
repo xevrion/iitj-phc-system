@@ -17,6 +17,7 @@ BASE="${1:-http://localhost:8000/api/v1}"
 PASS=0
 FAIL=0
 FUTURE_EVENT_DATE=$(date -u -d '+10 days' '+%Y-%m-%dT09:00:00.000Z' 2>/dev/null || date -u -v+10d '+%Y-%m-%dT09:00:00.000Z')
+TMP_LAB_REPORT="/tmp/phc-lab-report.pdf"
 
 # ── Colours ──────────────────────────────────────────────────────────
 GREEN='\033[0;32m'
@@ -104,13 +105,12 @@ fi
 echo -e "  ${GREEN}✓ All 6 role tokens acquired${NC}"
 
 # ── Reset doctor state before grabbing IDs ────────────────────────────
-# Checkout first (idempotent), then restore availability so GET /doctors returns results
+# Checkout first (idempotent) so attendance-related tests start clean
 req POST "$BASE/doctors/me/checkout" "$DOCTOR_TOKEN" "" > /dev/null 2>&1
-req PUT "$BASE/doctors/me/availability" "$DOCTOR_TOKEN" '{"isAvailable":true}' > /dev/null 2>&1
 
 # ── Grab stable IDs ───────────────────────────────────────────────────
-req GET "$BASE/doctors" "$RECEPTION_TOKEN" ""
-DOCTOR_ID=$(jv "d['data'][0]['id']")
+req GET "$BASE/auth/me" "$DOCTOR_TOKEN" ""
+DOCTOR_ID=$(jv "d['data']['doctor']['id']")
 
 req GET "$BASE/patients/qr/QR001" "$RECEPTION_TOKEN" ""
 PATIENT_ID=$(jv "d['data']['id']")
@@ -143,6 +143,7 @@ VISIT_ID=$(jv "d['data']['id']")
 
 req POST "$BASE/doctors/me/checkin" "$DOCTOR_TOKEN" ""
 check "TC-F-007" "Doctor checks in (opens attendance record)" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
+req PUT "$BASE/doctors/me/availability" "$DOCTOR_TOKEN" '{"isAvailable":true}' > /dev/null 2>&1
 
 req GET "$BASE/visits/my-queue" "$DOCTOR_TOKEN" ""
 check "TC-F-008" "Doctor views waiting patient queue" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
@@ -183,13 +184,23 @@ BILL_ID=$(jv "d['data']['id']")
 req PUT "$BASE/bills/$BILL_ID/pay" "$PHARMACY_TOKEN" ""
 check "TC-F-018" "Pharmacy marks bill as paid" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
 
-req POST "$BASE/lab-requests/$LAB_REQUEST_ID/report" "$LAB_TOKEN" \
-  '{"reportUrl":"https://storage.example.com/reports/cbc-001.pdf"}'
+printf '%s' 'CBC report from smoke test' > "$TMP_LAB_REPORT"
+raw=$(curl -s -X POST \
+  -H "Authorization: Bearer $LAB_TOKEN" \
+  -F "file=@${TMP_LAB_REPORT};type=application/pdf" \
+  --write-out $'\n%{http_code}\n%{time_total}' \
+  --output /tmp/_phc_resp \
+  "$BASE/lab-requests/$LAB_REQUEST_ID/report" 2>/dev/null)
+HTTP_STATUS=$(echo "$raw" | tail -2 | head -1 | tr -d '[:space:]')
+HTTP_STATUS="${HTTP_STATUS:-000}"
+RESPONSE_TIME=$(echo "$raw" | tail -1 | awk '{printf "%d", $1*1000}')
+RESPONSE_BODY=$(cat /tmp/_phc_resp 2>/dev/null)
 check "TC-F-019" "Lab staff uploads diagnostic report" 201 "$HTTP_STATUS" "$RESPONSE_TIME"
 
 req GET "$BASE/lab-requests/$LAB_REQUEST_ID" "$PATIENT_TOKEN" ""
 check "TC-F-020" "Patient views a single completed lab request/report" 200 "$HTTP_STATUS" "$RESPONSE_TIME"
 
+req POST "$BASE/doctors/me/checkin" "$DOCTOR_TOKEN" "" > /dev/null 2>&1
 req PUT "$BASE/doctors/me/availability" "$DOCTOR_TOKEN" '{"isAvailable":true}'
 req POST "$BASE/appointments" "$PATIENT_TOKEN" \
   "{\"doctorId\":\"$DOCTOR_ID\",\"appointmentTime\":\"2026-04-01T10:00:00.000Z\",\"slotDuration\":15}"
@@ -268,8 +279,9 @@ check "TC-N-004" "Patient attempting to generate bill → 403" 403 "$HTTP_STATUS
 # Fresh visit for prescription empty-items test
 req POST "$BASE/checkin" "$RECEPTION_TOKEN" '{"qrCode":"QR001","visitType":"OPD"}'
 NEG_VISIT_ID=$(jv "d['data']['id']")
-# Check doctor back in (checked out in F-014), then claim
+# Check doctor back in (checked out in F-014), reopen consultations, then claim
 req POST "$BASE/doctors/me/checkin" "$DOCTOR_TOKEN" "" > /dev/null 2>&1
+req PUT "$BASE/doctors/me/availability" "$DOCTOR_TOKEN" '{"isAvailable":true}' > /dev/null 2>&1
 req PUT "$BASE/visits/$NEG_VISIT_ID/claim" "$DOCTOR_TOKEN" "" > /dev/null 2>&1
 req POST "$BASE/visits/$NEG_VISIT_ID/prescription" "$DOCTOR_TOKEN" '{"items":[]}'
 check "TC-N-005" "Prescription with empty items array → 400" 400 "$HTTP_STATUS" "$RESPONSE_TIME"
