@@ -1,6 +1,7 @@
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 import { cache } from "../utils/cache.js";
+import { invalidateNotificationCache } from "./notification.service.js";
 
 const DOCTOR_LIST_CACHE_KEY = "doctor:list:available";
 const DOCTOR_PROFILE_CACHE_PREFIX = "doctor:profile:";
@@ -71,6 +72,10 @@ const createSpecialistUnavailableNotifications = async (tx, doctor) => {
     })),
   });
 
+  appointments.forEach((appointment) => {
+    invalidateNotificationCache(appointment.patient.userId);
+  });
+
   return {
     affectedAppointments: appointments.length,
     notificationsCreated: appointments.length,
@@ -100,6 +105,10 @@ const createPhysicianBroadcastNotifications = async (tx, doctor, reason = null) 
       message: `${doctor.name || "A physician"} has been marked unavailable.${reasonSuffix}`,
       notificationType: "PHYSICIAN_UNAVAILABLE",
     })),
+  });
+
+  users.forEach((user) => {
+    invalidateNotificationCache(user.id);
   });
 
   return { notificationsCreated: users.length };

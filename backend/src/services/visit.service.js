@@ -1,5 +1,26 @@
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
+import { cache } from "../utils/cache.js";
+
+const VISIT_CACHE_TTL_MS = 5 * 1000;
+const VISIT_DETAIL_CACHE_TTL_MS = 15 * 1000;
+const VISIT_CACHE_PREFIX = "visit:";
+
+const invalidateVisitCaches = ({ visitId, patientId, doctorId } = {}) => {
+  cache.delPrefix(VISIT_CACHE_PREFIX);
+
+  if (visitId) {
+    cache.del(`${VISIT_CACHE_PREFIX}detail:${visitId}`);
+  }
+
+  if (patientId) {
+    cache.del(`${VISIT_CACHE_PREFIX}patient-current:${patientId}`);
+  }
+
+  if (doctorId) {
+    cache.del(`${VISIT_CACHE_PREFIX}doctor-queue:${doctorId}`);
+  }
+};
 
 // REQ-17, REQ-28: reception creates a visit and generates a VisitID
 export const createVisit = async ({ patientId, doctorId, visitType, vitals }) => {
@@ -13,7 +34,7 @@ export const createVisit = async ({ patientId, doctorId, visitType, vitals }) =>
       throw new ApiError(400, "Selected doctor is currently unavailable");
   }
 
-  return prisma.visit.create({
+  const visit = await prisma.visit.create({
     data: {
       patientId,
       doctorId: doctorId || null,
@@ -31,24 +52,32 @@ export const createVisit = async ({ patientId, doctorId, visitType, vitals }) =>
     },
     include: { vitals: true },
   });
+
+  invalidateVisitCaches({ patientId, doctorId });
+  return visit;
 };
 
 export const getVisit = async (visitId) => {
-  const visit = await prisma.visit.findUnique({
-    where: { id: visitId },
-    include: {
-      patient: {
-        select: { id: true, name: true, bloodGroup: true, qrCode: true },
-      },
-      doctor: {
-        select: { id: true, name: true, doctorType: true, specialization: true },
-      },
-      vitals: true,
-      prescription: { include: { items: { include: { medicine: true } } } },
-      labRequests: { include: { report: true } },
-      bill: true,
-    },
-  });
+  const visit = await cache.getOrSet(
+    `${VISIT_CACHE_PREFIX}detail:${visitId}`,
+    VISIT_DETAIL_CACHE_TTL_MS,
+    () =>
+      prisma.visit.findUnique({
+        where: { id: visitId },
+        include: {
+          patient: {
+            select: { id: true, name: true, bloodGroup: true, qrCode: true },
+          },
+          doctor: {
+            select: { id: true, name: true, doctorType: true, specialization: true },
+          },
+          vitals: true,
+          prescription: { include: { items: { include: { medicine: true } } } },
+          labRequests: { include: { report: true } },
+          bill: true,
+        },
+      })
+  );
   if (!visit) throw new ApiError(404, "Visit not found");
   return visit;
 };
@@ -58,11 +87,14 @@ export const upsertVitals = async (visitId, vitals) => {
   const visit = await prisma.visit.findUnique({ where: { id: visitId } });
   if (!visit) throw new ApiError(404, "Visit not found");
 
-  return prisma.visitVitals.upsert({
+  const updatedVitals = await prisma.visitVitals.upsert({
     where: { visitId },
     create: { visitId, ...vitals },
     update: vitals,
   });
+
+  invalidateVisitCaches({ visitId, patientId: visit.patientId, doctorId: visit.doctorId });
+  return updatedVitals;
 };
 
 // REQ-22: doctor claims a visit, preventing concurrent access
@@ -89,10 +121,13 @@ export const claimVisit = async (visitId, doctorUserId) => {
     throw new ApiError(400, "Open consultations before claiming patients");
   }
 
-  return prisma.visit.update({
+  const updatedVisit = await prisma.visit.update({
     where: { id: visitId },
     data: { doctorId: doctor.id, visitStatus: "IN_CONSULTATION" },
   });
+
+  invalidateVisitCaches({ visitId, patientId: visit.patientId, doctorId: doctor.id });
+  return updatedVisit;
 };
 
 // REQ-24: doctor records clinical observations
@@ -105,10 +140,13 @@ export const saveConsultationNotes = async (visitId, consultationNotes, doctorUs
   if (visit.doctorId !== doctor.id)
     throw new ApiError(403, "You are not assigned to this visit");
 
-  return prisma.visit.update({
+  const updatedVisit = await prisma.visit.update({
     where: { id: visitId },
     data: { consultationNotes },
   });
+
+  invalidateVisitCaches({ visitId, patientId: visit.patientId, doctorId: doctor.id });
+  return updatedVisit;
 };
 
 export const completeVisit = async (visitId, doctorUserId) => {
@@ -122,10 +160,13 @@ export const completeVisit = async (visitId, doctorUserId) => {
   if (visit.visitStatus !== "IN_CONSULTATION")
     throw new ApiError(400, "Visit is not currently in consultation");
 
-  return prisma.visit.update({
+  const updatedVisit = await prisma.visit.update({
     where: { id: visitId },
     data: { visitStatus: "COMPLETED", closedAt: new Date() },
   });
+
+  invalidateVisitCaches({ visitId, patientId: visit.patientId, doctorId: doctor.id });
+  return updatedVisit;
 };
 
 export const cancelVisit = async (visitId) => {
@@ -134,10 +175,13 @@ export const cancelVisit = async (visitId) => {
   if (visit.visitStatus === "COMPLETED")
     throw new ApiError(400, "Cannot cancel a completed visit");
 
-  return prisma.visit.update({
+  const updatedVisit = await prisma.visit.update({
     where: { id: visitId },
     data: { visitStatus: "CANCELLED", closedAt: new Date() },
   });
+
+  invalidateVisitCaches({ visitId, patientId: visit.patientId, doctorId: visit.doctorId });
+  return updatedVisit;
 };
 
 // REQ-21: returns waiting visits assigned to or unassigned for this doctor
@@ -145,14 +189,19 @@ export const getDoctorQueue = async (doctorUserId) => {
   const doctor = await prisma.doctor.findUnique({ where: { userId: doctorUserId } });
   if (!doctor) throw new ApiError(404, "Doctor profile not found");
 
-  return prisma.visit.findMany({
-    where: { doctorId: doctor.id, visitStatus: "WAITING" },
-    include: {
-      patient: { select: { id: true, name: true, bloodGroup: true } },
-      vitals: true,
-    },
-    orderBy: { createdAt: "asc" },
-  });
+  return cache.getOrSet(
+    `${VISIT_CACHE_PREFIX}doctor-queue:${doctor.id}`,
+    VISIT_CACHE_TTL_MS,
+    () =>
+      prisma.visit.findMany({
+        where: { doctorId: doctor.id, visitStatus: "WAITING" },
+        include: {
+          patient: { select: { id: true, name: true, bloodGroup: true } },
+          vitals: true,
+        },
+        orderBy: { createdAt: "asc" },
+      })
+  );
 };
 
 export const getReceptionLiveQueue = async () => {
@@ -162,46 +211,54 @@ export const getReceptionLiveQueue = async () => {
   const endOfDay = new Date(now);
   endOfDay.setHours(23, 59, 59, 999);
 
-  const [activeVisits, todayVisits] = await prisma.$transaction([
-    prisma.visit.findMany({
-      where: {
-        visitStatus: {
-          in: ["WAITING", "IN_CONSULTATION"],
-        },
-        createdAt: {
-          gte: startOfDay,
-          lte: endOfDay,
-        },
-      },
-      include: {
-        patient: {
-          select: {
-            id: true,
-            name: true,
-            bloodGroup: true,
+  const { activeVisits, todayVisits } = await cache.getOrSet(
+    `${VISIT_CACHE_PREFIX}reception-live-queue`,
+    VISIT_CACHE_TTL_MS,
+    async () => {
+      const [activeVisits, todayVisits] = await prisma.$transaction([
+        prisma.visit.findMany({
+          where: {
+            visitStatus: {
+              in: ["WAITING", "IN_CONSULTATION"],
+            },
+            createdAt: {
+              gte: startOfDay,
+              lte: endOfDay,
+            },
           },
-        },
-        doctor: {
-          select: {
-            id: true,
-            name: true,
-            doctorType: true,
-            specialization: true,
+          include: {
+            patient: {
+              select: {
+                id: true,
+                name: true,
+                bloodGroup: true,
+              },
+            },
+            doctor: {
+              select: {
+                id: true,
+                name: true,
+                doctorType: true,
+                specialization: true,
+              },
+            },
+            vitals: true,
           },
-        },
-        vitals: true,
-      },
-      orderBy: [{ createdAt: "asc" }],
-    }),
-    prisma.visit.count({
-      where: {
-        createdAt: {
-          gte: startOfDay,
-          lte: endOfDay,
-        },
-      },
-    }),
-  ]);
+          orderBy: [{ createdAt: "asc" }],
+        }),
+        prisma.visit.count({
+          where: {
+            createdAt: {
+              gte: startOfDay,
+              lte: endOfDay,
+            },
+          },
+        }),
+      ]);
+
+      return { activeVisits, todayVisits };
+    }
+  );
 
   const waitingCounters = new Map();
   const enrichedVisits = activeVisits.map((visit) => {
@@ -261,66 +318,72 @@ export const getMyCurrentVisit = async (patientUserId) => {
   });
   if (!patient) throw new ApiError(404, "Patient profile not found");
 
-  const visit = await prisma.visit.findFirst({
-    where: {
-      patientId: patient.id,
-      visitStatus: {
-        in: ["WAITING", "IN_CONSULTATION"],
-      },
-      createdAt: {
-        gte: startOfDay,
-        lte: endOfDay,
-      },
-    },
-    include: {
-      doctor: {
-        select: {
-          id: true,
-          name: true,
-          doctorType: true,
-          specialization: true,
+  return cache.getOrSet(
+    `${VISIT_CACHE_PREFIX}patient-current:${patient.id}`,
+    VISIT_CACHE_TTL_MS,
+    async () => {
+      const visit = await prisma.visit.findFirst({
+        where: {
+          patientId: patient.id,
+          visitStatus: {
+            in: ["WAITING", "IN_CONSULTATION"],
+          },
+          createdAt: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
         },
-      },
-      vitals: true,
-    },
-    orderBy: { createdAt: "desc" },
-  });
-
-  if (!visit) {
-    return null;
-  }
-
-  if (visit.visitStatus !== "WAITING" || !visit.doctorId) {
-    return {
-      ...visit,
-      queuePosition: null,
-      waitingAhead: null,
-      totalWaitingForDoctor: null,
-    };
-  }
-
-  const [waitingAhead, totalWaitingForDoctor] = await prisma.$transaction([
-    prisma.visit.count({
-      where: {
-        doctorId: visit.doctorId,
-        visitStatus: "WAITING",
-        createdAt: {
-          lt: visit.createdAt,
+        include: {
+          doctor: {
+            select: {
+              id: true,
+              name: true,
+              doctorType: true,
+              specialization: true,
+            },
+          },
+          vitals: true,
         },
-      },
-    }),
-    prisma.visit.count({
-      where: {
-        doctorId: visit.doctorId,
-        visitStatus: "WAITING",
-      },
-    }),
-  ]);
+        orderBy: { createdAt: "desc" },
+      });
 
-  return {
-    ...visit,
-    queuePosition: waitingAhead + 1,
-    waitingAhead,
-    totalWaitingForDoctor,
-  };
+      if (!visit) {
+        return null;
+      }
+
+      if (visit.visitStatus !== "WAITING" || !visit.doctorId) {
+        return {
+          ...visit,
+          queuePosition: null,
+          waitingAhead: null,
+          totalWaitingForDoctor: null,
+        };
+      }
+
+      const [waitingAhead, totalWaitingForDoctor] = await prisma.$transaction([
+        prisma.visit.count({
+          where: {
+            doctorId: visit.doctorId,
+            visitStatus: "WAITING",
+            createdAt: {
+              lt: visit.createdAt,
+            },
+          },
+        }),
+        prisma.visit.count({
+          where: {
+            doctorId: visit.doctorId,
+            visitStatus: "WAITING",
+          },
+        }),
+      ]);
+
+      return {
+        ...visit,
+        queuePosition: waitingAhead + 1,
+        waitingAhead,
+        totalWaitingForDoctor,
+      };
+    }
+  );
 };
