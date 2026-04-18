@@ -9,6 +9,10 @@ import { cn } from "../../utils/cn";
 import { getDoctorInitial, stripDoctorPrefix } from "../../utils/doctorName";
 import useAuthStore from "../../store/useAuthStore";
 import NotificationCenter from "../ui/NotificationCenter";
+import {
+  checkOutDoctor,
+  updateMyAvailability,
+} from "../../features/doctor/services/doctor.service";
 
 const DashboardLayout = ({ children, role, navItems }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 1024);
@@ -30,7 +34,21 @@ const DashboardLayout = ({ children, role, navItems }) => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (user?.role === "DOCTOR") {
+      try {
+        await checkOutDoctor();
+      } catch (error) {
+        if (user?.doctor?.isAvailable) {
+          try {
+            await updateMyAvailability(false);
+          } catch {
+            // Ignore fallback failure and continue logging out locally.
+          }
+        }
+      }
+    }
+
     logout();
     navigate("/login");
   };
@@ -86,7 +104,7 @@ const DashboardLayout = ({ children, role, navItems }) => {
         </nav>
 
         <div className="p-4 border-t border-gray-200">
-          <button 
+          <button
             onClick={handleLogout}
             className={cn(
               "flex items-center gap-3 p-3 w-full rounded-lg text-red-500 hover:bg-red-50 transition-colors",
