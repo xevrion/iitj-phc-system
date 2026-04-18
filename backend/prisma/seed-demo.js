@@ -62,7 +62,7 @@ async function clearDemoData() {
 
   await prisma.$transaction([
     prisma.notification.deleteMany(),
-    prisma.phcEvent.deleteMany(),
+    prisma.pHCEvent.deleteMany(),
     prisma.doctorAttendance.deleteMany(),
     prisma.labReport.deleteMany(),
     prisma.labRequest.deleteMany(),
