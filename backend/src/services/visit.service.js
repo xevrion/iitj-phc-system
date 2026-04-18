@@ -297,7 +297,7 @@ export const cancelVisit = async (visitId) => {
   return updatedVisit;
 };
 
-// REQ-21: returns waiting visits assigned to or unassigned for this doctor
+// REQ-21: returns active visits for this doctor, including claimed consultations
 export const getDoctorQueue = async (doctorUserId) => {
   const doctor = await getDoctorProfileForUser(doctorUserId);
 
@@ -306,12 +306,17 @@ export const getDoctorQueue = async (doctorUserId) => {
     VISIT_CACHE_TTL_MS,
     () =>
       prisma.visit.findMany({
-        where: { doctorId: doctor.id, visitStatus: "WAITING" },
+        where: {
+          doctorId: doctor.id,
+          visitStatus: {
+            in: ["WAITING", "IN_CONSULTATION"],
+          },
+        },
         include: {
           patient: { select: { id: true, name: true, bloodGroup: true } },
           vitals: true,
         },
-        orderBy: { createdAt: "asc" },
+        orderBy: [{ visitStatus: "asc" }, { createdAt: "asc" }],
       })
   );
 };
