@@ -146,9 +146,9 @@ See [TESTING.md](TESTING.md) for prerequisites, sequencing, Bruno usage, and tro
 
 ## Technology Readiness Level
 
-Current assessment: **TRL 6**
+Current assessment: **TRL 4**
 
-This project has cleared TRL 1 through TRL 6 based on the repository contents and the implemented verification assets.
+This project has cleared TRL 1 through TRL 4 based on the repository contents and the implemented verification assets.
 
 ### TRL 1 — Basic principles observed
 
@@ -178,28 +178,13 @@ Cleared because the integrated code is validated at component and subsystem leve
 - service-level automated tests exist in `backend/tests/unit/`
 - local development execution is supported through `npm run dev`, `npm run seed`, and Prisma migration commands
 
-### TRL 5 — Technology validated in a relevant environment
+### Why the project is not claimed above TRL 4
 
-Cleared because the system is exercised in a representative integration environment rather than only isolated unit logic:
-- role-based access control is verified by `npm run test:rbac`
-- realistic multi-step backend flow coverage exists in `backend/scripts/e2e-full-flow.js`
-- the Bruno collection in `backend/tests/iitj-phc-system/` and `backend/smoke_test.sh` cover representative PHC workflows against a running server
-- the project includes representative integrations such as PostgreSQL via Prisma, JWT auth, LDAP-based login flow, and Cloudinary-backed uploads
-
-### TRL 6 — Representative prototype demonstrated in a relevant environment
-
-Cleared because the repository now contains an integrated system prototype with successful end-to-end verification evidence:
-- the backend exposes 63 implemented application routes across the major PHC modules
-- the frontend is present and buildable, with pages, routes, features, store, hooks, and services under `frontend/src/`
-- automated verification commands exist for unit, RBAC, E2E, load, and smoke testing
-- recent local verification evidence showed `npm run test:unit`, `npm run test:rbac`, `npm run test:e2e`, `npm run test:load`, and `bash smoke_test.sh` succeeding after the current test-script fixes
-
-### Why the project is not claimed above TRL 6
-
-This README does not claim TRL 7 or higher because the repository does not by itself demonstrate:
-- live operation in the actual IIT Jodhpur PHC or another operational deployment environment
-- sustained field use by real clinical staff and patients
-- production deployment, operational support, and field acceptance evidence
+This README does not claim TRL 5 or higher because the repository does not by itself demonstrate:
+- validation in the actual IIT Jodhpur PHC or another real relevant deployment environment
+- field validation with real doctors, reception staff, pharmacy staff, lab staff, administrators, or patients
+- formal stress, resilience, or production-readiness qualification beyond development-level verification
+- operational deployment, monitoring, support, and acceptance evidence
 
 ## Notes
 
