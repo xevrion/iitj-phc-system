@@ -24,7 +24,7 @@ import {
 } from "../services/doctor.service";
 
 const DoctorProfile = () => {
-  const { user, checkAuth } = useAuthStore();
+  const { user, updateUser } = useAuthStore();
   const [attendance, setAttendance] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -61,8 +61,21 @@ const DoctorProfile = () => {
       const nextValue = !isAvailable;
       const res = await updateMyAvailability(nextValue);
       if (res.success) {
-        setIsAvailable(Boolean(res.data?.doctor?.isAvailable));
-        await checkAuth();
+        const nextAvailability = Boolean(res.data?.doctor?.isAvailable);
+        setIsAvailable(nextAvailability);
+        updateUser((currentUser) =>
+          currentUser
+            ? {
+                ...currentUser,
+                doctor: currentUser.doctor
+                  ? {
+                      ...currentUser.doctor,
+                      isAvailable: nextAvailability,
+                    }
+                  : currentUser.doctor,
+              }
+            : currentUser
+        );
         await fetchAttendance();
         setMessage({ type: "success", text: `Status updated to ${nextValue ? "Available" : "Unavailable"}` });
       }
@@ -82,8 +95,20 @@ const DoctorProfile = () => {
     try {
       const res = await checkInDoctor();
       if (res.success) {
-        await checkAuth();
         setIsAvailable(false);
+        updateUser((currentUser) =>
+          currentUser
+            ? {
+                ...currentUser,
+                doctor: currentUser.doctor
+                  ? {
+                      ...currentUser.doctor,
+                      isAvailable: false,
+                    }
+                  : currentUser.doctor,
+              }
+            : currentUser
+        );
         await fetchAttendance();
         setMessage({ type: "success", text: "Checked in for today." });
       }
@@ -103,8 +128,20 @@ const DoctorProfile = () => {
     try {
       const res = await checkOutDoctor();
       if (res.success) {
-        await checkAuth();
         setIsAvailable(false);
+        updateUser((currentUser) =>
+          currentUser
+            ? {
+                ...currentUser,
+                doctor: currentUser.doctor
+                  ? {
+                      ...currentUser.doctor,
+                      isAvailable: false,
+                    }
+                  : currentUser.doctor,
+              }
+            : currentUser
+        );
         await fetchAttendance();
         setMessage({ type: "success", text: "Checked out for the day." });
       }

@@ -13,6 +13,15 @@ const useAuthStore = create((set) => ({
     set({ user, token, isAuthenticated: true, error: null });
   },
 
+  updateUser: (updater) =>
+    set((state) => {
+      const nextUser =
+        typeof updater === "function" ? updater(state.user) : updater;
+
+      localStorage.setItem("user", JSON.stringify(nextUser));
+      return { user: nextUser };
+    }),
+
   checkAuth: async () => {
     set({ loading: true });
     try {

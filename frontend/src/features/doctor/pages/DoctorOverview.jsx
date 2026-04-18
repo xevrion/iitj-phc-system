@@ -26,7 +26,7 @@ import {
 } from "../../../utils/appointmentQueue";
 
 const DoctorOverview = () => {
-  const { user, checkAuth } = useAuthStore();
+  const { user, updateUser } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [queue, setQueue] = useState([]);
@@ -104,8 +104,20 @@ const DoctorOverview = () => {
     setError("");
     try {
       await checkInDoctor();
-      await checkAuth();
       setIsAvailable(false);
+      updateUser((currentUser) =>
+        currentUser
+          ? {
+              ...currentUser,
+              doctor: currentUser.doctor
+                ? {
+                    ...currentUser.doctor,
+                    isAvailable: false,
+                  }
+                : currentUser.doctor,
+            }
+          : currentUser
+      );
       await fetchOverview();
     } catch {
       setError("Check-in failed. You may already be checked in.");
@@ -119,8 +131,20 @@ const DoctorOverview = () => {
     setError("");
     try {
       await checkOutDoctor();
-      await checkAuth();
       setIsAvailable(false);
+      updateUser((currentUser) =>
+        currentUser
+          ? {
+              ...currentUser,
+              doctor: currentUser.doctor
+                ? {
+                    ...currentUser.doctor,
+                    isAvailable: false,
+                  }
+                : currentUser.doctor,
+            }
+          : currentUser
+      );
       await fetchOverview();
     } catch {
       setError("Check-out failed. No active check-in was found.");
@@ -136,9 +160,22 @@ const DoctorOverview = () => {
     try {
       const response = await updateMyAvailability(nextValue);
       if (response.success) {
-        setIsAvailable(Boolean(response.data?.doctor?.isAvailable));
+        const nextAvailability = Boolean(response.data?.doctor?.isAvailable);
+        setIsAvailable(nextAvailability);
+        updateUser((currentUser) =>
+          currentUser
+            ? {
+                ...currentUser,
+                doctor: currentUser.doctor
+                  ? {
+                      ...currentUser.doctor,
+                      isAvailable: nextAvailability,
+                    }
+                  : currentUser.doctor,
+              }
+            : currentUser
+        );
       }
-      await checkAuth();
       await fetchOverview();
     } catch (err) {
       setError(
