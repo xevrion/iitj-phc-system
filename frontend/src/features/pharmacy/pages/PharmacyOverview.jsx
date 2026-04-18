@@ -26,6 +26,7 @@ const PharmacyOverview = () => {
   const [paying, setPaying] = useState(null);
   const [billing, setBilling] = useState(null);
   const [tab, setTab] = useState("prescriptions");
+  const [prescriptionTab, setPrescriptionTab] = useState("awaiting");
   const [billDrafts, setBillDrafts] = useState({});
 
   const fetchData = async () => {
@@ -325,16 +326,58 @@ const PharmacyOverview = () => {
               <Pill size={18} className="text-blue-500" /> Pharmacy Workflow Queue
             </h2>
           </div>
-          {renderPrescriptionSection(
-            awaitingBillingOrPayment,
-            "Awaiting Bill Or Payment",
-            "No prescriptions are waiting for billing or payment."
-          )}
-          {renderPrescriptionSection(
-            readyToDispense,
-            "Ready To Dispense",
-            "No prescriptions are currently ready to dispense."
-          )}
+          <div className="border-b border-gray-100 px-5 py-4">
+            <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+              {[
+                {
+                  key: "awaiting",
+                  label: "Awaiting Bill Or Payment",
+                  count: awaitingBillingOrPayment.length,
+                },
+                {
+                  key: "ready",
+                  label: "Ready To Dispense",
+                  count: readyToDispense.length,
+                },
+              ].map((section) => (
+                <button
+                  key={section.key}
+                  onClick={() => setPrescriptionTab(section.key)}
+                  className={cn(
+                    "px-4 py-2 rounded-md text-sm font-semibold transition-all",
+                    prescriptionTab === section.key
+                      ? "bg-white shadow-sm text-gray-900"
+                      : "text-gray-500 hover:text-gray-700"
+                  )}
+                >
+                  {section.label}
+                  {section.count > 0 && (
+                    <span
+                      className={cn(
+                        "ml-2 text-xs px-1.5 py-0.5 rounded-full font-bold",
+                        prescriptionTab === section.key
+                          ? "bg-blue-100 text-blue-600"
+                          : "bg-gray-200 text-gray-500"
+                      )}
+                    >
+                      {section.count}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+          {prescriptionTab === "awaiting"
+            ? renderPrescriptionSection(
+                awaitingBillingOrPayment,
+                "Awaiting Bill Or Payment",
+                "No prescriptions are waiting for billing or payment."
+              )
+            : renderPrescriptionSection(
+                readyToDispense,
+                "Ready To Dispense",
+                "No prescriptions are currently ready to dispense."
+              )}
         </div>
       )}
 
