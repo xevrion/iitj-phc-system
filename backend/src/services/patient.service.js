@@ -89,7 +89,7 @@ export const getPatientVisitHistory = async (patientId, requester, limit) => {
 export const getMyLabReports = async (userId, limit) => {
   const patient = await getPatientProfileForUser(userId);
 
-  return prisma.labRequest.findMany({
+  const reports = await prisma.labRequest.findMany({
     where: {
       visit: {
         patientId: patient.id,
@@ -116,7 +116,18 @@ export const getMyLabReports = async (userId, limit) => {
       },
       report: true,
     },
-    orderBy: { id: "asc" },
-    ...(limit && { take: limit }),
   });
+
+  const sortedReports = reports.sort((left, right) => {
+    const leftTime = new Date(
+      left.report?.uploadedAt || left.visit?.createdAt || 0
+    ).getTime();
+    const rightTime = new Date(
+      right.report?.uploadedAt || right.visit?.createdAt || 0
+    ).getTime();
+
+    return rightTime - leftTime;
+  });
+
+  return limit ? sortedReports.slice(0, limit) : sortedReports;
 };
