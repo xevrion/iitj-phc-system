@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Activity, TrendingUp, Loader2, AlertCircle } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import { cn } from "../../../utils/cn";
+import { formatDoctorName } from "../../../utils/doctorName";
 import { listUsers, getUsageReport, getAttendanceReport } from "../services/admin.service";
 
 const AdminOverview = () => {
@@ -114,7 +115,9 @@ const AdminOverview = () => {
             {attendance.map(a => (
               <div key={a.doctorId} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">Dr. {a.doctorName ?? "Unknown"}</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {formatDoctorName(a.doctorName, "Unknown")}
+                  </p>
                   <p className="text-xs text-gray-400">{a.attendanceRecords} session{a.attendanceRecords !== 1 ? "s" : ""}</p>
                 </div>
                 <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
