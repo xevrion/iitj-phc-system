@@ -61,42 +61,38 @@ const LoginPage = () => {
 
         <div className="p-6 sm:p-8">
           <form onSubmit={handleLogin} className="space-y-6">
-            <div className="relative">
-              <Input
-                label="LDAP ID"
-                placeholder="e.g. b22cs001"
-                value={ldapId}
-                onChange={(e) => setLdapId(e.target.value)}
-                required
-                className="pl-10"
-              />
-              <User className="absolute left-3 top-9 w-4 h-4 text-gray-400" />
-            </div>
+            <Input
+              label="LDAP ID"
+              placeholder="e.g. b22cs001"
+              value={ldapId}
+              onChange={(e) => setLdapId(e.target.value)}
+              required
+              leftAdornment={<User className="w-4 h-4" />}
+            />
 
-            <div className="relative">
-              <Input
-                label="Password"
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="pl-10 pr-11"
-              />
-              <Lock className="absolute left-3 top-9 w-4 h-4 text-gray-400" />
-              <button
-                type="button"
-                onClick={() => setShowPassword((current) => !current)}
-                className="absolute right-3 top-8.5 text-gray-400 hover:text-gray-600 transition-colors"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? (
-                  <EyeOff className="w-4 h-4" />
-                ) : (
-                  <Eye className="w-4 h-4" />
-                )}
-              </button>
-            </div>
+            <Input
+              label="Password"
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              leftAdornment={<Lock className="w-4 h-4" />}
+              rightAdornment={
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              }
+            />
 
             {error && (
               <div className="p-3 bg-red-50 text-red-600 text-sm rounded-md border border-red-100">
