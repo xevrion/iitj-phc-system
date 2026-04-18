@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FileText, Printer, User, Calendar, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { FileText, Printer, User, Calendar, Loader2 } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import { getMyVisits, getPrescriptionByVisit } from "../services/patient.service";
 import useAuthStore from "../../../store/useAuthStore";
@@ -8,7 +8,6 @@ const Prescriptions = () => {
   const { user } = useAuthStore();
   const [prescriptions, setPrescriptions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
     const fetchAllPrescriptions = async () => {
@@ -21,7 +20,16 @@ const Prescriptions = () => {
             .map(async (v) => {
               try {
                 const res = await getPrescriptionByVisit(v.id);
-                return res.success ? { ...res.data, visit: v } : null;
+                return res.success
+                  ? {
+                      ...res.data,
+                      visit: {
+                        ...res.data.visit,
+                        ...v,
+                        patient: v.patient || res.data.visit?.patient || user.patient,
+                      },
+                    }
+                  : null;
               } catch { return null; }
             });
           const results = await Promise.all(presPromises);
@@ -49,11 +57,14 @@ const Prescriptions = () => {
       <p>Prescription ID: <strong>#${pres.id.slice(-8).toUpperCase()}</strong></p>
       <p>Date: ${new Date(pres.createdAt).toLocaleDateString("en-IN")}</p>
       <p>Doctor: ${pres.visit?.doctor?.name || "General Physician"}</p>
-      <p>Patient: ${pres.visit?.patient?.name || ""}</p></div>
+      <p>Patient: ${pres.visit?.patient?.name || user?.patient?.name || ""}</p></div>
       <h3>Medications</h3>
       <table><tr><th>Medicine</th><th>Dosage</th><th>Duration</th></tr>
       ${(pres.items || []).map(item => `<tr><td>${item.medicine?.name || "Medicine"}</td><td>${item.dosage || "-"}</td><td>${item.duration || "-"}</td></tr>`).join("")}
-      </table></body></html>
+      </table>
+      <h3>Prescription Notes</h3>
+      <p>${pres.notes || "No additional notes were recorded for this prescription."}</p>
+      </body></html>
     `);
     win.document.close();
     win.print();
@@ -114,7 +125,7 @@ const Prescriptions = () => {
                   Medications ({pres.items?.length || 0})
                 </p>
                 <div className="space-y-2">
-                  {(expandedId === pres.id ? pres.items : pres.items?.slice(0, 2))?.map((item, idx) => (
+                  {pres.items?.map((item, idx) => (
                     <div key={idx} className="p-2 rounded bg-blue-50/50 border border-blue-100/50">
                       <p className="text-sm font-bold text-blue-900">{item.medicine?.name || "Medicine"}</p>
                       <p className="text-xs text-blue-700">Dosage: {item.dosage || "N/A"} | Duration: {item.duration || "N/A"}</p>
@@ -123,45 +134,30 @@ const Prescriptions = () => {
                 </div>
               </div>
 
-              {expandedId === pres.id && (
-                <div className="space-y-4 pt-2 border-t border-gray-100">
-                  <div>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Prescription Notes</p>
-                    <p className="text-sm text-gray-700 leading-relaxed">
-                      {pres.notes || "No additional notes were recorded for this prescription."}
+              <div className="space-y-4 pt-2 border-t border-gray-100">
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Prescription Notes</p>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    {pres.notes || "No additional notes were recorded for this prescription."}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Prescription Status</p>
+                    <p className="text-sm font-medium text-gray-800">
+                      {pres.isDispensed ? "Dispensed" : "Pending Dispense"}
                     </p>
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Prescription Status</p>
-                      <p className="text-sm font-medium text-gray-800">
-                        {pres.isDispensed ? "Dispensed" : "Pending Dispense"}
-                      </p>
-                    </div>
-                    <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Visit Reference</p>
-                      <p className="text-sm font-medium text-gray-800">
-                        #{pres.visitId?.slice(-8)?.toUpperCase() || "N/A"}
-                      </p>
-                    </div>
+                  <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Visit Reference</p>
+                    <p className="text-sm font-medium text-gray-800">
+                      #{pres.visitId?.slice(-8)?.toUpperCase() || "N/A"}
+                    </p>
                   </div>
                 </div>
-              )}
-            </div>
-
-            {(pres.items?.length > 0 || pres.notes) && (
-              <div className="p-4 border-t border-gray-50 bg-gray-50/30">
-                <Button
-                  variant="outline"
-                  className="w-full gap-2 text-sm font-bold border-blue-100 text-blue-600 hover:bg-blue-50"
-                  onClick={() => setExpandedId(expandedId === pres.id ? null : pres.id)}
-                >
-                  {expandedId === pres.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                  {expandedId === pres.id ? "Show Less" : "View Details"}
-                </Button>
               </div>
-            )}
+            </div>
           </div>
         ))}
         {prescriptions.length === 0 && (

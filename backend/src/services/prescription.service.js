@@ -73,6 +73,18 @@ export const getPrescriptionByVisit = async (visitId) => {
         include: {
           items: { include: { medicine: true } },
           doctor: { select: { name: true, specialization: true } },
+          visit: {
+            select: {
+              id: true,
+              createdAt: true,
+              patient: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
         },
       })
   );

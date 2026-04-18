@@ -26,6 +26,8 @@ import {
   getMedicines
 } from "../services/doctor.service";
 
+const getDraftStorageKey = (visitId) => `consultation-draft:${visitId}`;
+
 const Consultation = () => {
   const { visitId } = useParams();
   const navigate = useNavigate();
@@ -39,6 +41,7 @@ const Consultation = () => {
 
   // Consultation State
   const [notes, setNotes] = useState("");
+  const [prescriptionNotes, setPrescriptionNotes] = useState("");
   const [prescriptionItems, setPrescriptionItems] = useState([]);
   const [labTests, setLabTests] = useState([]);
   
@@ -52,10 +55,34 @@ const Consultation = () => {
           getVisitById(visitId),
           getMedicines()
         ]);
+
+        let savedDraft = null;
+        if (typeof window !== "undefined") {
+          try {
+            savedDraft = JSON.parse(
+              window.localStorage.getItem(getDraftStorageKey(visitId)) || "null"
+            );
+          } catch {
+            savedDraft = null;
+          }
+        }
         
         if (vRes.success) {
           setVisit(vRes.data);
-          setNotes(vRes.data.consultationNotes || "");
+          setNotes(savedDraft?.notes ?? vRes.data.consultationNotes ?? "");
+          setPrescriptionNotes(
+            savedDraft?.prescriptionNotes ?? vRes.data.prescription?.notes ?? ""
+          );
+          setPrescriptionItems(
+            savedDraft?.prescriptionItems ??
+              vRes.data.prescription?.items?.map((item) => ({
+                medicineId: item.medicineId,
+                dosage: item.dosage || "",
+                duration: item.duration || "",
+              })) ??
+              []
+          );
+          setLabTests(savedDraft?.labTests ?? []);
         }
         if (mRes.success) {
           setMedicines(mRes.data);
@@ -68,6 +95,22 @@ const Consultation = () => {
     };
     fetchData();
   }, [visitId]);
+
+  useEffect(() => {
+    if (loading || typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(
+      getDraftStorageKey(visitId),
+      JSON.stringify({
+        notes,
+        prescriptionNotes,
+        prescriptionItems,
+        labTests,
+      })
+    );
+  }, [visitId, loading, notes, prescriptionNotes, prescriptionItems, labTests]);
 
   const handleAddMedicine = () => {
     setPrescriptionItems([...prescriptionItems, { medicineId: "", dosage: "", duration: "" }]);
@@ -94,20 +137,37 @@ const Consultation = () => {
     setSuccess("");
     
     try {
+      const validPrescriptionItems = prescriptionItems.filter((item) => item.medicineId);
+
       // 1. Save Notes
       await saveConsultationNotes(visitId, notes);
       
       // 2. Save Prescription if items exist
-      if (prescriptionItems.length > 0) {
-        await createPrescription(visitId, {
-          notes: "Prescribed during consultation",
-          items: prescriptionItems.filter(item => item.medicineId)
+      if (!visit?.prescription && validPrescriptionItems.length > 0) {
+        const prescriptionResponse = await createPrescription(visitId, {
+          notes: prescriptionNotes.trim() || null,
+          items: validPrescriptionItems,
         });
+
+        if (prescriptionResponse.success) {
+          setVisit((current) => ({
+            ...current,
+            prescription: prescriptionResponse.data,
+          }));
+        }
       }
       
       // 3. Save Lab Requests
       for (const test of labTests) {
         await createLabRequest(visitId, test);
+      }
+
+      setLabTests([]);
+      if (validPrescriptionItems.length > 0) {
+        setPrescriptionItems(validPrescriptionItems);
+      }
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(getDraftStorageKey(visitId));
       }
       
       setSuccess("Consultation data saved successfully!");
@@ -272,6 +332,21 @@ const Consultation = () => {
                   <Button size="sm" onClick={handleAddMedicine} className="gap-2">
                     <Plus size={16} /> Add Medicine
                   </Button>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    Prescription Notes
+                  </label>
+                  <textarea
+                    className="w-full min-h-[120px] p-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-600 outline-none text-gray-700"
+                    placeholder="Add instructions or remarks to appear on the printed prescription..."
+                    value={prescriptionNotes}
+                    onChange={(e) => setPrescriptionNotes(e.target.value)}
+                  />
+                  <p className="text-xs text-gray-400">
+                    Draft is saved automatically for this visit while you work.
+                  </p>
                 </div>
 
                 <div className="space-y-4">
