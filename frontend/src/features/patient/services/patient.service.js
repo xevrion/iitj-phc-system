@@ -1,5 +1,17 @@
 import api from "../../../services/api";
 
+const buildFreshRequestConfig = (params = {}) => ({
+  params: {
+    ...params,
+    _ts: Date.now(),
+  },
+  headers: {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    Pragma: "no-cache",
+    Expires: "0",
+  },
+});
+
 export const getMyProfile = async () => {
   const response = await api.get("/patients/me");
   return response.data;
@@ -11,7 +23,10 @@ export const updateMyProfile = async (data) => {
 };
 
 export const getMyVisits = async (id, { limit } = {}) => {
-  const response = await api.get(`/patients/${id}/visits`, { params: limit ? { limit } : {} });
+  const response = await api.get(
+    `/patients/${id}/visits`,
+    buildFreshRequestConfig(limit ? { limit } : {})
+  );
   return response.data;
 };
 
@@ -26,7 +41,10 @@ export const getMyCurrentVisit = async () => {
 };
 
 export const getPrescriptionByVisit = async (visitId) => {
-  const response = await api.get(`/visits/${visitId}/prescription`);
+  const response = await api.get(
+    `/visits/${visitId}/prescription`,
+    buildFreshRequestConfig()
+  );
   return response.data;
 };
 
