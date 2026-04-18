@@ -30,6 +30,11 @@ const DoctorProfile = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const [isAvailable, setIsAvailable] = useState(Boolean(user?.doctor?.isAvailable));
+
+  useEffect(() => {
+    setIsAvailable(Boolean(user?.doctor?.isAvailable));
+  }, [user?.doctor?.isAvailable]);
 
   const fetchAttendance = async () => {
     try {
@@ -53,9 +58,10 @@ const DoctorProfile = () => {
     setSaving(true);
     setMessage({ type: "", text: "" });
     try {
-      const nextValue = !user?.doctor?.isAvailable;
+      const nextValue = !isAvailable;
       const res = await updateMyAvailability(nextValue);
       if (res.success) {
+        setIsAvailable(Boolean(res.data?.doctor?.isAvailable));
         await checkAuth();
         await fetchAttendance();
         setMessage({ type: "success", text: `Status updated to ${nextValue ? "Available" : "Unavailable"}` });
@@ -77,6 +83,7 @@ const DoctorProfile = () => {
       const res = await checkInDoctor();
       if (res.success) {
         await checkAuth();
+        setIsAvailable(false);
         await fetchAttendance();
         setMessage({ type: "success", text: "Checked in for today." });
       }
@@ -97,6 +104,7 @@ const DoctorProfile = () => {
       const res = await checkOutDoctor();
       if (res.success) {
         await checkAuth();
+        setIsAvailable(false);
         await fetchAttendance();
         setMessage({ type: "success", text: "Checked out for the day." });
       }
@@ -199,14 +207,14 @@ const DoctorProfile = () => {
                   "px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide",
                   !isCheckedIn
                     ? "bg-slate-100 text-slate-700"
-                    : user?.doctor?.isAvailable
+                    : isAvailable
                       ? "bg-emerald-100 text-emerald-700"
                       : "bg-amber-100 text-amber-700"
                 )}
               >
                 {!isCheckedIn
                   ? "Off Duty"
-                  : user?.doctor?.isAvailable
+                  : isAvailable
                     ? "Open For Consultations"
                     : "Temporarily Paused"}
               </span>
@@ -214,14 +222,14 @@ const DoctorProfile = () => {
 
             <div className="mt-5 space-y-3">
               <Button
-                variant={user?.doctor?.isAvailable ? "secondary" : "primary"}
+                variant={isAvailable ? "secondary" : "primary"}
                 onClick={handleToggleAvailability}
                 isLoading={saving}
                 disabled={!isCheckedIn}
                 className="w-full gap-2"
               >
-                {user?.doctor?.isAvailable ? <CircleX size={18} /> : <CircleCheck size={18} />}
-                {user?.doctor?.isAvailable ? "Pause Consultations" : "Open Consultations"}
+                {isAvailable ? <CircleX size={18} /> : <CircleCheck size={18} />}
+                {isAvailable ? "Pause Consultations" : "Open Consultations"}
               </Button>
             </div>
           </div>

@@ -34,6 +34,11 @@ const DoctorOverview = () => {
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState(null);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const [isAvailable, setIsAvailable] = useState(Boolean(user?.doctor?.isAvailable));
+
+  useEffect(() => {
+    setIsAvailable(Boolean(user?.doctor?.isAvailable));
+  }, [user?.doctor?.isAvailable]);
 
   const fetchOverview = async () => {
     setLoading(true);
@@ -100,6 +105,7 @@ const DoctorOverview = () => {
     try {
       await checkInDoctor();
       await checkAuth();
+      setIsAvailable(false);
       await fetchOverview();
     } catch {
       setError("Check-in failed. You may already be checked in.");
@@ -114,6 +120,7 @@ const DoctorOverview = () => {
     try {
       await checkOutDoctor();
       await checkAuth();
+      setIsAvailable(false);
       await fetchOverview();
     } catch {
       setError("Check-out failed. No active check-in was found.");
@@ -123,11 +130,14 @@ const DoctorOverview = () => {
   };
 
   const handleAvailabilityToggle = async () => {
-    const nextValue = !user?.doctor?.isAvailable;
+    const nextValue = !isAvailable;
     setSaving(true);
     setError("");
     try {
-      await updateMyAvailability(nextValue);
+      const response = await updateMyAvailability(nextValue);
+      if (response.success) {
+        setIsAvailable(Boolean(response.data?.doctor?.isAvailable));
+      }
       await checkAuth();
       await fetchOverview();
     } catch (err) {
@@ -221,24 +231,24 @@ const DoctorOverview = () => {
               "px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide w-fit",
               !isCheckedIn
                 ? "bg-slate-100 text-slate-700"
-                : user?.doctor?.isAvailable
+                : isAvailable
                   ? "bg-emerald-100 text-emerald-700"
                   : "bg-amber-100 text-amber-700"
             )}
           >
             {!isCheckedIn
               ? "Off Duty"
-              : user?.doctor?.isAvailable
+              : isAvailable
                 ? "Open For Consultations"
                 : "Temporarily Paused"}
           </span>
           <Button
-            variant={user?.doctor?.isAvailable ? "secondary" : "primary"}
+            variant={isAvailable ? "secondary" : "primary"}
             onClick={handleAvailabilityToggle}
             isLoading={saving}
             disabled={!isCheckedIn}
           >
-            {user?.doctor?.isAvailable ? "Pause Consultations" : "Open Consultations"}
+            {isAvailable ? "Pause Consultations" : "Open Consultations"}
           </Button>
         </div>
       </div>
